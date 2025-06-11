@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { useState, useEffect, useCallback } from 'react';
-import { CustomerIcon } from '@/components/icons/customer-icon'; // ตรวจสอบเส้นทางให้ถูกต้อง
+import { CustomerIcon } from '../components/icons/customer-icon'; // ตรวจสอบเส้นทางให้ถูกต้อง
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { IconDefinition } from '@fortawesome/fontawesome-svg-core'; // สำคัญ: ต้อง Import IconDefinition
 
