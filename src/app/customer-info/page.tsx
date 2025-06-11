@@ -17,15 +17,18 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import AnimatedPage, { itemVariants } from '../components/AnimatedPage';
 
+// กำหนด Interface สำหรับข้อมูลลูกค้าที่ถูกจัดรูปแบบแล้ว
 interface CustomerData {
   licensePlate: string;
   customerName: string;
   phone: string;
   registerDate: string;
   status: string;
+  rowIndex: number; // เพิ่ม rowIndex เพื่อระบุแถวใน Google Sheet
 }
 
-// กำหนด Interface สำหรับข้อมูลดิบที่มาจาก Google Sheet API โดยไม่มี [key: string]: any;
+// กำหนด Interface สำหรับข้อมูลดิบที่มาจาก Google Sheet API
+// คีย์ต้องตรงกับชื่อคอลัมน์ใน Google Sheet และสิ่งที่ doGet ส่งมา
 interface RawCustomerDataItem {
   'ทะเบียนรถ'?: string;
   'ชื่อลูกค้า'?: string;
@@ -33,6 +36,7 @@ interface RawCustomerDataItem {
   'วันที่ชำระภาษีล่าสุด'?: string;
   'สถานะ'?: string;
   'สถานะการเตือน'?: string;
+  rowIndex?: number; // เพิ่ม rowIndex
 }
 
 interface SelectFilterProps {
@@ -82,52 +86,68 @@ export default function CustomerInfoPage() {
   const [filterDay, setFilterDay] = useState<string>('');
   const [filterMonth, setFilterMonth] = useState<string>('');
   const [filterYear, setFilterYear] = useState<string>('');
-  
+
   const [data, setData] = useState<CustomerData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null); // เพิ่ม state สำหรับ error message
   const [currentPage, setCurrentPage] = useState<number>(1);
 
   const itemsPerPage: number = 10;
-  
+
+  // **** เปลี่ยน URL นี้เป็น URL ของ Web App ของคุณจริงๆ ****
   const GOOGLE_SHEET_CUSTOMER_API_URL: string = 'https://script.google.com/macros/s/AKfycbxN9rG3NhDyhlXVKgNndNcJ6kHopPaf5GRma_dRYjtP64svTEX4mYCHoDd6g/exec?getAll=1';
+
 
   const fetchData = useCallback(async () => {
     setLoading(true);
+    setError(null); // รีเซ็ต error ก่อนเริ่ม fetch ใหม่
     try {
       const res = await fetch(GOOGLE_SHEET_CUSTOMER_API_URL);
-      
+
       if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}.`);
+        // ตรวจสอบสถานะ HTTP error
+        const errorText = `HTTP error! Status: ${res.status}. ${res.statusText || ''}`;
+        throw new Error(errorText);
       }
 
-      const json: { data?: RawCustomerDataItem[] } = await res.json();
+      const json: { data?: RawCustomerDataItem[]; error?: boolean; message?: string } = await res.json();
+
+      if (json.error) {
+        // ตรวจสอบ error ที่มาจาก Apps Script เอง
+        throw new Error(`Server Error: ${json.message || 'Unknown server error'}`);
+      }
 
       const formatted: CustomerData[] = (json.data || []).map((item: RawCustomerDataItem) => {
         const dtField: string = item['วันที่ชำระภาษีล่าสุด'] || '';
+        // ตรวจสอบรูปแบบวันที่ให้แน่ใจว่าเป็น yyyy-MM-dd
         const registerDate: string = dtField.includes('T') ? dtField.split('T')[0] : dtField;
-        
+
         const rawPhone: string = (item['เบอร์ติดต่อ'] || '').toString();
+        // เพิ่ม '0' หน้าเบอร์โทรศัพท์ ถ้ายังไม่มี
         const phone: string = rawPhone.startsWith('0') || rawPhone.length === 0 ? rawPhone : `0${rawPhone}`;
-        
+
         return {
           licensePlate: item['ทะเบียนรถ'] || '',
           customerName: item['ชื่อลูกค้า'] || '',
           phone,
           registerDate,
           status: item['สถานะ'] || item['สถานะการเตือน'] || 'รอดำเนินการ',
+          rowIndex: item.rowIndex || 0, // กำหนดค่า default เป็น 0 หากไม่มี
         };
       });
       setData(formatted);
     } catch (err: unknown) {
       if (err instanceof Error) {
         console.error('❌ ดึงข้อมูลลูกค้าไม่สำเร็จ:', err.message);
+        setError(`ไม่สามารถโหลดข้อมูลลูกค้าได้: ${err.message}`);
       } else {
         console.error('❌ ดึงข้อมูลลูกค้าไม่สำเร็จ:', err);
+        setError('ไม่สามารถโหลดข้อมูลลูกค้าได้ในขณะนี้');
       }
     } finally {
       setLoading(false);
     }
-  }, [GOOGLE_SHEET_CUSTOMER_API_URL]);
+  }, [GOOGLE_SHEET_CUSTOMER_API_URL]); // dependency array
 
   useEffect(() => {
     fetchData();
@@ -138,36 +158,44 @@ export default function CustomerInfoPage() {
     setFilterDay('');
     setFilterMonth('');
     setFilterYear('');
-    setCurrentPage(1);
+    setCurrentPage(1); // เมื่อรีเซ็ตตัวกรอง ให้กลับไปหน้าแรก
   };
 
   const filteredData: CustomerData[] = data
-    .filter(item => !!item.registerDate)
+    .filter(item => !!item.registerDate) // กรองรายการที่ไม่มีวันที่ลงทะเบียนออก
     .filter(item => {
+      // ตรวจสอบให้แน่ใจว่า registerDate มีรูปแบบที่ถูกต้องก่อน split
+      if (!item.registerDate || item.registerDate.split('-').length !== 3) {
+        return false;
+      }
       const [year, monthRaw, dayRaw] = item.registerDate.split('-');
-      if (!year || !monthRaw || !dayRaw) return false; 
 
-      const day: string = String(Number(dayRaw));
-      const monthIndex: number = Number(monthRaw) - 1;
+      const day: string = String(Number(dayRaw)); // แปลงเป็น Number แล้วกลับเป็น String เพื่อลบ 0 นำหน้า
+      const monthIndex: number = Number(monthRaw) - 1; // เดือนจาก 1-12 เป็น index 0-11
       const monthMap: string[] = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-      const month: string = monthMap[monthIndex] || '';
-      
-      const matchSearch: boolean = item.licensePlate.toLowerCase().includes(search.toLowerCase()) || 
+      const month: string = monthMap[monthIndex] || ''; // หาชื่อเดือนไทย
+
+      // เงื่อนไขการค้นหา
+      const matchSearch: boolean = item.licensePlate.toLowerCase().includes(search.toLowerCase()) ||
                                    item.customerName.toLowerCase().includes(search.toLowerCase());
+      // เงื่อนไขการกรองวันที่
       const matchDay: boolean = !filterDay || day === filterDay;
       const matchMonth: boolean = !filterMonth || month === filterMonth;
       const matchYear: boolean = !filterYear || year === filterYear;
 
       return matchSearch && matchDay && matchMonth && matchYear;
     });
-  
+
+  // Pagination Logic
   const startIdx: number = (currentPage - 1) * itemsPerPage;
   const paginatedData: CustomerData[] = filteredData.slice(startIdx, startIdx + itemsPerPage);
   const totalPages: number = Math.ceil(filteredData.length / itemsPerPage);
 
+  // สร้างตัวเลือกสำหรับ dropdown
   const days: string[] = Array.from({ length: 31 }, (_, i) => `${i + 1}`);
   const months: string[] = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
   const currentYear: number = new Date().getFullYear();
+  // สร้างปีสำหรับ 2 ปีก่อนหน้า ถึง 2 ปีในอนาคต
   const years: string[] = Array.from({ length: 5 }, (_, i) => `${currentYear + i - 2}`);
 
   return (
@@ -175,7 +203,7 @@ export default function CustomerInfoPage() {
       <motion.div variants={itemVariants} className="w-full max-w-6xl">
         <h1 className="text-3xl font-bold mb-6 text-center text-gray-900 dark:text-white">ข้อมูลลูกค้าต่อภาษี</h1>
       </motion.div>
-      
+
       <motion.div
         variants={itemVariants}
         className="bg-white dark:bg-neutral-800 rounded-lg p-4 sm:p-6 shadow-lg w-full max-w-6xl"
@@ -188,12 +216,12 @@ export default function CustomerInfoPage() {
               placeholder="ค้นหาทะเบียนรถ / ชื่อลูกค้า"
               className="w-full pl-10 py-2 rounded-lg bg-gray-50 dark:bg-neutral-700 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={search}
-              onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
+              onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} // เมื่อค้นหาใหม่ ให้กลับไปหน้าแรก
             />
           </div>
-          <SelectFilter value={filterDay} onChange={setFilterDay} icon={faCalendarDay} placeholder="ทุกวัน" options={days} />
-          <SelectFilter value={filterMonth} onChange={setFilterMonth} icon={faCalendarAlt} placeholder="ทุกเดือน" options={months} />
-          <SelectFilter value={filterYear} onChange={setFilterYear} icon={faCalendar} placeholder="ทุกปี" options={years} />
+          <SelectFilter value={filterDay} onChange={val => { setFilterDay(val); setCurrentPage(1); }} icon={faCalendarDay} placeholder="ทุกวัน" options={days} />
+          <SelectFilter value={filterMonth} onChange={val => { setFilterMonth(val); setCurrentPage(1); }} icon={faCalendarAlt} placeholder="ทุกเดือน" options={months} />
+          <SelectFilter value={filterYear} onChange={val => { setFilterYear(val); setCurrentPage(1); }} icon={faCalendar} placeholder="ทุกปี" options={years} />
           <button onClick={resetFilters} className="px-4 py-2 bg-red-500 dark:bg-red-600 text-white rounded-lg hover:bg-red-600 dark:hover:bg-red-700 transition w-full">ล้าง</button>
         </div>
 
@@ -201,6 +229,11 @@ export default function CustomerInfoPage() {
           <div className="flex flex-col items-center justify-center py-12 text-gray-700 dark:text-gray-200">
             <FontAwesomeIcon icon={faSpinner} spin className="text-4xl mb-4 text-blue-500 dark:text-blue-400" />
             <p className="text-lg">กำลังโหลดข้อมูล...</p>
+          </div>
+        ) : error ? ( // แสดง error message ถ้ามี
+          <div className="flex flex-col items-center justify-center py-12 text-red-600 dark:text-red-400">
+            <FontAwesomeIcon icon={faExclamationTriangle} className="text-4xl mb-4" />
+            <p className="text-lg">{error}</p>
           </div>
         ) : (
           <>
@@ -215,13 +248,13 @@ export default function CustomerInfoPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                   {paginatedData.map((item: CustomerData) => (
-                    <tr key={item.licensePlate} className="hover:bg-gray-50 dark:hover:bg-neutral-700/50">
+                    <tr key={item.licensePlate + item.rowIndex} className="hover:bg-gray-50 dark:hover:bg-neutral-700/50">
                       <td className="p-3 font-medium whitespace-nowrap">{item.licensePlate}</td>
                       <td className="p-3 whitespace-nowrap">{item.registerDate}</td>
                       <td className="p-3 whitespace-nowrap">{item.customerName}</td>
                       <td className="p-3 whitespace-nowrap">{item.phone}</td>
                       <td className="p-3 whitespace-nowrap">
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold 
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold
                           ${item.status === 'ต่อภาษีแล้ว' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
                             item.status === 'เกินกำหนด' ? 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200' :
                             'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'}`}>
@@ -232,7 +265,7 @@ export default function CustomerInfoPage() {
                   ))}
                 </tbody>
               </table>
-              
+
               {paginatedData.length === 0 && (
                   <div className="flex items-center justify-center h-full text-center py-10 text-gray-500">
                       ไม่พบข้อมูลที่ตรงกับตัวกรอง
