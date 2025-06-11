@@ -12,9 +12,6 @@ import {
   faCalendarDay,
   faCalendarAlt,
   faCalendar,
-  faCar,
-  faUser,
-  faPhone,
   faClock,
   faCheckCircle,
   faExclamationTriangle, // <-- ตรวจสอบว่ามีบรรทัดนี้อยู่แล้วใน Import List
