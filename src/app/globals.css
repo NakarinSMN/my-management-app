@@ -1,0 +1,41 @@
+@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+   --text-color-primary: #1a202c; /* gray-900 */
+  --text-color-secondary: #4a5568; /* gray-600 */
+  --chart-grid-color: rgba(100, 100, 100, 0.1); /* สีเส้น Grid อ่อนๆ */
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --text-color-primary: #e2e8f0; /* gray-200 */
+  --text-color-secondary: #94a3b8; /* gray-400 */
+  --chart-grid-color: rgba(200, 200, 200, 0.1); /* สีเส้น Grid อ่อนๆ สำหรับ Dark Mode */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Kanit", sans-serif;
+  @apply bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white;
+}
+
+
+html {
+  scroll-behavior: smooth;
+}

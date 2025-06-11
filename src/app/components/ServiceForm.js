@@ -1,0 +1,203 @@
+"use client";
+
+import { useState } from 'react';
+import { FaSave, FaTimes, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
+
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz3WJmHNJ2h8Yj1rm2tc_mXj6JNCYz8T-yOmg9kC6aKgpAAuXmH5Z3DNZQF8ecGZUGw/exec';
+
+// ประเภทข้อมูลบริการ (ใช้ตอน edit)
+export interface Service {
+  serviceName: string;
+  servicePrice: string | number;
+  serviceDetails: string;
+  rowIndex: number;
+  categoryName: string;
+  categoryDescription: string;
+}
+
+// ประเภทข้อมูลในฟอร์ม
+interface FormData {
+  categoryName: string;
+  categoryDescription: string;
+  serviceName: string;
+  servicePrice: string | number;
+  serviceDetails: string;
+}
+
+// Props ของ Component
+interface ServiceFormProps {
+  onSuccess: () => void;
+  onCancel: () => void;
+  initialData?: Service | null;
+}
+
+// โครงสร้างผลลัพธ์จาก API
+interface ApiResponse {
+  status: 'success' | 'error';
+  message?: string;
+}
+
+export default function ServiceForm({
+  onSuccess,
+  onCancel,
+  initialData = null,
+}: ServiceFormProps) {
+  const isEditMode = !!initialData;
+
+  const [formData, setFormData] = useState<FormData>(
+    initialData
+      ? {
+          categoryName: initialData.categoryName,
+          categoryDescription: initialData.categoryDescription,
+          serviceName: initialData.serviceName,
+          servicePrice: initialData.servicePrice,
+          serviceDetails: initialData.serviceDetails,
+        }
+      : {
+          categoryName: '',
+          categoryDescription: '',
+          serviceName: '',
+          servicePrice: '',
+          serviceDetails: '',
+        }
+  );
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setMessage('');
+    setError('');
+
+    try {
+      const payload: FormData & { action: string; rowIndex?: number } = {
+        ...formData,
+        action: isEditMode ? 'edit' : 'add',
+      };
+
+      if (isEditMode && initialData?.rowIndex !== undefined) {
+        payload.rowIndex = initialData.rowIndex;
+      } else if (isEditMode) {
+        throw new Error('rowIndex is missing for edit mode.');
+      }
+
+      const res = await fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        redirect: 'follow',
+      });
+
+      const result: ApiResponse = await res.json();
+
+      if (result.status === 'success') {
+        setMessage(isEditMode ? 'แก้ไขข้อมูลสำเร็จ!' : 'เพิ่มข้อมูลสำเร็จ!');
+        setTimeout(() => onSuccess(), 1500);
+      } else {
+        throw new Error(result.message || 'เกิดข้อผิดพลาด');
+      }
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(`เกิดข้อผิดพลาด: ${err.message}`);
+      } else {
+        setError('เกิดข้อผิดพลาดที่ไม่รู้จัก');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4 text-left">
+      <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
+        {isEditMode ? 'แก้ไขรายละเอียดบริการ' : 'เพิ่มบริการใหม่'}
+      </h2>
+
+      <input
+        type="text"
+        name="categoryName"
+        placeholder="ชื่อหมวดหมู่ (จำเป็น)"
+        value={formData.categoryName}
+        onChange={handleChange}
+        required
+        className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+      />
+      <input
+        type="text"
+        name="serviceName"
+        placeholder="ชื่อบริการ (จำเป็น)"
+        value={formData.serviceName}
+        onChange={handleChange}
+        required
+        className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+      />
+      <input
+        type="text"
+        name="servicePrice"
+        placeholder="ราคา (จำเป็น)"
+        value={formData.servicePrice}
+        onChange={handleChange}
+        required
+        className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+      />
+      <textarea
+        name="serviceDetails"
+        placeholder="รายละเอียดบริการ"
+        value={formData.serviceDetails}
+        onChange={handleChange}
+        rows={2}
+        className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+      ></textarea>
+      <textarea
+        name="categoryDescription"
+        placeholder="คำอธิบายหมวดหมู่ (ถ้ามี)"
+        value={formData.categoryDescription}
+        onChange={handleChange}
+        rows={2}
+        className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+      ></textarea>
+
+      {message && (
+        <p className="text-green-500 font-medium flex items-center gap-2">
+          <FaCheckCircle /> {message}
+        </p>
+      )}
+      {error && (
+        <p className="text-red-500 font-medium flex items-center gap-2">
+          <FaExclamationCircle /> {error}
+        </p>
+      )}
+
+      <div className="flex justify-end gap-4 mt-4">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex items-center gap-2 px-4 py-2 bg-gray-300 text-gray-800 dark:bg-gray-600 dark:text-gray-200 rounded-md hover:bg-gray-400 transition-colors"
+        >
+          <FaTimes /> ยกเลิก
+        </button>
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
+        >
+          <FaSave />{' '}
+          {isSubmitting
+            ? 'กำลังบันทึก...'
+            : isEditMode
+            ? 'บันทึกการแก้ไข'
+            : 'เพิ่มข้อมูล'}
+        </button>
+      </div>
+    </form>
+  );
+}
