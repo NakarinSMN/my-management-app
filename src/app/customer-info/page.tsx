@@ -13,7 +13,8 @@ import {
   faCalendar,
   faChevronLeft,
   faChevronRight,
-  faSpinner
+  faSpinner,
+  faExclamationTriangle // <--- ADD THIS LINE
 } from '@fortawesome/free-solid-svg-icons';
 import AnimatedPage, { itemVariants } from '../components/AnimatedPage';
 
