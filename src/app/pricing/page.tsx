@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { JSX } from 'react/jsx-runtime'; // เพิ่มบรรทัดนี้เพื่อแก้ไข 'Cannot find namespace JSX'
+import { JSX } from 'react/jsx-runtime';
 
 import {
   FaPlus, FaSpinner, FaExclamationTriangle, FaCar, FaPencilAlt
@@ -13,7 +13,8 @@ import Modal from '../components/Modal';
 import ServiceForm from '../components/ServiceForm';
 
 import AnimatedPage, { itemVariants } from '../components/AnimatedPage';
-import { Card } from '../components/ui/Card';
+// ถ้า Card component ของคุณไม่ได้ถูกใช้แล้วจริงๆ ก็สามารถลบ import นี้ได้
+// import { Card } from '../components/ui/Card'; 
 
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz3WJmHNJ2h8Yj1rm2tc_mXj6JNCYz8T-yOmg9kC6aKgpAAuXmH5Z3DNZQF8ecGZUGw/exec';
 
@@ -44,7 +45,6 @@ interface ServiceCategory {
   services: Service[];
 }
 
-// แก้ไข: ลบพารามิเตอร์ categoryName ออก เนื่องจากไม่ได้ใช้งานจริงในฟังก์ชันนี้
 const getCategoryIcon = (): JSX.Element => {
   return <FaCar className="inline mr-2" />;
 };
@@ -69,7 +69,7 @@ export default function PricingPage() {
     try {
       const response = await fetch(GOOGLE_SCRIPT_URL);
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data: RawServiceData[] = await response.json(); // กำหนดประเภท RawServiceData
+      const data: RawServiceData[] = await response.json();
 
       const formattedData: ServiceCategory[] = data.reduce((acc: ServiceCategory[], current: RawServiceData) => {
         let category = acc.find(cat => cat.name === current.categoryName);
@@ -146,12 +146,30 @@ export default function PricingPage() {
           {error && <div className="flex items-center justify-center text-lg mt-8 text-red-500 gap-3"><FaExclamationTriangle /> {error}</div>}
 
           {!isLoading && !error && (
-            <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8 items-start">
+            // Grid Container: items-stretch ทำให้ motion.div มีความสูงเท่ากัน
+            <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8 items-stretch">
               {serviceCategories.map((category: ServiceCategory, catIndex: number) => (
-                <motion.div key={catIndex} variants={itemVariants}>
-                  <Card title={<>{getCategoryIcon()} {category.name}</>} className="h-full flex flex-col">
-                    <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 flex-grow">{category.description}</p>
-                    <ul className="space-y-3 mt-auto">
+                // motion.div เป็น container หลักของการ์ด กำหนดความสูงคงที่และ flex
+                <motion.div 
+                  key={catIndex} 
+                  variants={itemVariants} 
+                  className="h-[500px] flex flex-col rounded-lg shadow-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                >
+                  {/* ส่วนหัวของการ์ด: Fixed ไม่ไหลตามการ scroll */}
+                  <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 z-10 sticky top-0">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                      {getCategoryIcon()} {category.name}
+                    </h3>
+                  </div>
+                  {/* ส่วนรายละเอียด (description) ของการ์ด: ยังคงอยู่กับที่ */}
+                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 p-2 pt-6">
+                      {category.description}
+                  </p>
+
+                  {/* Container สำหรับเนื้อหาที่สามารถ Scroll ได้ */}
+                  {/* flex-grow เพื่อให้ใช้พื้นที่ที่เหลือทั้งหมด และ overflow-y-auto เพื่อให้ scroll ได้ */}
+                  <div className="flex-grow overflow-y-auto custom-scrollable-area"> {/* เพิ่ม class ที่นี่ */}
+                    <ul className="space-y-3 p-4 pt-0">
                       {category.services.map((service: Service, svcIndex: number) => (
                         <li key={svcIndex} className="relative group flex justify-between items-start border-b border-gray-200 dark:border-gray-700 pb-2 last:border-b-0 last:pb-0 pr-8">
                           <div className="flex items-start text-left gap-2">
@@ -165,12 +183,12 @@ export default function PricingPage() {
                             {formatPrice(service.servicePrice)} บาท
                           </span>
                           <button onClick={() => handleEditClick(service)} className="absolute right-0 top-0 text-gray-400 hover:text-yellow-500 transition-opacity duration-300 opacity-0 group-hover:opacity-100">
-                              <FaPencilAlt />
+                                <FaPencilAlt />
                           </button>
                         </li>
                       ))}
                     </ul>
-                  </Card>
+                  </div> {/* ปิด div สำหรับเนื้อหาที่ Scroll ได้ */}
                 </motion.div>
               ))}
             </div>
