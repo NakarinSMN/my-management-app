@@ -153,7 +153,7 @@ export default function PricingPage() {
                 <motion.div 
                   key={catIndex} 
                   variants={itemVariants} 
-                  className="h-[500px] flex flex-col rounded-lg shadow-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                  className="h-[450px] flex flex-col rounded-lg shadow-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
                 >
                   {/* ส่วนหัวของการ์ด: Fixed ไม่ไหลตามการ scroll */}
                   <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 z-10 sticky top-0">
