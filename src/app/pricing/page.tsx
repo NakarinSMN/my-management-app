@@ -153,7 +153,7 @@ export default function PricingPage() {
                 <motion.div 
                   key={catIndex} 
                   variants={itemVariants} 
-                  className="h-[450px] flex flex-col rounded-lg shadow-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                  className="h-[450px] flex flex-col rounded-lg shadow-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 overflow-hidden" // เปลี่ยน overflow-y-auto เป็น overflow-hidden
                 >
                   {/* ส่วนหัวของการ์ด: Fixed ไม่ไหลตามการ scroll */}
                   <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 z-10 sticky top-0">
@@ -162,16 +162,16 @@ export default function PricingPage() {
                     </h3>
                   </div>
                   {/* ส่วนรายละเอียด (description) ของการ์ด: ยังคงอยู่กับที่ */}
-                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 p-2 pt-6">
+                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 px-4 py-2"> {/* ปรับ padding */}
                       {category.description}
                   </p>
 
                   {/* Container สำหรับเนื้อหาที่สามารถ Scroll ได้ */}
                   {/* flex-grow เพื่อให้ใช้พื้นที่ที่เหลือทั้งหมด และ overflow-y-auto เพื่อให้ scroll ได้ */}
-                  <div className="flex-grow overflow-y-auto custom-scrollable-area"> {/* เพิ่ม class ที่นี่ */}
-                    <ul className="space-y-3 p-4 pt-0">
+                  <div className="flex-grow overflow-y-auto custom-scrollable-area px-4"> {/* เพิ่ม class และ padding-x ที่นี่ */}
+                    <ul className="space-y-3 pb-4"> {/* ลบ p-4 pt-0 และเพิ่ม pb-4 */}
                       {category.services.map((service: Service, svcIndex: number) => (
-                        <li key={svcIndex} className="relative group flex justify-between items-start border-b border-gray-200 dark:border-gray-700 pb-2 last:border-b-0 last:pb-0 pr-8">
+                        <li key={svcIndex} className="relative group flex justify-between items-start border-b border-gray-200 dark:border-gray-700 pb-2 last:border-b-0 last:pb-0 pr-8"> {/* pr-8 ยังคงอยู่ */}
                           <div className="flex items-start text-left gap-2">
                             <FaCar className="text-blue-500 mt-1 flex-shrink-0" />
                             <div className="flex flex-col">
