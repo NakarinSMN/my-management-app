@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   title: "ระบบจัดการงานบริการ", // เปลี่ยนชื่อเว็บไซต์ตรงนี้ตามที่คุณต้องการ
   description: "Billing System Clone", // เปลี่ยนคำอธิบายตามที่คุณต้องการ
   icons: {
-    icon: "/inbox-archive-svgrepo-com.svg", // ตรวจสอบพาธของ favicon ของคุณ
+    icon: "/packagemajor-svgrepo-com.svg", // ตรวจสอบพาธของ favicon ของคุณ
   },
 };
 
