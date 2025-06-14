@@ -3,6 +3,7 @@
 @tailwind components;
 @tailwind utilities;
 
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -32,7 +33,6 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: "Kanit", sans-serif;
-  @apply bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white;
 }
 
 
@@ -41,41 +41,28 @@ html {
 }
 
 
-/* Modern Scrollbar Styling for WebKit browsers (Chrome, Edge, Safari) */
-/* สำหรับ Scrollbar โดยรวม */
 ::-webkit-scrollbar {
   width: 8px; /* ความกว้างของ Scrollbar ในแนวตั้ง */
   height: 8px; /* ความสูงของ Scrollbar ในแนวนอน */
 }
 
-/* สำหรับแทร็ก (พื้นหลัง) ของ Scrollbar */
 ::-webkit-scrollbar-track {
   background: #f1f1f1; /* สีพื้นหลังของ Scrollbar Track */
   border-radius: 10px; /* ความโค้งมนของ Scrollbar Track */
 }
 
-/* สำหรับ Thumb (แถบเลื่อน) ของ Scrollbar */
+
 ::-webkit-scrollbar-thumb {
   background: #888; /* สีของ Scrollbar Thumb */
   border-radius: 10px; /* ความโค้งมนของ Scrollbar Thumb */
 }
 
-/* สำหรับ Thumb ของ Scrollbar เมื่อ Hover */
+
 ::-webkit-scrollbar-thumb:hover {
   background: #555; /* สีของ Scrollbar Thumb เมื่อ Hover */
 }
 
-/* สำหรับ Firefox (ถ้าต้องการรองรับ) */
-/* อาจต้องปรับค่า scrollbar-width และ scrollbar-color ในไฟล์ CSS หลัก */
-/* body {
-  scrollbar-width: thin;
-  scrollbar-color: #888 #f1f1f1;
-} */
 
-
-/* ถ้าคุณต้องการปรับแต่ง scrollbar เฉพาะกับการ์ดของคุณเท่านั้น */
-/* คุณต้องใส่ class ให้กับ div ที่มี overflow-y-auto และใช้ class นั้นในการปรับแต่ง */
-/* ตัวอย่าง: ถ้า div ที่มี overflow-y-auto มี class ชื่อ 'custom-scrollable-area' */
 .custom-scrollable-area::-webkit-scrollbar {
   width: 6px; /* ความกว้างของ Scrollbar ในแนวตั้ง */
 }
