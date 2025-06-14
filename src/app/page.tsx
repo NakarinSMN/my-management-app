@@ -65,6 +65,7 @@ export default function Home() {
           <MenuButton href="/dashboard" text="แดชบอร์ด" />
           <MenuButton href="/pricing" text="ราคางานบริการ" />
           <MenuButton href="/customer-info" text="ข้อมูลต่อภาษี" />
+          <MenuButton href="/noti-today" text="รายการแจ้งเตือนวันนี้" />
           {/* สามารถเพิ่มปุ่มเมนูอื่นๆ ได้ตามต้องการ */}
         </motion.div>
       </motion.main>
