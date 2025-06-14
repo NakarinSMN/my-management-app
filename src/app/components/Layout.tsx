@@ -13,7 +13,6 @@ import {
   faTachometerAlt,
   faHandHoldingUsd,
   faUserCircle,
-  faBell,
   faCogs,
   faFileAlt, // For "รายงาน" (Reports)
   faReceipt, // For "รับชำระเงิน" (Payment)
@@ -146,19 +145,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               text="ข้อมูลต่อภาษี"
               isSidebarOpen={isDesktopSidebarExpanded}
             />
-            <SidebarMenuItem
-              href="/noti-today"
-              icon={faBell}
-              text="รายการแจ้งเตือนวันนี้"
-              isSidebarOpen={isDesktopSidebarExpanded}
-            />
+
             <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-6 mb-2 px-3">
-              {isDesktopSidebarExpanded ? "จัดการรายการ" : ""} {/* Hide text when collapsed */}
+              {isDesktopSidebarExpanded ? "ออกบิลเงินสด" : ""} {/* Hide text when collapsed */}
             </h3>
             <SidebarMenuItem
-              href="/report-main"
+              href="/billing-main"
               icon={faFileAlt}
-              text="รายงานหลัก"
+              text="ออกบิล"
               isSidebarOpen={isDesktopSidebarExpanded}
             />
             <SidebarMenuItem
