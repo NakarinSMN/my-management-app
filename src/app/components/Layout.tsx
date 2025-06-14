@@ -1,7 +1,7 @@
 // src/app/components/Layout.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -14,24 +14,22 @@ import {
   faHandHoldingUsd,
   faUserCircle,
   faCogs,
-  faFileAlt, // For "รายงาน" (Reports)
-  faReceipt, // For "รับชำระเงิน" (Payment)
-  faCalendarAlt, // For "ประวัติ" (History)
-  faUsers, // For "จัดการผู้ใช้งาน" (User Management)
-  faAngleLeft, // New: Icon for collapsing sidebar
-  faAngleRight, // New: Icon for expanding sidebar
+  faFileAlt,
+  faReceipt,
+  faCalendarAlt,
+  faUsers,
+  faAngleLeft,
+  faAngleRight,
 } from "@fortawesome/free-solid-svg-icons";
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 
-// Interface for MenuItem Props
 interface MenuItemProps {
   href: string;
   icon: IconDefinition;
   text: string;
-  isSidebarOpen: boolean; // Add prop to know sidebar state
+  isSidebarOpen: boolean;
 }
 
-// Component for each menu item in the Sidebar
 const SidebarMenuItem: React.FC<MenuItemProps> = ({ href, icon, text, isSidebarOpen }) => {
   const pathname = usePathname();
   const isActive = pathname !== null && pathname.startsWith(href) && (pathname.length === href.length || pathname.charAt(href.length) === '/');
@@ -42,42 +40,55 @@ const SidebarMenuItem: React.FC<MenuItemProps> = ({ href, icon, text, isSidebarO
         whileHover={{ scale: 1.02 }}
         className={`flex items-center p-3 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-blue-100 dark:hover:bg-gray-700 transition-colors duration-200 ${
           isActive ? "bg-blue-500 text-white dark:bg-blue-700" : ""
-        } ${isSidebarOpen ? 'justify-start' : 'justify-center'}`} // Adjust justify based on sidebar state
-        title={!isSidebarOpen ? text : undefined} // Tooltip for collapsed state
+        } ${isSidebarOpen ? 'justify-start' : 'justify-center'}`}
+        title={!isSidebarOpen ? text : undefined}
       >
         <FontAwesomeIcon
           icon={icon}
-          className={`text-xl ${isSidebarOpen ? 'mr-3' : ''}`} // Remove margin if collapsed
+          className={`text-xl ${isSidebarOpen ? 'mr-3' : ''}`}
         />
-        {isSidebarOpen && <span className="font-medium text-lg">{text}</span>} {/* Show text only if expanded */}
+        {isSidebarOpen && <span className="font-medium text-lg">{text}</span>}
       </motion.a>
     </Link>
   );
 };
 
-// Main Layout Component
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-  // เริ่มต้นให้ Sidebar เปิด (expanded) บน Desktop, ปิด (collapsed) บน Mobile
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  // สถานะสำหรับ Desktop Collapse: true = Expanded, false = Collapsed
-  const [isDesktopSidebarExpanded, setIsDesktopSidebarExpanded] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Mobile sidebar state
+  const [isDesktopSidebarExpanded, setIsDesktopSidebarExpanded] = useState(true); // Desktop collapse state
 
-  // Toggle for Mobile Sidebar (Fixed, Overlay)
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) { // ต่ำกว่า lg breakpoint (1024px)
+        setIsDesktopSidebarExpanded(false); // บังคับให้ยุบใน mobile/tablet
+        setIsSidebarOpen(false); // ปิด sidebar overlay ใน mobile
+      } else {
+        setIsSidebarOpen(true); // เปิด sidebar ใน desktop
+        // รักษาสถานะ expanded/collapsed เดิมไว้สำหรับ desktop
+      }
+    };
+
+    handleResize(); // เรียกครั้งแรกตอน mount
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const toggleMobileSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
-  // Toggle for Desktop Sidebar (Expand/Collapse)
   const toggleDesktopSidebar = () => {
     setIsDesktopSidebarExpanded(!isDesktopSidebarExpanded);
   };
 
-  // Determine current sidebar width for Tailwind classes
-  const sidebarWidthClass = isDesktopSidebarExpanded ? 'lg:w-64' : 'lg:w-20'; // 64 = 16rem, 20 = 5rem
+  // กำหนดความกว้างของ Sidebar สำหรับ Tailwind CSS
+  // w-64 = 256px, w-20 = 80px
+  const sidebarWidthClass = isDesktopSidebarExpanded ? 'w-64' : 'w-20';
+  const marginLeftMain = isDesktopSidebarExpanded ? '256px' : '80px'; // ค่าเป็น pixel สำหรับ style attribute
 
   return (
     <div className="flex min-h-screen bg-gray-100 dark:bg-gray-950">
@@ -89,30 +100,35 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         ></div>
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar - **นี่คือจุดที่สำคัญ** ให้ Sidebar เป็น fixed และกำหนดความกว้าง */}
       <motion.aside
-        initial={{ x: -250 }}
-        animate={{ x: isSidebarOpen ? 0 : -250 }}
+        initial={{ x: -250 }} // Mobile animation
+        animate={{ x: isSidebarOpen ? 0 : -250 }} // Mobile animation
         transition={{ duration: 0.3 }}
+        // ใช้ classname สำหรับความกว้าง (w-64/w-20)
+        // ใช้ fixed เพื่อตรึง
+        // ใช้ flex-shrink-0 เพื่อให้มันไม่หดตัว
         className={`fixed top-0 left-0 h-full ${sidebarWidthClass} bg-white dark:bg-gray-800 shadow-lg z-40
           transform ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
           transition-transform duration-300 ease-in-out
           flex flex-col
-          lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto lg:shadow-none`}
+          lg:flex-shrink-0 lg:overflow-y-auto lg:shadow-none lg:transform-none lg:transition-all lg:duration-300 lg:ease-in-out`}
+          // ลบคลาส lg:fixed ออกจาก Sidebar เพราะเราจะใช้ flexbox และ margin-left แทนการ fixed
+          // **คำอธิบาย: จริงๆ แล้ว lg:fixed ใน aside ถูกต้องแล้วครับ เพื่อให้มันตรึงอยู่**
+          // **ปัญหาคือ div main content ไม่ได้ใช้ margin-left/padding-left ที่ถูกต้องและ dynamic**
+          // ผมจะกลับไปใช้ lg:fixed เหมือนเดิมใน aside และแก้ไขที่ main content
       >
         <div className="p-6 flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
-          {/* Logo - Hide text portion when collapsed, show only icon/small logo */}
-      
-            <Image
-              className="h-8 w-auto"
-              src="/ToRoOo.png"
-              alt="Billing System Logo"
-              width={100}
-              height={100}
-              priority
-            />
+          <Image
+            className="h-8 w-auto"
+            src="/ToRoOo.png"
+            alt="Billing System Logo"
+            width={100}
+            height={100}
+            priority
+          />
 
-          {isDesktopSidebarExpanded && ( // Only show "ตรอ.บังรีท่าอิฐ" when expanded
+          {isDesktopSidebarExpanded && (
             <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300 ml-4 flex-grow">
               ตรอ.บังรีท่าอิฐ
             </h2>
@@ -147,7 +163,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             />
 
             <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-6 mb-2 px-3">
-              {isDesktopSidebarExpanded ? "ออกบิลเงินสด" : ""} {/* Hide text when collapsed */}
+              {isDesktopSidebarExpanded ? "ออกบิลเงินสด" : ""}
             </h3>
             <SidebarMenuItem
               href="/billing-main"
@@ -167,8 +183,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               text="ประวัติ"
               isSidebarOpen={isDesktopSidebarExpanded}
             />
-             <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-6 mb-2 px-3">
-              {isDesktopSidebarExpanded ? "ตั้งค่าระบบ" : ""} {/* Hide text when collapsed */}
+            <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-6 mb-2 px-3">
+              {isDesktopSidebarExpanded ? "ตั้งค่าระบบ" : ""}
             </h3>
             <SidebarMenuItem
               href="/settings"
@@ -190,10 +206,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </footer>
       </motion.aside>
 
-      {/* Main Content Area */}
-      <div className={`flex-1 flex flex-col bg-gray-100 dark:bg-gray-900 `}>
-        <main className="flex-1 p-5 overflow-y-auto ">
-          {children}
+      {/* Main Content Area - **นี่คือจุดที่สำคัญ** ใช้ marginLeft เพื่อดันเนื้อหาให้พ้น Sidebar */}
+      <div
+        className={`flex-1 flex flex-col bg-gray-100 dark:bg-gray-900 transition-all duration-300 ease-in-out`}
+        // **ใช้ marginLeftDynamic ที่นี่**
+        style={{ marginLeft: marginLeftMain }}
+      >
+        <main className="flex-1 p-5 overflow-y-auto">
+          {children} {/* children คือ BillingMainPage ของคุณ */}
         </main>
       </div>
     </div>
