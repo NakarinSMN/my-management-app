@@ -3,6 +3,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
+// 1. นำเข้า Font Awesome libraries และ icon ที่ต้องการ
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faTachometerAlt,
+  faHandHoldingUsd,
+  faUserCircle,
+  faBell,
+} from "@fortawesome/free-solid-svg-icons"; // ตัวอย่าง icon ที่ใช้
 
 export default function Home() {
   // กำหนด variants สำหรับ animation ของ container (parent)
@@ -62,17 +70,35 @@ export default function Home() {
           variants={containerVariants}
         >
           {/* แต่ละ MenuButton จะเป็น child ของ motion.div นี้ ดังนั้นจะรับ stagger effect */}
-          <MenuButton href="/dashboard" text="แดชบอร์ด" />
-          <MenuButton href="/pricing" text="ราคางานบริการ" />
-          <MenuButton href="/customer-info" text="ข้อมูลต่อภาษี" />
-          <MenuButton href="/noti-today" text="รายการแจ้งเตือนวันนี้" />
+          {/* ส่ง prop icon เพิ่มเติมเข้าไปใน MenuButton */}
+          <MenuButton
+            href="/dashboard"
+            text="แดชบอร์ด"
+            icon={faTachometerAlt}
+          />
+          <MenuButton
+            href="/pricing"
+            text="ราคางานบริการ"
+            icon={faHandHoldingUsd}
+          />
+          <MenuButton
+            href="/customer-info"
+            text="ข้อมูลต่อภาษี"
+            icon={faUserCircle}
+          />
+          <MenuButton
+            href="/noti-today"
+            text="รายการแจ้งเตือนวันนี้"
+            icon={faBell}
+          />
           {/* สามารถเพิ่มปุ่มเมนูอื่นๆ ได้ตามต้องการ */}
         </motion.div>
       </motion.main>
 
       {/* Footer สามารถคงไว้หรือปรับเปลี่ยนได้ตามต้องการ */}
       <footer className="mt-16 text-sm text-gray-600 dark:text-gray-400">
-        &copy; {new Date().getFullYear()} Management system. All rights reserved..
+        &copy; {new Date().getFullYear()} Management system. All rights
+        reserved..
       </footer>
     </div>
   );
@@ -82,9 +108,10 @@ export default function Home() {
 interface MenuButtonProps {
   href: string;
   text: string;
+  icon?: any; // เพิ่ม prop สำหรับ icon (ประเภทเป็น 'any' เพื่อความยืดหยุ่น)
 }
 
-function MenuButton({ href, text }: MenuButtonProps) {
+function MenuButton({ href, text, icon }: MenuButtonProps) {
   // กำหนด variants สำหรับ animation ของ MenuButton (เพื่อให้ปุ่มแต่ละอันมีอนิเมชั่นแยกกัน)
   const buttonVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -94,9 +121,16 @@ function MenuButton({ href, text }: MenuButtonProps) {
   return (
     <Link href={href} passHref>
       <motion.div
-        className="w-full p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 cursor-pointer flex items-center justify-center"
+        className="w-full p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 cursor-pointer flex items-center justify-center space-x-2" // เพิ่ม space-x-2 เพื่อเว้นระยะระหว่าง icon กับ text
         variants={buttonVariants}
       >
+        {/* แสดง icon ถ้ามีการส่ง prop icon เข้ามา */}
+        {icon && (
+          <FontAwesomeIcon
+            icon={icon}
+            className="text-blue-600 dark:text-blue-400 text-xl"
+          />
+        )}
         <span className="text-lg font-medium text-blue-600 dark:text-blue-400">
           {text}
         </span>
