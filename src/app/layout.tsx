@@ -1,23 +1,20 @@
+// src/app/layout.tsx
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google"; // ถ้ายังใช้ Geist font อยู่
-import "./globals.css";
+import { Inter } from "next/font/google";
+import "./globals.css"; // Global styles, e.g., Tailwind CSS
 
-// สมมติว่าคุณยังต้องการใช้ Geist font หรือคุณสามารถลบออกได้หากไม่ใช้แล้ว
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+import Layout from "./components/Layout"; // Import the main Layout component
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const inter = Inter({ subsets: ["latin"] });
+
 
 export const metadata: Metadata = {
-  title: "ระบบจัดการงานบริการ", // เปลี่ยนชื่อเว็บไซต์ตรงนี้ตามที่คุณต้องการ
-  description: "Billing System Clone", // เปลี่ยนคำอธิบายตามที่คุณต้องการ
+  title: "ระบบจัดการงานบริการ ตรอ.บังรีท่าอิฐ",
+  description: "Billing System",
   icons: {
-    icon: "/packagemajor-svgrepo-com.svg", // ตรวจสอบพาธของ favicon ของคุณ
+    icon: "/packagemajor-svgrepo-com.svg", // Path to your favicon file
+    // You can also add other icons like apple-touch-icon:
+    // apple: "/apple-icon.png",
   },
 };
 
@@ -26,16 +23,21 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Logic to determine if it's the landing page
+  // In a real application, you would typically use authentication status
+  // or a more robust routing check here.
+  const isLandingPage = typeof window !== 'undefined' && window.location.pathname === '/';
+
   return (
     <html lang="en">
-      <head>
-        {/* Font Awesome CDN (สำหรับ Web Fonts) */}
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossOrigin="anonymous" referrerPolicy="no-referrer" />
-      </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+      <body className={inter.className}>
+        {/* If it's the landing page, just render its content. */}
+        {/* Otherwise, wrap the content with the main Layout component (which includes the sidebar). */}
+        {isLandingPage ? (
+          children
+        ) : (
+          <Layout>{children}</Layout>
+        )}
       </body>
     </html>
   );
