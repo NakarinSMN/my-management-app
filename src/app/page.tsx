@@ -1,8 +1,9 @@
-"use client"; // เพิ่มบรรทัดนี้ที่ด้านบนสุดของไฟล์
+"use client";
 
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
+
 // 1. นำเข้า Font Awesome libraries และ icon ที่ต้องการ
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -10,7 +11,10 @@ import {
   faHandHoldingUsd,
   faUserCircle,
   faBell,
-} from "@fortawesome/free-solid-svg-icons"; // ตัวอย่าง icon ที่ใช้
+  faCogs, // ตัวอย่างไอคอนเพิ่มเติมสำหรับ "ตั้งค่า"
+  faChartBar, // ตัวอย่างไอคอนเพิ่มเติมสำหรับ "รายงาน"
+} from "@fortawesome/free-solid-svg-icons";
+import { IconDefinition } from "@fortawesome/fontawesome-svg-core"; // **สำคัญ: นำเข้า IconDefinition**
 
 export default function Home() {
   // กำหนด variants สำหรับ animation ของ container (parent)
@@ -70,7 +74,7 @@ export default function Home() {
           variants={containerVariants}
         >
           {/* แต่ละ MenuButton จะเป็น child ของ motion.div นี้ ดังนั้นจะรับ stagger effect */}
-          {/* ส่ง prop icon เพิ่มเติมเข้าไปใน MenuButton */}
+          {/* ส่ง prop icon เพิ่มเติมเข้าไปใน MenuButton โดยใช้ IconDefinition */}
           <MenuButton
             href="/dashboard"
             text="แดชบอร์ด"
@@ -91,7 +95,9 @@ export default function Home() {
             text="รายการแจ้งเตือนวันนี้"
             icon={faBell}
           />
-          {/* สามารถเพิ่มปุ่มเมนูอื่นๆ ได้ตามต้องการ */}
+          {/* เพิ่มปุ่มเมนูอื่นๆ ได้ตามต้องการ */}
+          <MenuButton href="/settings" text="ตั้งค่า" icon={faCogs} />
+          <MenuButton href="/reports" text="รายงาน" icon={faChartBar} />
         </motion.div>
       </motion.main>
 
@@ -108,7 +114,7 @@ export default function Home() {
 interface MenuButtonProps {
   href: string;
   text: string;
-  icon?: any; // เพิ่ม prop สำหรับ icon (ประเภทเป็น 'any' เพื่อความยืดหยุ่น)
+  icon?: IconDefinition; // **แก้ไขตรงนี้: เปลี่ยน 'any' เป็น 'IconDefinition'**
 }
 
 function MenuButton({ href, text, icon }: MenuButtonProps) {
