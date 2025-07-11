@@ -28,10 +28,10 @@ export default function Modal({ isOpen, onClose, children }) {
   }, [isOpen, controls]);
 
   const handleBackdropClick = () => {
-    controls.start("shake");
+    if (onClose) onClose();
+    else controls.start("shake");
   };
-  
-  // Return null if the modal is not open
+
   if (!isOpen) return null;
 
   return (
@@ -46,7 +46,7 @@ export default function Modal({ isOpen, onClose, children }) {
           onClick={handleBackdropClick}
         >
           <motion.div
-            className="relative bg-white dark:bg-gray-800/90 rounded-lg shadow-xl p-6 m-4 max-w-lg w-full border border-white/20"
+            className="relative p-6 m-4 max-w-lg w-full"
             variants={modalVariants}
             animate={controls}
             onClick={(e) => e.stopPropagation()} // Prevents click inside modal from closing it
@@ -54,13 +54,12 @@ export default function Modal({ isOpen, onClose, children }) {
             {/* --- CHANGE: ADDED A CLOSE BUTTON --- */}
             {/* This button calls the 'onClose' function, fixing the ESLint error */}
             {/* and allowing users to actually close the modal. */}
-            <button
+           {/* <button
               onClick={onClose} // This calls the function to close the modal
               className="absolute top-2 right-2 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors text-2xl"
               aria-label="Close modal"
             >
-              &times; {/* This is the 'X' symbol */}
-            </button>
+            </button> */}
             
             {children}
 
