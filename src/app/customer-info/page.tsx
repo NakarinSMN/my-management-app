@@ -278,7 +278,7 @@ export default function CustomerInfoPage() {
                 <table className="w-full text-left text-sm text-gray-700 dark:text-gray-200">
                   <thead>
                     <tr className="border-b border-gray-300 dark:border-gray-700">
-                      {['ทะเบียนรถ', 'วันที่ชำระภาษีล่าสุด', 'ลูกค้า', 'เบอร์โทร', 'สถานะ'].map((label, i) => (
+                      {['ทะเบียนรถ', 'วันสิ้นอายุภาษีปัจจุบัน', 'ลูกค้า', 'เบอร์โทร', 'สถานะ'].map((label, i) => (
                         <th key={i} className="py-2 font-medium">{label}</th>
                       ))}
                     </tr>
