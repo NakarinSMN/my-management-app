@@ -19,7 +19,7 @@ import {
   faCalendarAlt,
   faUsers,
   faAngleLeft,
-  faAngleRight,
+  faBars,
 } from "@fortawesome/free-solid-svg-icons";
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 
@@ -30,25 +30,22 @@ interface MenuItemProps {
   isSidebarOpen: boolean;
 }
 
-const SidebarMenuItem: React.FC<MenuItemProps> = ({ href, icon, text, isSidebarOpen }) => {
+const SidebarMenuItem: React.FC<MenuItemProps> = ({ href, icon, text }) => {
   const pathname = usePathname();
   const isActive = pathname !== null && pathname.startsWith(href) && (pathname.length === href.length || pathname.charAt(href.length) === '/');
 
   return (
-    <Link href={href} passHref>
-      <motion.a
-        whileHover={{ scale: 1.02 }}
-        className={`flex items-center p-3 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-blue-100 dark:hover:bg-gray-700 transition-colors duration-200 ${
-          isActive ? "bg-blue-500 text-white dark:bg-blue-700" : ""
-        } ${isSidebarOpen ? 'justify-start' : 'justify-center'}`}
-        title={!isSidebarOpen ? text : undefined}
-      >
-        <FontAwesomeIcon
-          icon={icon}
-          className={`text-xl ${isSidebarOpen ? 'mr-3' : ''}`}
-        />
-        {isSidebarOpen && <span className="font-medium text-lg">{text}</span>}
-      </motion.a>
+    <Link
+      href={href}
+      className={`flex items-center p-3 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-blue-100 dark:hover:bg-gray-700 transition-colors duration-200
+        ${isActive ? "bg-blue-500 text-white dark:bg-blue-700" : ""}
+        justify-start`}
+      title={text}
+    >
+      <motion.div whileHover={{ scale: 1.02 }} className="flex items-center w-full">
+        <FontAwesomeIcon icon={icon} className="text-xl mr-3" />
+        <span className="font-medium text-lg">{text}</span>
+      </motion.div>
     </Link>
   );
 };
@@ -58,59 +55,73 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Mobile sidebar state
-  const [isDesktopSidebarExpanded, setIsDesktopSidebarExpanded] = useState(true); // Desktop collapse state
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // sidebar state (mobile เท่านั้น)
+  const [isMobile, setIsMobile] = useState(false); // Mobile state
+  const [sidebarWidth, setSidebarWidth] = useState(300); // default 300px
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 1024) { // ต่ำกว่า lg breakpoint (1024px)
-        setIsDesktopSidebarExpanded(false); // บังคับให้ยุบใน mobile/tablet
-        setIsSidebarOpen(false); // ปิด sidebar overlay ใน mobile
+      const isMobileView = window.innerWidth < 1024;
+      setIsMobile(isMobileView);
+      if (isMobileView) {
+        setIsSidebarOpen(false); // ปิด sidebar เมื่อเข้า mobile
       } else {
-        setIsSidebarOpen(true); // เปิด sidebar ใน desktop
-        // รักษาสถานะ expanded/collapsed เดิมไว้สำหรับ desktop
+        setIsSidebarOpen(true); // เปิด sidebar เมื่อเข้า PC
       }
     };
-
-    handleResize(); // เรียกครั้งแรกตอน mount
     window.addEventListener('resize', handleResize);
+    handleResize(); // เรียกครั้งแรก
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const toggleMobileSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
+  useEffect(() => {
+    if (isMobile) {
+      setSidebarWidth(window.innerWidth);
+    } else {
+      setSidebarWidth(300);
+    }
+  }, [isMobile]);
 
-  const toggleDesktopSidebar = () => {
-    setIsDesktopSidebarExpanded(!isDesktopSidebarExpanded);
+  const toggleMobileSidebar = () => {
+    if (isMobile) setIsSidebarOpen((open) => !open);
   };
 
   // กำหนดความกว้างของ Sidebar สำหรับ Tailwind CSS
   // w-64 = 256px, w-20 = 80px
-  const sidebarWidthClass = isDesktopSidebarExpanded ? 'w-64' : 'w-20';
-  const marginLeftMain = isDesktopSidebarExpanded ? '256px' : '80px'; // ค่าเป็น pixel สำหรับ style attribute
+  const sidebarWidthClass = isMobile ? 'w-full' : 'w-[300px]';
+  
+  // ใช้ state isMobile แทนการเช็ค window.innerWidth โดยตรง
+  const marginLeftMain = isMobile ? '0px' : '300px'; // 256px = w-64, 80px = w-20
 
   return (
     <div className="flex min-h-screen bg-gray-100 dark:bg-gray-950">
       {/* Overlay for Mobile View when Sidebar is open */}
-      {isSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+      {isMobile && isSidebarOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.5, display: 'block' }}
+          exit={{ opacity: 0, display: 'none' }}
+          transition={{ duration: 0.3, ease: 'easeInOut' }}
+          className="fixed inset-0 bg-black z-30 lg:hidden"
           onClick={toggleMobileSidebar}
-        ></div>
+        />
       )}
 
       {/* Sidebar - **นี่คือจุดที่สำคัญ** ให้ Sidebar เป็น fixed และกำหนดความกว้าง */}
       <motion.aside
-        initial={{ x: -250 }} // Mobile animation
-        animate={{ x: isSidebarOpen ? 0 : -250 }} // Mobile animation
-        transition={{ duration: 0.3 }}
-        // ใช้ classname สำหรับความกว้าง (w-64/w-20)
-        // ใช้ fixed เพื่อตรึง
-        // ใช้ flex-shrink-0 เพื่อให้มันไม่หดตัว
+        initial={{ x: 0 }}
+        animate={{
+          x: isMobile && !isSidebarOpen ? -sidebarWidth : 0,
+          width: isMobile ? (isSidebarOpen ? '100%' : '0%') : '300px'
+        }}
+        transition={{ 
+          duration: 0.4,
+          ease: [0.4, 0.0, 0.2, 1], // Custom easing for smoother animation
+          type: "spring",
+          stiffness: 300,
+          damping: 30
+        }}
         className={`fixed top-0 left-0 h-full ${sidebarWidthClass} bg-white dark:bg-gray-800 shadow-lg z-40
-          transform ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
-          transition-transform duration-300 ease-in-out
           flex flex-col
           lg:flex-shrink-0 lg:overflow-y-auto lg:shadow-none lg:transform-none lg:transition-all lg:duration-300 lg:ease-in-out`}
           // ลบคลาส lg:fixed ออกจาก Sidebar เพราะเราจะใช้ flexbox และ margin-left แทนการ fixed
@@ -119,26 +130,54 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           // ผมจะกลับไปใช้ lg:fixed เหมือนเดิมใน aside และแก้ไขที่ main content
       >
         <div className="p-6 flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
-          <Image
-            className="h-8 w-auto"
-            src="/ToRoOo.png"
-            alt="Billing System Logo"
-            width={100}
-            height={100}
-            priority
-          />
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Image
+              className="h-8 w-auto"
+              src="/ToRoOo.png"
+              alt="Billing System Logo"
+              width={100}
+              height={100}
+              priority
+            />
+          </motion.div>
 
-          {isDesktopSidebarExpanded && (
-            <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300 ml-4 flex-grow">
+          {(isMobile || isSidebarOpen) && (
+            <motion.h2 
+              className="text-lg font-semibold text-gray-700 dark:text-gray-300 ml-4 flex-grow"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.4, delay: 0.1 }}
+            >
               ตรอ.บังรีท่าอิฐ
-            </h2>
+            </motion.h2>
           )}
-          <button
+          
+          {/* ปุ่มปิดเมนูสำหรับโหมดมือถือ */}
+          {isMobile && (
+            <motion.button
+              onClick={toggleMobileSidebar}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="lg:hidden p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none transition-colors duration-200"
+              aria-label="ปิดเมนู"
+            >
+              <FontAwesomeIcon icon={faAngleLeft} className="text-xl" />
+            </motion.button>
+          )}
+          
+          {/* ลบปุ่มย่อ/ขยายสำหรับเดสก์ท็อป */}
+          {/* <motion.button
             onClick={toggleDesktopSidebar}
-            className="lg:block text-gray-600 dark:text-gray-300 focus:outline-none ml-2"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="hidden lg:block text-gray-600 dark:text-gray-300 focus:outline-none ml-2 transition-colors duration-200"
           >
             <FontAwesomeIcon icon={isDesktopSidebarExpanded ? faAngleLeft : faAngleRight} className="text-xl" />
-          </button>
+          </motion.button> */}
         </div>
 
         <nav className="flex-1 px-4 py-6">
@@ -147,75 +186,128 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               href="/dashboard"
               icon={faTachometerAlt}
               text="แดชบอร์ด"
-              isSidebarOpen={isDesktopSidebarExpanded}
+              isSidebarOpen={isMobile || isSidebarOpen}
             />
             <SidebarMenuItem
               href="/pricing"
               icon={faHandHoldingUsd}
               text="ราคางานบริการ"
-              isSidebarOpen={isDesktopSidebarExpanded}
+              isSidebarOpen={isMobile || isSidebarOpen}
             />
             <SidebarMenuItem
               href="/customer-info"
               icon={faUserCircle}
               text="ข้อมูลต่อภาษี"
-              isSidebarOpen={isDesktopSidebarExpanded}
+              isSidebarOpen={isMobile || isSidebarOpen}
             />
 
-            <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-6 mb-2 px-3">
-              {isDesktopSidebarExpanded ? "ออกบิลเงินสด" : ""}
-            </h3>
+            <motion.h3 
+              className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-6 mb-2 px-3"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ 
+                opacity: (isMobile || isSidebarOpen) ? 1 : 0,
+                x: (isMobile || isSidebarOpen) ? 0 : -20
+              }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+            >
+              {(isMobile || isSidebarOpen) ? "ออกบิลเงินสด" : ""}
+            </motion.h3>
             <SidebarMenuItem
               href="/billing-main"
               icon={faFileAlt}
               text="ออกบิล"
-              isSidebarOpen={isDesktopSidebarExpanded}
+              isSidebarOpen={isMobile || isSidebarOpen}
             />
             <SidebarMenuItem
               href="/payment"
               icon={faReceipt}
               text="รับชำระเงิน"
-              isSidebarOpen={isDesktopSidebarExpanded}
+              isSidebarOpen={isMobile || isSidebarOpen}
             />
             <SidebarMenuItem
               href="/history"
               icon={faCalendarAlt}
               text="ประวัติ"
-              isSidebarOpen={isDesktopSidebarExpanded}
+              isSidebarOpen={isMobile || isSidebarOpen}
             />
-            <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-6 mb-2 px-3">
-              {isDesktopSidebarExpanded ? "ตั้งค่าระบบ" : ""}
-            </h3>
+            <motion.h3 
+              className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-6 mb-2 px-3"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ 
+                opacity: (isMobile || isSidebarOpen) ? 1 : 0,
+                x: (isMobile || isSidebarOpen) ? 0 : -20
+              }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+            >
+              {(isMobile || isSidebarOpen) ? "ตั้งค่าระบบ" : ""}
+            </motion.h3>
             <SidebarMenuItem
               href="/settings"
               icon={faCogs}
               text="ตั้งค่าทั่วไป"
-              isSidebarOpen={isDesktopSidebarExpanded}
+              isSidebarOpen={isMobile || isSidebarOpen}
             />
             <SidebarMenuItem
               href="/user-management"
               icon={faUsers}
               text="จัดการผู้ใช้งาน"
-              isSidebarOpen={isDesktopSidebarExpanded}
+              isSidebarOpen={isMobile || isSidebarOpen}
             />
           </ul>
         </nav>
 
-        <footer className={`p-4 text-center text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 ${isDesktopSidebarExpanded ? '' : 'hidden'}`}>
+        <motion.footer 
+          className={`p-4 text-center text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700`}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ 
+            opacity: (isMobile || isSidebarOpen) ? 1 : 0,
+            y: (isMobile || isSidebarOpen) ? 0 : 20
+          }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+        >
           &copy; {new Date().getFullYear()} Management system.
-        </footer>
+        </motion.footer>
       </motion.aside>
 
       {/* Main Content Area - **นี่คือจุดที่สำคัญ** ใช้ marginLeft เพื่อดันเนื้อหาให้พ้น Sidebar */}
-      <div
-        className={`flex-1 flex flex-col bg-gray-100 dark:bg-gray-900 transition-all duration-300 ease-in-out`}
-        // **ใช้ marginLeftDynamic ที่นี่**
-        style={{ marginLeft: marginLeftMain }}
+      <motion.div
+        className={`flex-1 flex flex-col bg-gray-100 dark:bg-gray-900`}
+        animate={{ marginLeft: marginLeftMain }}
+        transition={{ duration: 0.4, ease: [0.4, 0.0, 0.2, 1], type: "spring", stiffness: 300, damping: 30 }}
       >
+        {/* Mobile Header with Menu Button */}
+        <motion.header 
+          className="lg:hidden bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 p-4"
+          initial={{ y: -100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+        >
+          <div className="flex items-center justify-between">
+            <motion.button
+              onClick={toggleMobileSidebar}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
+              aria-label="เปิดเมนู"
+            >
+              <FontAwesomeIcon icon={faBars} className="text-xl" />
+            </motion.button>
+            <motion.h1 
+              className="text-lg font-semibold text-gray-700 dark:text-gray-300"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              ตรอ.บังรีท่าอิฐ
+            </motion.h1>
+            <div className="w-10"></div> {/* Spacer for centering */}
+          </div>
+        </motion.header>
+        
         <main className="flex-1 p-5 overflow-y-auto">
           {children} {/* children คือ BillingMainPage ของคุณ */}
         </main>
-      </div>
+      </motion.div>
     </div>
   );
 };
