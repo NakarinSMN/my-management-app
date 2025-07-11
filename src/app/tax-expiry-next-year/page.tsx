@@ -1,14 +1,13 @@
-// src/app/customer-info/page.tsx
+// src/app/tax-expiry-next-year/page.tsx
 'use client';
 
 import Link from 'next/link';
 import { useState, useEffect, useCallback } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { IconDefinition } from '@fortawesome/fontawesome-svg-core'; // สำคัญ: ต้อง Import IconDefinition
+import { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 
 import {
   faSearch,
-  faCalendarDay,
   faCalendarAlt,
   faClock,
   faCheckCircle,
@@ -17,31 +16,30 @@ import {
   faChevronLeft,
   faChevronRight,
   faSpinner,
+  faWarning,
   faInfoCircle
 } from '@fortawesome/free-solid-svg-icons';
 
-// กำหนด Interface สำหรับข้อมูลลูกค้าที่ถูกจัดรูปแบบแล้ว
-interface CustomerData {
+// กำหนด Interface สำหรับข้อมูลลูกค้าที่มีวันสิ้นอายุภาษีปีถัดไป
+interface TaxExpiryData {
   licensePlate: string;
   customerName: string;
   phone: string;
-  registerDate: string;
+  lastTaxDate: string;
+  expiryDate: string;
+  daysUntilExpiry: number;
   status: string;
-  // rowIndex?: number; // หาก Google Apps Script ส่ง rowIndex มาด้วย ให้เพิ่มบรรทัดนี้
 }
 
 // กำหนด Interface สำหรับข้อมูลดิบที่มาจาก Google Sheet API
-// คีย์ต้องตรงกับชื่อคอลัมน์ใน Google Sheet และสิ่งที่ doGet ส่งมา
-interface RawCustomerDataItem {
+interface RawTaxExpiryDataItem {
   'ทะเบียนรถ'?: string;
   'ชื่อลูกค้า'?: string;
   'เบอร์ติดต่อ'?: string | number;
   'วันที่ชำระภาษีล่าสุด'?: string;
+  'ภาษีครั้งถัดไป'?: string; // คอลัมน์ J
   'สถานะ'?: string;
-  'สถานะการเตือน'?: string;
-  // rowIndex?: number; // หาก Google Apps Script ส่ง rowIndex มาด้วย ให้เพิ่มบรรทัดนี้
 }
-
 
 // Interfaces สำหรับ Component ลูก
 interface SelectFilterProps {
@@ -57,7 +55,6 @@ interface PageButtonProps {
   disabled: boolean;
   icon: IconDefinition;
 }
-
 
 // Maps สำหรับสถานะและสี/ไอคอน
 const statusColor: { [key: string]: string } = {
@@ -75,7 +72,6 @@ const statusIcon: { [key: string]: IconDefinition } = {
   'เกินกำหนด': faTimesCircle,
   'รอดำเนินการ': faClock,
 };
-
 
 // Component ลูก: SelectFilter
 function SelectFilter({ value, onChange, icon, placeholder, options }: SelectFilterProps) {
@@ -107,6 +103,14 @@ function PageButton({ onClick, disabled, icon }: PageButtonProps) {
   );
 }
 
+// ฟังก์ชันคำนวณจำนวนวันที่เหลือจากวันสิ้นอายุ
+function calculateDaysUntilExpiry(expiryDate: string): number {
+  const expiry = new Date(expiryDate);
+  const today = new Date();
+  const timeDiff = expiry.getTime() - today.getTime();
+  return Math.ceil(timeDiff / (1000 * 3600 * 24));
+}
+
 function getPageNumbers(currentPage: number, totalPages: number, maxPages = 5) {
   let start = Math.max(1, currentPage - Math.floor(maxPages / 2));
   let end = start + maxPages - 1;
@@ -117,72 +121,84 @@ function getPageNumbers(currentPage: number, totalPages: number, maxPages = 5) {
   return Array.from({ length: end - start + 1 }, (_, i) => start + i);
 }
 
-
-export default function CustomerInfoPage() {
+export default function TaxExpiryNextYearPage() {
   const [search, setSearch] = useState<string>('');
-  const [filterDay, setFilterDay] = useState<string>('');
   const [filterMonth, setFilterMonth] = useState<string>('');
-  const [filterYear, setFilterYear] = useState<string>('');
-  const [data, setData] = useState<CustomerData[]>([]);
+  const [filterStatus, setFilterStatus] = useState<string>('');
+  const [data, setData] = useState<TaxExpiryData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null); // เพิ่ม state สำหรับ error message
+  const [error, setError] = useState<string | null>(null);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
 
-  // **** เปลี่ยน URL นี้เป็น URL ของ Web App ของคุณจริงๆ ที่ได้จาก Google Apps Script ****
+  // URL ของ Google Apps Script API
   const GOOGLE_SHEET_CUSTOMER_API_URL: string = 'https://script.google.com/macros/s/AKfycbxN9rG3NhDyhlXVKgNndNcJ6kHopPaf5GRma_dRYjtP64svMYUFCSALwTEX4mYCHoDd6g/exec?getAll=1';
-
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    setError(null); // รีเซ็ต error ก่อนเริ่ม fetch ใหม่
+    setError(null);
     try {
       const res = await fetch(GOOGLE_SHEET_CUSTOMER_API_URL);
 
       if (!res.ok) {
-        // ตรวจสอบสถานะ HTTP error
         const errorText = `HTTP error! Status: ${res.status}. ${res.statusText || ''}`;
         throw new Error(errorText);
       }
 
-      const json: { data?: RawCustomerDataItem[]; error?: boolean; message?: string } = await res.json();
+      const json: { data?: RawTaxExpiryDataItem[]; error?: boolean; message?: string } = await res.json();
 
       if (json.error) {
-        // ตรวจสอบ error ที่มาจาก Apps Script เอง (เช่น ถ้า Apps Script มี Bug)
         throw new Error(`Server Error: ${json.message || 'Unknown server error from Apps Script'}`);
       }
 
-      const formatted: CustomerData[] = (json.data || []).map((item: RawCustomerDataItem) => {
-        const dtField: string = item['วันที่ชำระภาษีล่าสุด'] || '';
-        // ตรวจสอบรูปแบบวันที่ให้แน่ใจว่าเป็น yyyy-MM-dd
-        const registerDate: string = dtField.includes('T') ? dtField.split('T')[0] : dtField;
+      const formatted: TaxExpiryData[] = (json.data || [])
+        .map((item: RawTaxExpiryDataItem) => {
+          const expiryDate = item['ภาษีครั้งถัดไป'] || '';
+          if (!expiryDate || expiryDate.split('-').length !== 3) {
+            return null;
+          }
 
-        const rawPhone: string = (item['เบอร์ติดต่อ'] || '').toString();
-        // เพิ่ม '0' หน้าเบอร์โทรศัพท์ ถ้ายังไม่มี
-        const phone: string = rawPhone.startsWith('0') || rawPhone.length === 0 ? rawPhone : `0${rawPhone}`;
+          const daysUntilExpiry = calculateDaysUntilExpiry(expiryDate);
 
-        return {
-          licensePlate: item['ทะเบียนรถ'] || '',
-          customerName: item['ชื่อลูกค้า'] || '',
-          phone,
-          registerDate,
-          status: item['สถานะ'] || item['สถานะการเตือน'] || 'รอดำเนินการ',
-          // rowIndex: item.rowIndex || 0, // หาก Google Apps Script ส่ง rowIndex มาด้วย ให้เพิ่มบรรทัดนี้
-        };
-      });
+          const rawPhone: string = (item['เบอร์ติดต่อ'] || '').toString();
+          const phone: string = rawPhone.startsWith('0') || rawPhone.length === 0 ? rawPhone : `0${rawPhone}`;
+
+          // กำหนดสถานะตามจำนวนวันที่เหลือ
+          let status = 'รอดำเนินการ';
+          if (daysUntilExpiry < 0) {
+            status = 'เกินกำหนด';
+          } else if (daysUntilExpiry <= 30) {
+            status = 'ใกล้ครบกำหนด';
+          } else if (daysUntilExpiry <= 90) {
+            status = 'กำลังจะครบกำหนด';
+          }
+
+          return {
+            licensePlate: item['ทะเบียนรถ'] || '',
+            customerName: item['ชื่อลูกค้า'] || '',
+            phone,
+            lastTaxDate: item['วันที่ชำระภาษีล่าสุด'] || '',
+            expiryDate,
+            daysUntilExpiry,
+            status
+          };
+        })
+        .filter((item): item is TaxExpiryData => item !== null)
+        .sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry); // เรียงตามจำนวนวันที่เหลือ
+
       setData(formatted);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        console.error('❌ ดึงข้อมูลลูกค้าไม่สำเร็จ:', err.message);
-        setError(`ไม่สามารถโหลดข้อมูลลูกค้าได้: ${err.message}`);
+        console.error('❌ ดึงข้อมูลวันสิ้นอายุภาษีไม่สำเร็จ:', err.message);
+        setError(`ไม่สามารถโหลดข้อมูลได้: ${err.message}`);
       } else {
-        console.error('❌ ดึงข้อมูลลูกค้าไม่สำเร็จ:', err);
-        setError('ไม่สามารถโหลดข้อมูลลูกค้าได้ในขณะนี้');
+        console.error('❌ ดึงข้อมูลวันสิ้นอายุภาษีไม่สำเร็จ:', err);
+        setError('ไม่สามารถโหลดข้อมูลได้ในขณะนี้');
       }
     } finally {
       setLoading(false);
     }
-  }, [GOOGLE_SHEET_CUSTOMER_API_URL]); // dependency array
+  }, [GOOGLE_SHEET_CUSTOMER_API_URL]);
 
   useEffect(() => {
     fetchData();
@@ -190,46 +206,42 @@ export default function CustomerInfoPage() {
 
   const resetFilters = () => {
     setSearch('');
-    setFilterDay('');
     setFilterMonth('');
-    setFilterYear('');
-    setCurrentPage(1); // เมื่อรีเซ็ตตัวกรอง ให้กลับไปหน้าแรก
+    setFilterStatus('');
+    setCurrentPage(1);
   };
 
-  const filteredData: CustomerData[] = data
+  const filteredData: TaxExpiryData[] = data
     .filter(item => {
-      // กรองรายการที่ไม่มีวันที่ลงทะเบียน หรือวันที่ไม่ถูกต้อง
-      if (!item.registerDate || item.registerDate.split('-').length !== 3) {
-        return false;
-      }
-      const [year, monthRaw, dayRaw] = item.registerDate.split('-');
+      // กรองตามการค้นหา
+      const searchLower = search.toLowerCase();
+      const matchesSearch = !search || 
+        item.licensePlate.toLowerCase().includes(searchLower) ||
+        item.customerName.toLowerCase().includes(searchLower) ||
+        item.phone.includes(search);
 
-      // แปลงวันและเดือนเป็นรูปแบบที่ใช้ในการกรอง (เช่น "1", "2" แทน "01", "02")
-      const day: string = String(Number(dayRaw));
-      const monthMap: string[] = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-      const month: string = monthMap[Number(monthRaw) - 1] || '';
+      // กรองตามเดือน
+      const expiryMonth = new Date(item.expiryDate).getMonth() + 1;
+      const matchesMonth = !filterMonth || String(expiryMonth) === filterMonth;
 
-      // เงื่อนไขการค้นหา (ไม่คำนึงถึงตัวพิมพ์เล็ก-ใหญ่)
-      const matchSearch: boolean = item.licensePlate.toLowerCase().includes(search.toLowerCase()) ||
-                                   item.customerName.toLowerCase().includes(search.toLowerCase());
-      // เงื่อนไขการกรองวันที่
-      const matchDay: boolean = !filterDay || day === filterDay;
-      const matchMonth: boolean = !filterMonth || month === filterMonth;
-      const matchYear: boolean = !filterYear || year === filterYear;
+      // กรองตามสถานะ
+      const matchesStatus = !filterStatus || item.status === filterStatus;
 
-      return matchSearch && matchDay && matchMonth && matchYear;
+      return matchesSearch && matchesMonth && matchesStatus;
     });
 
-  // Pagination Logic
-  const startIdx: number = (currentPage - 1) * itemsPerPage;
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
   // ใน pagination และการ slice ข้อมูล ให้รองรับ itemsPerPage = filteredData.length (all)
-  const paginatedData: CustomerData[] = itemsPerPage === filteredData.length ? filteredData : filteredData.slice(startIdx, startIdx + itemsPerPage);
-  const totalPages: number = itemsPerPage === filteredData.length ? 1 : Math.ceil(filteredData.length / itemsPerPage);
+  const currentData = itemsPerPage === filteredData.length ? filteredData : filteredData.slice(startIndex, endIndex);
 
-  // สร้างตัวเลือกสำหรับ dropdown
-  const days: string[] = Array.from({ length: 31 }, (_, i) => `${i + 1}`);
-  const months: string[] = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+  const monthOptions = Array.from({ length: 12 }, (_, i) => ({
+    value: String(i + 1),
+    label: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'][i]
+  }));
 
+  const statusOptions = ['รอดำเนินการ', 'กำลังจะครบกำหนด', 'ใกล้ครบกำหนด', 'เกินกำหนด', 'ต่อภาษีแล้ว'];
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
@@ -239,17 +251,17 @@ export default function CustomerInfoPage() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                ข้อมูลต่อภาษี
+                ภาษีครั้งถัดไป
               </h1>
               <p className="text-gray-600 dark:text-gray-400 mt-2">
-                รายการลูกค้าทั้งหมดและข้อมูลการต่อภาษี
+                รายการลูกค้าที่มีวันสิ้นอายุภาษีครั้งถัดไป
               </p>
             </div>
             <Link
-              href="/tax-expiry-next-year"
-              className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
+              href="/customer-info"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              ภาษีครั้งถัดไป
+              กลับไปหน้าข้อมูลต่อภาษี
             </Link>
           </div>
 
@@ -266,11 +278,11 @@ export default function CustomerInfoPage() {
             </div>
             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
               <div className="flex items-center">
-                <FontAwesomeIcon icon={faCheckCircle} className="text-green-500 mr-2" />
+                <FontAwesomeIcon icon={faWarning} className="text-yellow-500 mr-2" />
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">ต่อภาษีแล้ว</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">ใกล้ครบกำหนด</p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {filteredData.filter(item => item.status === 'ต่อภาษีแล้ว').length}
+                    {filteredData.filter(item => item.status === 'ใกล้ครบกำหนด').length}
                   </p>
                 </div>
               </div>
@@ -279,9 +291,9 @@ export default function CustomerInfoPage() {
               <div className="flex items-center">
                 <FontAwesomeIcon icon={faExclamationTriangle} className="text-orange-500 mr-2" />
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">ใกล้ครบกำหนด</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">กำลังจะครบกำหนด</p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {filteredData.filter(item => item.status === 'ใกล้ครบกำหนด').length}
+                    {filteredData.filter(item => item.status === 'กำลังจะครบกำหนด').length}
                   </p>
                 </div>
               </div>
@@ -313,20 +325,23 @@ export default function CustomerInfoPage() {
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            <SelectFilter
-              value={filterDay}
-              onChange={val => { setFilterDay(val); setCurrentPage(1); }}
-              icon={faCalendarDay}
-              placeholder="กรองตามวัน"
-              options={days}
-            />
+            
             <SelectFilter
               value={filterMonth}
-              onChange={val => { setFilterMonth(val); setCurrentPage(1); }}
+              onChange={setFilterMonth}
               icon={faCalendarAlt}
               placeholder="กรองตามเดือน"
-              options={months}
+              options={monthOptions.map(opt => opt.value)}
             />
+            
+            <SelectFilter
+              value={filterStatus}
+              onChange={setFilterStatus}
+              icon={faClock}
+              placeholder="กรองตามสถานะ"
+              options={statusOptions}
+            />
+            
             <select
               className="w-full py-2 px-3 rounded-lg bg-gray-50 dark:bg-gray-700 text-black dark:text-white focus:outline-none border border-gray-300 dark:border-gray-600"
               value={itemsPerPage}
@@ -339,6 +354,7 @@ export default function CustomerInfoPage() {
               {[10, 20, 30, 40, 50].map(n => <option key={n} value={n}>{n} รายการ</option>)}
               <option value="all">ทั้งหมด</option>
             </select>
+            
             <button
               onClick={resetFilters}
               className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors w-full font-semibold text-base"
@@ -371,39 +387,71 @@ export default function CustomerInfoPage() {
                 <table className="w-full">
                   <thead className="bg-gray-50 dark:bg-gray-700">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ทะเบียนรถ</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ชื่อลูกค้า</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">เบอร์โทร</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">วันที่ชำระล่าสุด</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">สถานะ</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        ทะเบียนรถ
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        ชื่อลูกค้า
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        เบอร์โทร
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        วันที่ชำระล่าสุด
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        ภาษีครั้งถัดไป
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        วันที่เหลือ
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        สถานะ
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {paginatedData.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
-                          ไม่พบข้อมูลที่ตรงกับตัวกรอง
+                    {currentData.map((item, index) => (
+                      <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                          {item.licensePlate}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                          {item.customerName}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                          {item.phone}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                          {new Date(item.lastTaxDate).toLocaleDateString('th-TH')}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                          {new Date(item.expiryDate).toLocaleDateString('th-TH')}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <span className={`font-medium ${
+                            item.daysUntilExpiry < 0 ? 'text-red-600 dark:text-red-400' :
+                            item.daysUntilExpiry <= 30 ? 'text-orange-600 dark:text-orange-400' :
+                            item.daysUntilExpiry <= 90 ? 'text-yellow-600 dark:text-yellow-400' :
+                            'text-green-600 dark:text-green-400'
+                          }`}>
+                            {item.daysUntilExpiry < 0 ? `${Math.abs(item.daysUntilExpiry)} วัน (เกินกำหนด)` :
+                             item.daysUntilExpiry === 0 ? 'วันนี้' :
+                             `${item.daysUntilExpiry} วัน`}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor[item.status]}`}>
+                            <FontAwesomeIcon icon={statusIcon[item.status]} className="mr-1" />
+                            {item.status}
+                          </span>
                         </td>
                       </tr>
-                    ) : (
-                      paginatedData.map((item, idx) => (
-                        <tr key={item.licensePlate + item.customerName + idx} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{item.licensePlate}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.customerName}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.phone}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{new Date(item.registerDate).toLocaleDateString('th-TH')}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor[item.status]}`}>
-                              <FontAwesomeIcon icon={statusIcon[item.status]} className="mr-1" />
-                              {item.status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))
-                    )}
+                    ))}
                   </tbody>
                 </table>
               </div>
+
               {/* Pagination */}
               {totalPages > 1 && (
                 <div className="bg-white dark:bg-gray-800 px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700">
@@ -426,8 +474,8 @@ export default function CustomerInfoPage() {
                   <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                     <div>
                       <p className="text-sm text-gray-700 dark:text-gray-300">
-                        แสดง <span className="font-medium">{startIdx + 1}</span> ถึง{' '}
-                        <span className="font-medium">{Math.min(startIdx + itemsPerPage, filteredData.length)}</span> จาก{' '}
+                        แสดง <span className="font-medium">{startIndex + 1}</span> ถึง{' '}
+                        <span className="font-medium">{Math.min(endIndex, filteredData.length)}</span> จาก{' '}
                         <span className="font-medium">{filteredData.length}</span> รายการ
                       </p>
                     </div>
@@ -467,4 +515,4 @@ export default function CustomerInfoPage() {
       </div>
     </div>
   );
-}
+} 

@@ -96,6 +96,14 @@ export default function DashboardPage() {
             ภาพรวมของระบบ ข้อมูลสำคัญ และกิจกรรมล่าสุด
           </motion.p>
         </div>
+        <motion.div variants={itemVariants} className="flex gap-2">
+                      <Link
+              href="/tax-expiry-next-year"
+              className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
+            >
+              ภาษีครั้งถัดไป
+            </Link>
+        </motion.div>
       </div>
 
        {/* SECTION 2: Summary and Key Performance Indicators (KPIs) */}
@@ -122,7 +130,14 @@ export default function DashboardPage() {
               </div>
             </div>
             <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-              ข้อมูลอัปเดตล่าสุด: {new Date().toLocaleDateString('th-TH', { dateStyle: 'long' })} เวลา {new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
+              ข้อมูลอัปเดตล่าสุด: {new Date().toLocaleDateString('th-TH', { 
+                dateStyle: 'long',
+                timeZone: 'Asia/Bangkok'
+              })} เวลา {new Date().toLocaleTimeString('th-TH', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                timeZone: 'Asia/Bangkok'
+              })}
             </p>
           </Card>
         </motion.div>
