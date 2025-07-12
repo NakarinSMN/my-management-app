@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { FaSpinner, FaExclamationTriangle, FaCar, FaPencilAlt, FaPlus } from 'react-icons/fa';
+import { FaSpinner, FaExclamationTriangle, FaCar, FaPencilAlt, FaPlus, FaSearch } from 'react-icons/fa';
 import AnimatedPage from '../components/AnimatedPage';
 import Modal from '../components/Modal';
 import ServiceForm from '../components/ServiceForm';
@@ -50,6 +50,7 @@ export default function PricingPage() {
   // (ลบ editingService และ handleEditClick เพราะไม่ได้ใช้)
   const [isEditCategoryOpen, setIsEditCategoryOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<ServiceCategory | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>('');
 
   const handleSuccess = () => {
     setIsModalOpen(false);
@@ -128,6 +129,16 @@ export default function PricingPage() {
   // สร้าง array ของหมวดหมู่ที่มีอยู่แล้ว (name, description)
   const categoryOptions = serviceCategories.map(cat => ({ name: cat.name, description: cat.description }));
 
+  // ฟังก์ชันกรองข้อมูลตามคำค้นหา
+  const filteredCategories = serviceCategories.map(category => ({
+    ...category,
+    services: category.services.filter(service =>
+      service.serviceName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      service.serviceDetails.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      category.name.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  })).filter(category => category.services.length > 0);
+
   return (
     <AnimatedPage>
       <main className="flex flex-col gap-8 items-center text-center w-full min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4">
@@ -142,57 +153,78 @@ export default function PricingPage() {
             เพิ่มหมวดหมู่ใหม่
           </button>
         </div>
+
+        {/* ช่องค้นหา */}
+        <div className="w-full max-w-2xl mx-auto mb-6">
+          <div className="relative">
+            <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+            <input
+              type="text"
+              placeholder="ค้นหาบริการ, รายละเอียด หรือหมวดหมู่..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+            />
+          </div>
+        </div>
+
         {isLoading && <div className="flex items-center justify-center text-base md:text-lg mt-8 gap-3"><FaSpinner className="animate-spin" /> กำลังโหลดข้อมูล...</div>}
         {error && <div className="flex items-center justify-center text-base md:text-lg mt-8 text-red-500 gap-3"><FaExclamationTriangle /> {error}</div>}
         {!isLoading && !error && (
           <div className="w-full max-w-5xl mx-auto flex flex-col gap-10">
-            {serviceCategories.map((cat) => (
-              <section key={cat.name} className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 md:p-6">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-2">
-                    <FaCar className="text-blue-500 text-lg md:text-xl" />
-                    <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white leading-tight">{cat.name}</h2>
+            {filteredCategories.length === 0 ? (
+              <div className="text-center text-gray-500 dark:text-gray-400 py-8">
+                {searchTerm ? `ไม่พบบริการที่ตรงกับคำค้นหา "${searchTerm}"` : 'ไม่มีบริการในขณะนี้'}
+              </div>
+            ) : (
+              filteredCategories.map((cat) => (
+                <section key={cat.name} className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 md:p-6">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2">
+                      <FaCar className="text-blue-500 text-lg md:text-xl" />
+                      <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white leading-tight">{cat.name}</h2>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs md:text-sm text-gray-600 dark:text-gray-300">{cat.description}</span>
+                      <button
+                        onClick={() => handleEditCategoryClick(cat)}
+                        className="p-2 rounded-full bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/40 dark:hover:bg-yellow-800 text-yellow-700 dark:text-yellow-200 transition-colors flex items-center justify-center z-10"
+                        title="แก้ไขหมวดหมู่นี้"
+                        aria-label="แก้ไขหมวดหมู่นี้"
+                      >
+                        <FaPencilAlt size={16} />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs md:text-sm text-gray-600 dark:text-gray-300">{cat.description}</span>
-                    <button
-                      onClick={() => handleEditCategoryClick(cat)}
-                      className="p-2 rounded-full bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/40 dark:hover:bg-yellow-800 text-yellow-700 dark:text-yellow-200 transition-colors flex items-center justify-center z-10"
-                      title="แก้ไขหมวดหมู่นี้"
-                      aria-label="แก้ไขหมวดหมู่นี้"
-                    >
-                      <FaPencilAlt size={16} />
-                    </button>
-                  </div>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full text-left border-separate border-spacing-y-2">
-                    <thead>
-                      <tr className="bg-blue-50 dark:bg-blue-900/30">
-                        <th className="px-4 py-2 text-xs md:text-sm font-bold text-gray-700 dark:text-gray-200 rounded-tl-lg">ชื่อบริการ</th>
-                        <th className="px-4 py-2 text-xs md:text-sm font-bold text-gray-700 dark:text-gray-200">รายละเอียด</th>
-                        <th className="px-4 py-2 text-xs md:text-sm font-bold text-gray-700 dark:text-gray-200 rounded-tr-lg">ราคา (บาท)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {cat.services.length === 0 ? (
-                        <tr>
-                          <td colSpan={3} className="text-center text-gray-400 dark:text-gray-500 py-4">ไม่มีบริการในหมวดหมู่นี้</td>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-left border-separate border-spacing-y-2">
+                      <thead>
+                        <tr className="bg-blue-50 dark:bg-blue-900/30">
+                          <th className="px-4 py-2 text-xs md:text-sm font-bold text-gray-700 dark:text-gray-200 rounded-tl-lg">ชื่อบริการ</th>
+                          <th className="px-4 py-2 text-xs md:text-sm font-bold text-gray-700 dark:text-gray-200">รายละเอียด</th>
+                          <th className="px-4 py-2 text-xs md:text-sm font-bold text-gray-700 dark:text-gray-200 rounded-tr-lg">ราคา (บาท)</th>
                         </tr>
-                      ) : (
-                        cat.services.map((service, i) => (
-                          <tr key={service.rowIndex || i} className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 hover:bg-blue-50/60 dark:hover:bg-blue-900/40 transition-colors">
-                            <td className="px-4 py-2 text-sm md:text-base text-gray-900 dark:text-white font-medium">{service.serviceName}</td>
-                            <td className="px-4 py-2 text-xs md:text-sm text-gray-600 dark:text-gray-300">{service.serviceDetails}</td>
-                            <td className="px-4 py-2 text-sm md:text-base text-blue-700 dark:text-blue-300 font-bold whitespace-nowrap">{formatPrice(service.servicePrice)}</td>
+                      </thead>
+                      <tbody>
+                        {cat.services.length === 0 ? (
+                          <tr>
+                            <td colSpan={3} className="text-center text-gray-400 dark:text-gray-500 py-4">ไม่มีบริการในหมวดหมู่นี้</td>
                           </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
-            ))}
+                        ) : (
+                          cat.services.map((service, i) => (
+                            <tr key={service.rowIndex || i} className="bg-white border-b border-gray-400 dark:bg-gray-900  dark:border-gray-800 hover:bg-blue-50/60 dark:hover:bg-blue-900/40 transition-colors">
+                              <td className="px-4 py-2 text-sm md:text-base text-gray-900 dark:text-white font-medium">{service.serviceName}</td>
+                              <td className="px-4 py-2 text-xs md:text-sm text-gray-600 dark:text-gray-300">{service.serviceDetails}</td>
+                              <td className="px-4 py-2 text-sm md:text-base text-blue-700 dark:text-blue-300 font-bold whitespace-nowrap">{formatPrice(service.servicePrice)}</td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              ))
+            )}
           </div>
         )}
         <div className="mt-10 text-center">
