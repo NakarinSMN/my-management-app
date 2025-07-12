@@ -15,9 +15,7 @@ import {
   faUserCircle,
   faCogs,
   faFileAlt,
-  faReceipt,
   faCalendarAlt,
-  faUsers,
   faAngleLeft,
   faBars,
 } from "@fortawesome/free-solid-svg-icons";
@@ -219,12 +217,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               isSidebarOpen={isMobile || isSidebarOpen}
             />
             <SidebarMenuItem
-              href="/payment"
-              icon={faReceipt}
-              text="รับชำระเงิน"
-              isSidebarOpen={isMobile || isSidebarOpen}
-            />
-            <SidebarMenuItem
               href="/history"
               icon={faCalendarAlt}
               text="ประวัติ"
@@ -245,12 +237,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               href="/settings"
               icon={faCogs}
               text="ตั้งค่าทั่วไป"
-              isSidebarOpen={isMobile || isSidebarOpen}
-            />
-            <SidebarMenuItem
-              href="/user-management"
-              icon={faUsers}
-              text="จัดการผู้ใช้งาน"
               isSidebarOpen={isMobile || isSidebarOpen}
             />
           </ul>
