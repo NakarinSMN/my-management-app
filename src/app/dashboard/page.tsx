@@ -6,7 +6,7 @@ import AnimatedPage, { itemVariants } from '../components/AnimatedPage';
 import { Card } from '../components/ui/Card';
 import { TimeSeriesChart } from '../components/TimeSeriesChart';
 import { RecentActivities } from '../components/RecentActivities';
-import { useMemo } from 'react'; // For memoizing data
+import { useMemo, useEffect, useState } from 'react'; // For memoizing data
 
 export default function DashboardPage() {
   const dashboardStats = [
@@ -77,6 +77,22 @@ export default function DashboardPage() {
     { date: '2025-05-31', value: 175 },
   ], []);
 
+  // เพิ่ม state สำหรับวันที่อัปเดตล่าสุด (string)
+  const [lastUpdate, setLastUpdate] = useState('');
+  const [lastUpdateTime, setLastUpdateTime] = useState('');
+  useEffect(() => {
+    // แปลงวันที่เป็น string ฝั่ง client เท่านั้น
+    setLastUpdate(new Date().toLocaleDateString('th-TH', {
+      dateStyle: 'long',
+      timeZone: 'Asia/Bangkok',
+    }));
+    setLastUpdateTime(new Date().toLocaleTimeString('th-TH', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Asia/Bangkok',
+    }));
+  }, []);
+
 
   return (
     <AnimatedPage>
@@ -86,17 +102,25 @@ export default function DashboardPage() {
           <motion.h1
             className="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white"
             variants={itemVariants}
+            initial="hidden"
+            animate="show"
+            exit="exit"
+            transition={{ duration: 0.5, ease: 'easeInOut' }}
           >
             แดชบอร์ดภาพรวม
           </motion.h1>
           <motion.p
             className="text-xl text-gray-600 dark:text-gray-400 mt-2"
             variants={itemVariants}
+            initial="hidden"
+            animate="show"
+            exit="exit"
+            transition={{ duration: 0.5, ease: 'easeInOut' }}
           >
             ภาพรวมของระบบ ข้อมูลสำคัญ และกิจกรรมล่าสุด
           </motion.p>
         </div>
-        <motion.div variants={itemVariants} className="flex gap-2">
+        <motion.div variants={itemVariants} className="flex gap-2" transition={{ duration: 0.2 }}>
                       <Link
               href="/tax-expiry-next-year"
               className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
@@ -110,7 +134,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         
         {/* Overall Summary Card - spanning 2 columns on large screens */}
-        <motion.div variants={itemVariants} className="lg:col-span-2">
+        <motion.div variants={itemVariants} className="lg:col-span-2" transition={{ duration: 0.2 }}>
           <Card title="ภาพรวมสรุป (Overall Summary)" className="h-full">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg shadow-sm">
@@ -130,14 +154,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-              ข้อมูลอัปเดตล่าสุด: {new Date().toLocaleDateString('th-TH', { 
-                dateStyle: 'long',
-                timeZone: 'Asia/Bangkok'
-              })} เวลา {new Date().toLocaleTimeString('th-TH', { 
-                hour: '2-digit', 
-                minute: '2-digit',
-                timeZone: 'Asia/Bangkok'
-              })}
+              ข้อมูลอัปเดตล่าสุด: {lastUpdate} เวลา {lastUpdateTime}
             </p>
           </Card>
         </motion.div>
@@ -145,7 +162,7 @@ export default function DashboardPage() {
         {/* Individual KPI Cards Container - This div wraps the map */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-6">
           {dashboardStats.map((stat) => (
-            <motion.div key={stat.label} variants={itemVariants}>
+            <motion.div key={stat.label} variants={itemVariants} transition={{ duration: 0.2 }}>
               {/* This is the corrected Card call with the required 'title' prop */}
               <Card title={stat.label}>
                 <div className="flex items-center justify-between">
@@ -165,7 +182,7 @@ export default function DashboardPage() {
       {/* SECTION 3: Primary Charts */}
       <div className="grid grid-cols-2 lg:grid-cols-2 gap-6 mb-8">
         {/* User Access Chart */}
-        <motion.div variants={itemVariants}>
+        <motion.div variants={itemVariants} transition={{ duration: 0.2 }}>
           <Card title="ข้อมูลลูกค้าเข้าใช้งาน" className="h-full">
             <TimeSeriesChart
               data={userAccessData}
@@ -179,7 +196,7 @@ export default function DashboardPage() {
         </motion.div>
 
         {/* Tax Renewal Statistics Chart */}
-        <motion.div variants={itemVariants}>
+        <motion.div variants={itemVariants} transition={{ duration: 0.2 }}>
           <Card title="สถิติต่อภาษี" className="h-full">
             <TimeSeriesChart
               data={taxRenewalData}
@@ -196,7 +213,7 @@ export default function DashboardPage() {
       {/* SECTION 4: Detailed Charts & Activities */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Vehicle Inspection Data Chart by Type */}
-        <motion.div variants={itemVariants}>
+        <motion.div variants={itemVariants} transition={{ duration: 0.2 }}>
           <Card title="ข้อมูลการตรวจสภาพรถ (ตามประเภท)" className="h-full">
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">แสดงจำนวนรถที่ได้รับการตรวจสภาพตามประเภท (รย.1, รย.2, รย.3, รย.12)</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -223,7 +240,7 @@ export default function DashboardPage() {
         </motion.div>
 
         {/* Recent Activities */}
-        <motion.div variants={itemVariants}>
+        <motion.div variants={itemVariants} transition={{ duration: 0.2 }}>
           <Card title="กิจกรรมล่าสุด (Recent Activities)" className="h-full">
             <RecentActivities />
           </Card>
@@ -231,7 +248,7 @@ export default function DashboardPage() {
       </div>
 
       {/* SECTION 5: Back to Home Button (or Footer) */}
-      <motion.div variants={itemVariants} className="mt-8 text-center">
+      <motion.div variants={itemVariants} className="mt-8 text-center" transition={{ duration: 0.2 }}>
         <Link
           href="/"
           className="inline-block px-8 py-4 bg-blue-600 text-white font-semibold rounded-lg shadow-lg hover:bg-blue-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"

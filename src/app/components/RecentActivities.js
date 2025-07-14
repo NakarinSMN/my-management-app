@@ -3,7 +3,9 @@
 
 'use client';
 
-export function RecentActivities() {
+import React, { memo } from 'react';
+
+export const RecentActivities = memo(function RecentActivities() {
   const activities = [
     { id: 1, text: "ผู้ใช้ John Doe ลงทะเบียนใหม่", time: "10 นาทีที่แล้ว", type: "new_user" },
     { id: 2, text: "คำสั่งซื้อ #123456 ถูกสร้างขึ้น", time: "30 นาทีที่แล้ว", type: "order" },
@@ -42,4 +44,4 @@ export function RecentActivities() {
       )}
     </div>
   );
-}
+});

@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, memo } from 'react';
 import Link from 'next/link';
-import { FaSpinner, FaExclamationTriangle, FaCar, FaPencilAlt, FaPlus, FaSearch } from 'react-icons/fa';
+import { FaExclamationTriangle, FaCar, FaPencilAlt, FaPlus, FaSearch } from 'react-icons/fa';
 import AnimatedPage from '../components/AnimatedPage';
 import Modal from '../components/Modal';
 import ServiceForm from '../components/ServiceForm';
 import EditCategoryForm from '../components/EditCategoryForm';
+import useSWR from 'swr';
 
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz3WJmHNJ2h8Yj1rm2tc_mXj6JNCYz8T-yOmg9kC6aKgpAAuXmH5Z3DNZQF8ecGZUGw/exec';
 
@@ -42,9 +43,20 @@ const formatPrice = (price: string | number | null | undefined): string | number
   return numericPrice.toLocaleString('en-US');
 };
 
+const ServiceRow = memo(function ServiceRow({ service }: { service: Service }) {
+  return (
+    <tr className="bg-white border-b border-gray-400 dark:bg-gray-900  dark:border-gray-800 hover:bg-blue-50/60 dark:hover:bg-blue-900/40 transition-colors">
+      <td className="px-4 py-2 text-sm md:text-base text-gray-900 dark:text-white font-medium">{service.serviceName}</td>
+      <td className="px-4 py-2 text-xs md:text-sm text-gray-600 dark:text-gray-300">{service.serviceDetails}</td>
+      <td className="px-4 py-2 text-sm md:text-base text-blue-700 dark:text-blue-300 font-bold whitespace-nowrap">{formatPrice(service.servicePrice)}</td>
+    </tr>
+  );
+});
+
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
 export default function PricingPage() {
   const [serviceCategories, setServiceCategories] = useState<ServiceCategory[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   // (ลบ editingService และ handleEditClick เพราะไม่ได้ใช้)
@@ -52,10 +64,15 @@ export default function PricingPage() {
   const [editingCategory, setEditingCategory] = useState<ServiceCategory | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
 
+  const { data: swrData, error: swrError, isLoading: swrIsLoading, mutate } = useSWR(GOOGLE_SCRIPT_URL, fetcher, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+  });
+
   const handleSuccess = () => {
     setIsModalOpen(false);
     // (ลบ editingService และ handleEditClick เพราะไม่ได้ใช้)
-    fetchData();
+    mutate();
   };
 
   // (ลบ handleEditClick เพราะไม่ได้ใช้)
@@ -80,17 +97,12 @@ export default function PricingPage() {
   const handleEditCategorySuccess = () => {
     setEditingCategory(null);
     setIsEditCategoryOpen(false);
-    fetchData();
+    mutate();
   };
 
-  const fetchData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(GOOGLE_SCRIPT_URL);
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data: RawServiceData[] = await response.json();
-
-      const formattedData: ServiceCategory[] = data.reduce((acc: ServiceCategory[], current: RawServiceData) => {
+  useEffect(() => {
+    if (swrData) {
+      const formattedData: ServiceCategory[] = swrData.reduce((acc: ServiceCategory[], current: RawServiceData) => {
         let category = acc.find(cat => cat.name === current.categoryName);
         if (!category) {
           category = { name: current.categoryName, description: current.categoryDescription, services: [] };
@@ -110,34 +122,24 @@ export default function PricingPage() {
         return acc;
       }, []);
       setServiceCategories(formattedData);
-    } catch (e: unknown) {
-      console.error("Failed to fetch pricing data:", e);
-      if (e instanceof Error) {
-        setError("ไม่สามารถโหลดข้อมูลราคาได้ในขณะนี้: " + e.message);
-      } else {
-        setError("ไม่สามารถโหลดข้อมูลราคาได้ในขณะนี้");
-      }
-    } finally {
-      setIsLoading(false);
+      setError(null);
+    } else if (swrError) {
+      setError('ไม่สามารถโหลดข้อมูลราคาได้ในขณะนี้: ' + swrError.message);
     }
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  }, [swrData, swrError]);
 
   // สร้าง array ของหมวดหมู่ที่มีอยู่แล้ว (name, description)
   const categoryOptions = serviceCategories.map(cat => ({ name: cat.name, description: cat.description }));
 
   // ฟังก์ชันกรองข้อมูลตามคำค้นหา
-  const filteredCategories = serviceCategories.map(category => ({
+  const filteredCategories = useMemo(() => serviceCategories.map(category => ({
     ...category,
     services: category.services.filter(service =>
       service.serviceName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       service.serviceDetails.toLowerCase().includes(searchTerm.toLowerCase()) ||
       category.name.toLowerCase().includes(searchTerm.toLowerCase())
     )
-  })).filter(category => category.services.length > 0);
+  })).filter(category => category.services.length > 0), [serviceCategories, searchTerm]);
 
   return (
     <AnimatedPage>
@@ -168,9 +170,21 @@ export default function PricingPage() {
           </div>
         </div>
 
-        {isLoading && <div className="flex items-center justify-center text-base md:text-lg mt-8 gap-3"><FaSpinner className="animate-spin" /> กำลังโหลดข้อมูล...</div>}
+        {swrIsLoading && (
+          <div className="flex items-center justify-center text-base md:text-lg mt-8 gap-3 w-full">
+            <div className="w-full">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="animate-pulse flex space-x-4 mb-4">
+                  <div className="rounded bg-gray-200 dark:bg-gray-700 h-6 w-1/4"></div>
+                  <div className="rounded bg-gray-200 dark:bg-gray-700 h-6 w-1/2"></div>
+                  <div className="rounded bg-gray-200 dark:bg-gray-700 h-6 w-1/6"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {error && <div className="flex items-center justify-center text-base md:text-lg mt-8 text-red-500 gap-3"><FaExclamationTriangle /> {error}</div>}
-        {!isLoading && !error && (
+        {!swrIsLoading && !error && (
           <div className="w-full max-w-5xl mx-auto flex flex-col gap-10">
             {filteredCategories.length === 0 ? (
               <div className="text-center text-gray-500 dark:text-gray-400 py-8">
@@ -212,11 +226,7 @@ export default function PricingPage() {
                           </tr>
                         ) : (
                           cat.services.map((service, i) => (
-                            <tr key={service.rowIndex || i} className="bg-white border-b border-gray-400 dark:bg-gray-900  dark:border-gray-800 hover:bg-blue-50/60 dark:hover:bg-blue-900/40 transition-colors">
-                              <td className="px-4 py-2 text-sm md:text-base text-gray-900 dark:text-white font-medium">{service.serviceName}</td>
-                              <td className="px-4 py-2 text-xs md:text-sm text-gray-600 dark:text-gray-300">{service.serviceDetails}</td>
-                              <td className="px-4 py-2 text-sm md:text-base text-blue-700 dark:text-blue-300 font-bold whitespace-nowrap">{formatPrice(service.servicePrice)}</td>
-                            </tr>
+                            <ServiceRow key={service.rowIndex || i} service={service} />
                           ))
                         )}
                       </tbody>

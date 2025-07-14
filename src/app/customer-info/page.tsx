@@ -2,9 +2,13 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, memo } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { IconDefinition } from '@fortawesome/fontawesome-svg-core'; // สำคัญ: ต้อง Import IconDefinition
+import useSWR from 'swr';
+import { motion } from 'framer-motion';
+
+import AnimatedPage, { itemVariants } from '../components/AnimatedPage';
 
 import {
   faSearch,
@@ -16,7 +20,6 @@ import {
   faTimesCircle,
   faChevronLeft,
   faChevronRight,
-  faSpinner,
   faInfoCircle
 } from '@fortawesome/free-solid-svg-icons';
 
@@ -132,61 +135,35 @@ export default function CustomerInfoPage() {
   // **** เปลี่ยน URL นี้เป็น URL ของ Web App ของคุณจริงๆ ที่ได้จาก Google Apps Script ****
   const GOOGLE_SHEET_CUSTOMER_API_URL: string = 'https://script.google.com/macros/s/AKfycbxN9rG3NhDyhlXVKgNndNcJ6kHopPaf5GRma_dRYjtP64svMYUFCSALwTEX4mYCHoDd6g/exec?getAll=1';
 
+  const fetcher = (url: string) => fetch(url).then(res => res.json());
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(null); // รีเซ็ต error ก่อนเริ่ม fetch ใหม่
-    try {
-      const res = await fetch(GOOGLE_SHEET_CUSTOMER_API_URL);
+  const { data: swrData, error: swrError, mutate } = useSWR(GOOGLE_SHEET_CUSTOMER_API_URL, fetcher, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+  });
 
-      if (!res.ok) {
-        // ตรวจสอบสถานะ HTTP error
-        const errorText = `HTTP error! Status: ${res.status}. ${res.statusText || ''}`;
-        throw new Error(errorText);
-      }
-
-      const json: { data?: RawCustomerDataItem[]; error?: boolean; message?: string } = await res.json();
-
-      if (json.error) {
-        // ตรวจสอบ error ที่มาจาก Apps Script เอง (เช่น ถ้า Apps Script มี Bug)
-        throw new Error(`Server Error: ${json.message || 'Unknown server error from Apps Script'}`);
-      }
-
-      const formatted: CustomerData[] = (json.data || []).map((item: RawCustomerDataItem) => {
+  useEffect(() => {
+    if (swrData && swrData.data) {
+      const formatted: CustomerData[] = (swrData.data || []).map((item: RawCustomerDataItem) => {
         const dtField: string = item['วันที่ชำระภาษีล่าสุด'] || '';
-        // ตรวจสอบรูปแบบวันที่ให้แน่ใจว่าเป็น yyyy-MM-dd
         const registerDate: string = dtField.includes('T') ? dtField.split('T')[0] : dtField;
-
         const rawPhone: string = (item['เบอร์ติดต่อ'] || '').toString();
-        // เพิ่ม '0' หน้าเบอร์โทรศัพท์ ถ้ายังไม่มี
         const phone: string = rawPhone.startsWith('0') || rawPhone.length === 0 ? rawPhone : `0${rawPhone}`;
-
         return {
           licensePlate: item['ทะเบียนรถ'] || '',
           customerName: item['ชื่อลูกค้า'] || '',
           phone,
           registerDate,
           status: item['สถานะ'] || item['สถานะการเตือน'] || 'รอดำเนินการ',
-          // rowIndex: item.rowIndex || 0, // หาก Google Apps Script ส่ง rowIndex มาด้วย ให้เพิ่มบรรทัดนี้
         };
       });
       setData(formatted);
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        console.error('❌ ดึงข้อมูลลูกค้าไม่สำเร็จ:', err.message);
-        setError(`ไม่สามารถโหลดข้อมูลลูกค้าได้: ${err.message}`);
-      } else {
-        console.error('❌ ดึงข้อมูลลูกค้าไม่สำเร็จ:', err);
-        setError('ไม่สามารถโหลดข้อมูลลูกค้าได้ในขณะนี้');
-      }
-    } finally {
-      setLoading(false);
+      setError(null);
+    } else if (swrError) {
+      setError('ไม่สามารถโหลดข้อมูลลูกค้าได้: ' + swrError.message);
     }
-  }, [GOOGLE_SHEET_CUSTOMER_API_URL]); // dependency array
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    setLoading(false);
+  }, [swrData, swrError]);
 
   const resetFilters = () => {
     setSearch('');
@@ -196,7 +173,9 @@ export default function CustomerInfoPage() {
     setCurrentPage(1); // เมื่อรีเซ็ตตัวกรอง ให้กลับไปหน้าแรก
   };
 
-  const filteredData: CustomerData[] = data
+  const startIdx: number = (currentPage - 1) * itemsPerPage;
+
+  const filteredData: CustomerData[] = useMemo(() => data
     .filter(item => {
       // กรองรายการที่ไม่มีวันที่ลงทะเบียน หรือวันที่ไม่ถูกต้อง
       if (!item.registerDate || item.registerDate.split('-').length !== 3) {
@@ -218,12 +197,9 @@ export default function CustomerInfoPage() {
       const matchYear: boolean = !filterYear || year === filterYear;
 
       return matchSearch && matchDay && matchMonth && matchYear;
-    });
+    }), [data, search, filterDay, filterMonth, filterYear]);
 
-  // Pagination Logic
-  const startIdx: number = (currentPage - 1) * itemsPerPage;
-  // ใน pagination และการ slice ข้อมูล ให้รองรับ itemsPerPage = filteredData.length (all)
-  const paginatedData: CustomerData[] = itemsPerPage === filteredData.length ? filteredData : filteredData.slice(startIdx, startIdx + itemsPerPage);
+  const paginatedData: CustomerData[] = useMemo(() => itemsPerPage === filteredData.length ? filteredData : filteredData.slice(startIdx, startIdx + itemsPerPage), [filteredData, itemsPerPage, startIdx]);
   const totalPages: number = itemsPerPage === filteredData.length ? 1 : Math.ceil(filteredData.length / itemsPerPage);
 
   // สร้างตัวเลือกสำหรับ dropdown
@@ -232,239 +208,257 @@ export default function CustomerInfoPage() {
 
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                ข้อมูลต่อภาษี
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-2">
-                รายการลูกค้าทั้งหมดและข้อมูลการต่อภาษี
-              </p>
-            </div>
-            <Link
-              href="/tax-expiry-next-year"
-              className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
-            >
-              ภาษีครั้งถัดไป
-            </Link>
-          </div>
-
-          {/* สถิติสรุป */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-              <div className="flex items-center">
-                <FontAwesomeIcon icon={faInfoCircle} className="text-blue-500 mr-2" />
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">รายการทั้งหมด</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{filteredData.length}</p>
-                </div>
+    <AnimatedPage>
+      <motion.div variants={itemVariants} initial="hidden" animate="show" exit="exit" transition={{ duration: 0.5, ease: 'easeInOut' }} className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <motion.h1 variants={itemVariants} initial="hidden" animate="show" exit="exit" transition={{ duration: 0.5, ease: 'easeInOut' }} className="text-3xl font-bold text-gray-900 dark:text-white">
+                  ข้อมูลต่อภาษี
+                </motion.h1>
+                <motion.p variants={itemVariants} initial="hidden" animate="show" exit="exit" transition={{ duration: 0.5, ease: 'easeInOut' }} className="text-gray-600 dark:text-gray-400 mt-2">
+                  รายการลูกค้าทั้งหมดและข้อมูลการต่อภาษี
+                </motion.p>
               </div>
-            </div>
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-              <div className="flex items-center">
-                <FontAwesomeIcon icon={faCheckCircle} className="text-green-500 mr-2" />
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">ต่อภาษีแล้ว</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {filteredData.filter(item => item.status === 'ต่อภาษีแล้ว').length}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-              <div className="flex items-center">
-                <FontAwesomeIcon icon={faExclamationTriangle} className="text-orange-500 mr-2" />
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">ใกล้ครบกำหนด</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {filteredData.filter(item => item.status === 'ใกล้ครบกำหนด').length}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-              <div className="flex items-center">
-                <FontAwesomeIcon icon={faTimesCircle} className="text-red-500 mr-2" />
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">เกินกำหนด</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {filteredData.filter(item => item.status === 'เกินกำหนด').length}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div className="relative">
-              <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="ค้นหาทะเบียนรถ, ชื่อลูกค้า, เบอร์โทร"
-                value={search}
-                onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <SelectFilter
-              value={filterDay}
-              onChange={val => { setFilterDay(val); setCurrentPage(1); }}
-              icon={faCalendarDay}
-              placeholder="กรองตามวัน"
-              options={days}
-            />
-            <SelectFilter
-              value={filterMonth}
-              onChange={val => { setFilterMonth(val); setCurrentPage(1); }}
-              icon={faCalendarAlt}
-              placeholder="กรองตามเดือน"
-              options={months}
-            />
-            <select
-              className="w-full py-2 px-3 rounded-lg bg-gray-50 dark:bg-gray-700 text-black dark:text-white focus:outline-none border border-gray-300 dark:border-gray-600"
-              value={itemsPerPage}
-              onChange={e => {
-                const val = e.target.value;
-                setItemsPerPage(val === 'all' ? filteredData.length : Number(val));
-                setCurrentPage(1);
-              }}
-            >
-              {[10, 20, 30, 40, 50].map(n => <option key={n} value={n}>{n} รายการ</option>)}
-              <option value="all">ทั้งหมด</option>
-            </select>
-            <button
-              onClick={resetFilters}
-              className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors w-full font-semibold text-base"
-            >
-              รีเซ็ตตัวกรอง
-            </button>
-          </div>
-        </div>
-
-        {/* Data Table */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-          {loading ? (
-            <div className="flex items-center justify-center p-8">
-              <FontAwesomeIcon icon={faSpinner} className="animate-spin text-2xl text-blue-500" />
-              <span className="ml-2 text-gray-600 dark:text-gray-400">กำลังโหลดข้อมูล...</span>
-            </div>
-          ) : error ? (
-            <div className="p-8 text-center">
-              <p className="text-red-500 mb-4">{error}</p>
-              <button
-                onClick={fetchData}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              <Link
+                href="/tax-expiry-next-year"
+                className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
               >
-                ลองใหม่
+                ภาษีครั้งถัดไป
+              </Link>
+            </div>
+
+            {/* สถิติสรุป */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+                <div className="flex items-center">
+                  <FontAwesomeIcon icon={faInfoCircle} className="text-blue-500 mr-2" />
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">รายการทั้งหมด</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{filteredData.length}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+                <div className="flex items-center">
+                  <FontAwesomeIcon icon={faCheckCircle} className="text-green-500 mr-2" />
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">ต่อภาษีแล้ว</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {filteredData.filter(item => item.status === 'ต่อภาษีแล้ว').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+                <div className="flex items-center">
+                  <FontAwesomeIcon icon={faExclamationTriangle} className="text-orange-500 mr-2" />
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">ใกล้ครบกำหนด</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {filteredData.filter(item => item.status === 'ใกล้ครบกำหนด').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+                <div className="flex items-center">
+                  <FontAwesomeIcon icon={faTimesCircle} className="text-red-500 mr-2" />
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">เกินกำหนด</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {filteredData.filter(item => item.status === 'เกินกำหนด').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Filters */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+              <div className="relative">
+                <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="ค้นหาทะเบียนรถ, ชื่อลูกค้า, เบอร์โทร"
+                  value={search}
+                  onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <SelectFilter
+                value={filterDay}
+                onChange={val => { setFilterDay(val); setCurrentPage(1); }}
+                icon={faCalendarDay}
+                placeholder="กรองตามวัน"
+                options={days}
+              />
+              <SelectFilter
+                value={filterMonth}
+                onChange={val => { setFilterMonth(val); setCurrentPage(1); }}
+                icon={faCalendarAlt}
+                placeholder="กรองตามเดือน"
+                options={months}
+              />
+              <select
+                className="w-full py-2 px-3 rounded-lg bg-gray-50 dark:bg-gray-700 text-black dark:text-white focus:outline-none border border-gray-300 dark:border-gray-600"
+                value={itemsPerPage}
+                onChange={e => {
+                  const val = e.target.value;
+                  setItemsPerPage(val === 'all' ? filteredData.length : Number(val));
+                  setCurrentPage(1);
+                }}
+              >
+                {[10, 20, 30, 40, 50].map(n => <option key={n} value={n}>{n} รายการ</option>)}
+                <option value="all">ทั้งหมด</option>
+              </select>
+              <button
+                onClick={resetFilters}
+                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors w-full font-semibold text-base"
+              >
+                รีเซ็ตตัวกรอง
               </button>
             </div>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ทะเบียนรถ</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ชื่อลูกค้า</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">เบอร์โทร</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">วันที่ชำระล่าสุด</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">สถานะ</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {paginatedData.length === 0 ? (
+          </div>
+
+          {/* Data Table */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+            {loading ? (
+              <div className="flex items-center justify-center p-8 w-full">
+                <div className="w-full">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="animate-pulse flex space-x-4 mb-4">
+                      <div className="rounded bg-gray-200 dark:bg-gray-700 h-6 w-1/6"></div>
+                      <div className="rounded bg-gray-200 dark:bg-gray-700 h-6 w-1/4"></div>
+                      <div className="rounded bg-gray-200 dark:bg-gray-700 h-6 w-1/5"></div>
+                      <div className="rounded bg-gray-200 dark:bg-gray-700 h-6 w-1/5"></div>
+                      <div className="rounded bg-gray-200 dark:bg-gray-700 h-6 w-1/6"></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : error ? (
+              <div className="p-8 text-center">
+                <p className="text-red-500 mb-4">{error}</p>
+                <button
+                  onClick={mutate}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  ลองใหม่
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 dark:bg-gray-700">
                       <tr>
-                        <td colSpan={5} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
-                          ไม่พบข้อมูลที่ตรงกับตัวกรอง
-                        </td>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ทะเบียนรถ</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ชื่อลูกค้า</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">เบอร์โทร</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">วันที่ชำระล่าสุด</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">สถานะ</th>
                       </tr>
-                    ) : (
-                      paginatedData.map((item, idx) => (
-                        <tr key={item.licensePlate + item.customerName + idx} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{item.licensePlate}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.customerName}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.phone}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{new Date(item.registerDate).toLocaleDateString('th-TH')}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor[item.status]}`}>
-                              <FontAwesomeIcon icon={statusIcon[item.status]} className="mr-1" />
-                              {item.status}
-                            </span>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      {paginatedData.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
+                            ไม่พบข้อมูลที่ตรงกับตัวกรอง
                           </td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="bg-white dark:bg-gray-800 px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700">
-                  <div className="flex-1 flex justify-between sm:hidden">
-                    <button
-                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                      disabled={currentPage === 1}
-                      className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-                    >
-                      ก่อนหน้า
-                    </button>
-                    <button
-                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                      disabled={currentPage === totalPages}
-                      className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-                    >
-                      ถัดไป
-                    </button>
-                  </div>
-                  <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-sm text-gray-700 dark:text-gray-300">
-                        แสดง <span className="font-medium">{startIdx + 1}</span> ถึง{' '}
-                        <span className="font-medium">{Math.min(startIdx + itemsPerPage, filteredData.length)}</span> จาก{' '}
-                        <span className="font-medium">{filteredData.length}</span> รายการ
-                      </p>
-                    </div>
-                    <div>
-                      <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                        <PageButton
-                          onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                          disabled={currentPage === 1}
-                          icon={faChevronLeft}
-                        />
-                        {getPageNumbers(currentPage, totalPages).map(page => (
-                          <button
-                            key={page}
-                            onClick={() => setCurrentPage(page)}
-                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                              currentPage === page
-                                ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                                : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                            }`}
-                          >
-                            {page}
-                          </button>
-                        ))}
-                        <PageButton
-                          onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                          disabled={currentPage === totalPages}
-                          icon={faChevronRight}
-                        />
-                      </nav>
-                    </div>
-                  </div>
+                      ) : (
+                        paginatedData.map((item, idx) => (
+                          <CustomerRow key={item.licensePlate + item.customerName + idx} item={item} />
+                        ))
+                      )}
+                    </tbody>
+                  </table>
                 </div>
-              )}
-            </>
-          )}
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="bg-white dark:bg-gray-800 px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700">
+                    <div className="flex-1 flex justify-between sm:hidden">
+                      <button
+                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                        disabled={currentPage === 1}
+                        className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                      >
+                        ก่อนหน้า
+                      </button>
+                      <button
+                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                        disabled={currentPage === totalPages}
+                        className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                      >
+                        ถัดไป
+                      </button>
+                    </div>
+                    <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          แสดง <span className="font-medium">{startIdx + 1}</span> ถึง{' '}
+                          <span className="font-medium">{Math.min(startIdx + itemsPerPage, filteredData.length)}</span> จาก{' '}
+                          <span className="font-medium">{filteredData.length}</span> รายการ
+                        </p>
+                      </div>
+                      <div>
+                        <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                          <PageButton
+                            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                            disabled={currentPage === 1}
+                            icon={faChevronLeft}
+                          />
+                          {getPageNumbers(currentPage, totalPages).map(page => (
+                            <button
+                              key={page}
+                              onClick={() => setCurrentPage(page)}
+                              className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                                currentPage === page
+                                  ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                                  : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                              }`}
+                            >
+                              {page}
+                            </button>
+                          ))}
+                          <PageButton
+                            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                            disabled={currentPage === totalPages}
+                            icon={faChevronRight}
+                          />
+                        </nav>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </AnimatedPage>
   );
 }
+
+// Table Row Memoized
+const CustomerRow = memo(function CustomerRow({ item }: { item: CustomerData }) {
+  return (
+    <tr key={item.licensePlate + item.customerName} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{item.licensePlate}</td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.customerName}</td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.phone}</td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{new Date(item.registerDate).toLocaleDateString('th-TH')}</td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor[item.status]}`}>
+          <FontAwesomeIcon icon={statusIcon[item.status]} className="mr-1" />
+          {item.status}
+        </span>
+      </td>
+    </tr>
+  );
+});

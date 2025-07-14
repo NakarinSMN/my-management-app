@@ -13,7 +13,6 @@ import {
   faTachometerAlt,
   faHandHoldingUsd,
   faUserCircle,
-  faCogs,
   faFileAlt,
   faCalendarAlt,
   faAngleLeft,
@@ -230,14 +229,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 x: (isMobile || isSidebarOpen) ? 0 : -20
               }}
               transition={{ duration: 0.3, delay: 0.1 }}
-            >
-              {(isMobile || isSidebarOpen) ? "ตั้งค่าระบบ" : ""}
-            </motion.h3>
-            <SidebarMenuItem
-              href="/settings"
-              icon={faCogs}
-              text="ตั้งค่าทั่วไป"
-              isSidebarOpen={isMobile || isSidebarOpen}
             />
           </ul>
         </nav>

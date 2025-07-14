@@ -5,7 +5,8 @@ import { Inter, Kanit } from "next/font/google";
 import "./globals.css"; // Global styles, e.g., Tailwind CSS
 
 import Layout from "./components/Layout"; // Import the main Layout component
-import { Providers } from "./providers";
+import PageTransition from "./components/PageTransition";
+import { ThemeProvider } from 'next-themes';
 
 // กำหนดฟอนต์ Inter และให้เป็น CSS variable
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -32,20 +33,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    // เพิ่ม className ของทั้งสองฟอนต์ลงในแท็ก <html>
-    // ทำให้ตัวแปร CSS ของฟอนต์พร้อมใช้งานทั่วทั้งแอป
-    <html lang="th" className={`${inter.variable} ${kanit.variable}`}>
-      <body>
-        <Providers>
-          {/*
-          หมายเหตุ: การเช็ค `window.location.pathname` ไม่สามารถทำได้โดยตรงใน Server Component
-          (เช่น layout.tsx) เพราะ `window` จะไม่มีอยู่บนเซิร์ฟเวอร์
-          หากคุณต้องการ Layout ที่แตกต่างกันสำหรับหน้า Landing Page,
-          คุณควรใช้ Route Groups หรือแยก Layout Component ออกไปต่างหาก
-          สำหรับตอนนี้ เราจะใช้ <Layout> ห่อหุ้ม children ไว้ทั้งหมด
-        */}
-          <Layout>{children}</Layout>
-        </Providers>
+    <html lang="th" suppressHydrationWarning>
+      <body className={`${inter.variable} ${kanit.variable}`} suppressHydrationWarning={true}>
+        <ThemeProvider attribute="class">
+          <Layout>
+            <PageTransition>
+              {children}
+            </PageTransition>
+          </Layout>
+        </ThemeProvider>
       </body>
     </html>
   );

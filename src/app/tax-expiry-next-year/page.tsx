@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, memo } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 
@@ -15,10 +15,11 @@ import {
   faTimesCircle,
   faChevronLeft,
   faChevronRight,
-  faSpinner,
   faWarning,
   faInfoCircle
 } from '@fortawesome/free-solid-svg-icons';
+
+import useSWR from 'swr';
 
 // กำหนด Interface สำหรับข้อมูลลูกค้าที่มีวันสิ้นอายุภาษีปีถัดไป
 interface TaxExpiryData {
@@ -121,6 +122,36 @@ function getPageNumbers(currentPage: number, totalPages: number, maxPages = 5) {
   return Array.from({ length: end - start + 1 }, (_, i) => start + i);
 }
 
+const TaxExpiryRow = memo(function TaxExpiryRow({ item }: { item: TaxExpiryData }) {
+  return (
+    <tr className="hover:bg-gray-50 dark:hover:bg-gray-700">
+      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{item.licensePlate}</td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.customerName}</td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.phone}</td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.lastTaxDate ? new Date(item.lastTaxDate).toLocaleDateString('th-TH') : '-'}</td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.expiryDate ? new Date(item.expiryDate).toLocaleDateString('th-TH') : '-'}</td>
+      <td className="px-6 py-4 whitespace-nowrap font-medium">
+        <span className={
+          item.daysUntilExpiry < 0 ? 'text-red-600 dark:text-red-400' :
+          item.daysUntilExpiry <= 30 ? 'text-orange-600 dark:text-orange-400' :
+          item.daysUntilExpiry <= 90 ? 'text-yellow-600 dark:text-yellow-400' :
+          'text-green-600 dark:text-green-400'
+        }>
+          {item.daysUntilExpiry < 0 ? `${Math.abs(item.daysUntilExpiry)} วัน (เกินกำหนด)` :
+            item.daysUntilExpiry === 0 ? 'วันนี้' :
+            `${item.daysUntilExpiry} วัน`}
+        </span>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor[item.status]}`}>
+          <FontAwesomeIcon icon={statusIcon[item.status]} className="mr-1" />
+          {item.status}
+        </span>
+      </td>
+    </tr>
+  );
+});
+
 export default function TaxExpiryNextYearPage() {
   const [search, setSearch] = useState<string>('');
   const [filterMonth, setFilterMonth] = useState<string>('');
@@ -134,36 +165,24 @@ export default function TaxExpiryNextYearPage() {
   // URL ของ Google Apps Script API
   const GOOGLE_SHEET_CUSTOMER_API_URL: string = 'https://script.google.com/macros/s/AKfycbxN9rG3NhDyhlXVKgNndNcJ6kHopPaf5GRma_dRYjtP64svMYUFCSALwTEX4mYCHoDd6g/exec?getAll=1';
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(GOOGLE_SHEET_CUSTOMER_API_URL);
+  const fetcher = (url: string) => fetch(url).then(res => res.json());
 
-      if (!res.ok) {
-        const errorText = `HTTP error! Status: ${res.status}. ${res.statusText || ''}`;
-        throw new Error(errorText);
-      }
+  const { data: swrData, error: swrError, mutate } = useSWR(GOOGLE_SHEET_CUSTOMER_API_URL, fetcher, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+  });
 
-      const json: { data?: RawTaxExpiryDataItem[]; error?: boolean; message?: string } = await res.json();
-
-      if (json.error) {
-        throw new Error(`Server Error: ${json.message || 'Unknown server error from Apps Script'}`);
-      }
-
-      const formatted: TaxExpiryData[] = (json.data || [])
+  useEffect(() => {
+    if (swrData && swrData.data) {
+      const formatted: TaxExpiryData[] = (swrData.data || [])
         .map((item: RawTaxExpiryDataItem) => {
           const expiryDate = item['ภาษีครั้งถัดไป'] || '';
           if (!expiryDate || expiryDate.split('-').length !== 3) {
             return null;
           }
-
           const daysUntilExpiry = calculateDaysUntilExpiry(expiryDate);
-
           const rawPhone: string = (item['เบอร์ติดต่อ'] || '').toString();
           const phone: string = rawPhone.startsWith('0') || rawPhone.length === 0 ? rawPhone : `0${rawPhone}`;
-
-          // กำหนดสถานะตามจำนวนวันที่เหลือ
           let status = 'รอดำเนินการ';
           if (daysUntilExpiry < 0) {
             status = 'เกินกำหนด';
@@ -172,7 +191,6 @@ export default function TaxExpiryNextYearPage() {
           } else if (daysUntilExpiry <= 90) {
             status = 'กำลังจะครบกำหนด';
           }
-
           return {
             licensePlate: item['ทะเบียนรถ'] || '',
             customerName: item['ชื่อลูกค้า'] || '',
@@ -183,26 +201,52 @@ export default function TaxExpiryNextYearPage() {
             status
           };
         })
-        .filter((item): item is TaxExpiryData => item !== null)
-        .sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry); // เรียงตามจำนวนวันที่เหลือ
-
+        .filter((item: TaxExpiryData | null): item is TaxExpiryData => item !== null);
       setData(formatted);
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        console.error('❌ ดึงข้อมูลวันสิ้นอายุภาษีไม่สำเร็จ:', err.message);
-        setError(`ไม่สามารถโหลดข้อมูลได้: ${err.message}`);
-      } else {
-        console.error('❌ ดึงข้อมูลวันสิ้นอายุภาษีไม่สำเร็จ:', err);
-        setError('ไม่สามารถโหลดข้อมูลได้ในขณะนี้');
-      }
-    } finally {
-      setLoading(false);
+      setError(null);
+    } else if (swrError) {
+      setError('ไม่สามารถโหลดข้อมูลได้: ' + swrError.message);
     }
-  }, [GOOGLE_SHEET_CUSTOMER_API_URL]);
+    setLoading(false);
+  }, [swrData, swrError]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (swrData && swrData.data) {
+      const formatted: TaxExpiryData[] = (swrData.data || [])
+        .map((item: RawTaxExpiryDataItem) => {
+          const expiryDate = item['ภาษีครั้งถัดไป'] || '';
+          if (!expiryDate || expiryDate.split('-').length !== 3) {
+            return null;
+          }
+          const daysUntilExpiry = calculateDaysUntilExpiry(expiryDate);
+          const rawPhone: string = (item['เบอร์ติดต่อ'] || '').toString();
+          const phone: string = rawPhone.startsWith('0') || rawPhone.length === 0 ? rawPhone : `0${rawPhone}`;
+          let status = 'รอดำเนินการ';
+          if (daysUntilExpiry < 0) {
+            status = 'เกินกำหนด';
+          } else if (daysUntilExpiry <= 30) {
+            status = 'ใกล้ครบกำหนด';
+          } else if (daysUntilExpiry <= 90) {
+            status = 'กำลังจะครบกำหนด';
+          }
+          return {
+            licensePlate: item['ทะเบียนรถ'] || '',
+            customerName: item['ชื่อลูกค้า'] || '',
+            phone,
+            lastTaxDate: item['วันที่ชำระภาษีล่าสุด'] || '',
+            expiryDate,
+            daysUntilExpiry,
+            status
+          };
+        })
+        .filter((item: TaxExpiryData | null): item is TaxExpiryData => item !== null);
+      setData(formatted);
+      setError(null);
+    } else if (swrError) {
+      setError('ไม่สามารถโหลดข้อมูลได้: ' + swrError.message);
+    }
+    setLoading(false);
+  }, [swrData, swrError]);
 
   const resetFilters = () => {
     setSearch('');
@@ -211,7 +255,7 @@ export default function TaxExpiryNextYearPage() {
     setCurrentPage(1);
   };
 
-  const filteredData: TaxExpiryData[] = data
+  const filteredData: TaxExpiryData[] = useMemo(() => data
     .filter(item => {
       // กรองตามการค้นหา
       const searchLower = search.toLowerCase();
@@ -228,13 +272,13 @@ export default function TaxExpiryNextYearPage() {
       const matchesStatus = !filterStatus || item.status === filterStatus;
 
       return matchesSearch && matchesMonth && matchesStatus;
-    });
+    }), [data, search, filterMonth, filterStatus]);
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   // ใน pagination และการ slice ข้อมูล ให้รองรับ itemsPerPage = filteredData.length (all)
-  const currentData = itemsPerPage === filteredData.length ? filteredData : filteredData.slice(startIndex, endIndex);
+  const currentData = useMemo(() => itemsPerPage === filteredData.length ? filteredData : filteredData.slice(startIndex, endIndex), [filteredData, itemsPerPage, startIndex, endIndex]);
 
   const monthOptions = Array.from({ length: 12 }, (_, i) => ({
     value: String(i + 1),
@@ -367,15 +411,24 @@ export default function TaxExpiryNextYearPage() {
         {/* Data Table */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
           {loading ? (
-            <div className="flex items-center justify-center p-8">
-              <FontAwesomeIcon icon={faSpinner} className="animate-spin text-2xl text-blue-500" />
-              <span className="ml-2 text-gray-600 dark:text-gray-400">กำลังโหลดข้อมูล...</span>
+            <div className="flex items-center justify-center p-8 w-full">
+              <div className="w-full">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="animate-pulse flex space-x-4 mb-4">
+                    <div className="rounded bg-gray-200 dark:bg-gray-700 h-6 w-1/6"></div>
+                    <div className="rounded bg-gray-200 dark:bg-gray-700 h-6 w-1/4"></div>
+                    <div className="rounded bg-gray-200 dark:bg-gray-700 h-6 w-1/5"></div>
+                    <div className="rounded bg-gray-200 dark:bg-gray-700 h-6 w-1/5"></div>
+                    <div className="rounded bg-gray-200 dark:bg-gray-700 h-6 w-1/6"></div>
+                  </div>
+                ))}
+              </div>
             </div>
           ) : error ? (
             <div className="p-8 text-center">
               <p className="text-red-500 mb-4">{error}</p>
               <button
-                onClick={fetchData}
+                onClick={mutate}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 ลองใหม่
@@ -411,42 +464,8 @@ export default function TaxExpiryNextYearPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {currentData.map((item, index) => (
-                      <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                          {item.licensePlate}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {item.customerName}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {item.phone}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {new Date(item.lastTaxDate).toLocaleDateString('th-TH')}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {new Date(item.expiryDate).toLocaleDateString('th-TH')}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <span className={`font-medium ${
-                            item.daysUntilExpiry < 0 ? 'text-red-600 dark:text-red-400' :
-                            item.daysUntilExpiry <= 30 ? 'text-orange-600 dark:text-orange-400' :
-                            item.daysUntilExpiry <= 90 ? 'text-yellow-600 dark:text-yellow-400' :
-                            'text-green-600 dark:text-green-400'
-                          }`}>
-                            {item.daysUntilExpiry < 0 ? `${Math.abs(item.daysUntilExpiry)} วัน (เกินกำหนด)` :
-                             item.daysUntilExpiry === 0 ? 'วันนี้' :
-                             `${item.daysUntilExpiry} วัน`}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor[item.status]}`}>
-                            <FontAwesomeIcon icon={statusIcon[item.status]} className="mr-1" />
-                            {item.status}
-                          </span>
-                        </td>
-                      </tr>
+                    {currentData.map((item, idx) => (
+                      <TaxExpiryRow key={item.licensePlate + item.customerName + idx} item={item} />
                     ))}
                   </tbody>
                 </table>

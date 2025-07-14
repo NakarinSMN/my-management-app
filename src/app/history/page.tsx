@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, memo } from 'react';
 import Link from 'next/link';
-import { FaSpinner, FaExclamationTriangle, FaCar, FaCalendarAlt, FaClock, FaUser, FaSearch, FaFilter, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaExclamationTriangle, FaCar, FaCalendarAlt, FaClock, FaUser, FaSearch, FaFilter, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import AnimatedPage from '../components/AnimatedPage';
 
 interface HistoryItem {
@@ -16,6 +16,7 @@ interface HistoryItem {
   phone: string;
   status: 'สด' | 'โอน' | 'ค้างจ่าย';
   notes?: string;
+  dateStr?: string; // เพิ่ม field สำหรับวันที่แปลงแล้ว
 }
 
 const mockHistoryData: HistoryItem[] = [
@@ -216,20 +217,47 @@ const getStatusText = (status: string) => {
   }
 };
 
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('th-TH', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-};
-
 const formatPrice = (price: number) => {
   return price.toLocaleString('th-TH');
 };
 
 const ROWS_PER_PAGE = 10;
+
+// Table Row Memoized (ย้ายขึ้นมาไว้ก่อนใช้งาน)
+const HistoryRow = memo(function HistoryRow({ item }: { item: HistoryItem }) {
+  return (
+    <tr key={item.id} className="h-16 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+      <td className="align-middle text-center px-6 py-4 whitespace-nowrap font-mono font-bold text-blue-700 dark:text-blue-300">{item.billNo}</td>
+      <td className="align-middle text-center px-6 py-4 whitespace-nowrap">
+        <div className="flex items-center justify-center">
+          <FaUser className="text-gray-400 mr-2" />
+          <span className="text-sm font-medium text-gray-900 dark:text-white">{item.customerName}</span>
+        </div>
+      </td>
+      <td className="align-middle text-center px-6 py-4 whitespace-nowrap">
+        <span className="text-sm text-gray-900 dark:text-white">{item.serviceName}</span>
+        {item.notes && (
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.notes}</p>
+        )}
+      </td>
+      <td className="align-middle text-center px-6 py-4 whitespace-nowrap">
+        <span className="text-sm text-gray-900 dark:text-white">{item.serviceCategory}</span>
+      </td>
+      <td className="align-middle text-center px-6 py-4 whitespace-nowrap">
+        <span className="text-sm font-medium text-green-600 dark:text-green-400">฿{formatPrice(item.price)}</span>
+      </td>
+      <td className="align-middle text-center px-6 py-4 whitespace-nowrap">
+        <span className="text-sm text-gray-900 dark:text-white">{item.dateStr}</span>
+      </td>
+      <td className="align-middle text-center px-6 py-4 whitespace-nowrap">
+        <span className="text-sm text-gray-900 dark:text-white">{item.phone}</span>
+      </td>
+      <td className="align-middle text-center px-6 py-4 whitespace-nowrap">
+        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(item.status)}`}>{getStatusText(item.status)}</span>
+      </td>
+    </tr>
+  );
+});
 
 export default function HistoryPage() {
   const [historyData, setHistoryData] = useState<HistoryItem[]>([]);
@@ -247,7 +275,12 @@ export default function HistoryPage() {
       try {
         // Simulate network delay
         await new Promise(resolve => setTimeout(resolve, 1000));
-        setHistoryData(mockHistoryData);
+        // แปลงวันที่เป็น string (th-TH) ล่วงหน้า
+        const dataWithDateStr = mockHistoryData.map(item => ({
+          ...item,
+          dateStr: new Date(item.date).toLocaleDateString('th-TH'),
+        }));
+        setHistoryData(dataWithDateStr);
       } catch {
         setError('ไม่สามารถโหลดข้อมูลประวัติได้');
       } finally {
@@ -259,7 +292,7 @@ export default function HistoryPage() {
   }, []);
 
   // Filter data based on search and filters
-  const filteredData = historyData.filter(item => {
+  const filteredData = useMemo(() => historyData.filter(item => {
     const matchesSearch = 
       item.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.serviceName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -284,12 +317,12 @@ export default function HistoryPage() {
     }
 
     return matchesSearch && matchesStatus && matchesDate;
-  });
+  }), [historyData, searchTerm, statusFilter, dateFilter]);
 
   // Pagination logic
   const totalRows = filteredData.length;
   const totalPages = Math.ceil(totalRows / rowsPerPage);
-  const paginatedData = filteredData.slice((page - 1) * rowsPerPage, page * rowsPerPage);
+  const paginatedData = useMemo(() => filteredData.slice((page - 1) * rowsPerPage, page * rowsPerPage), [filteredData, page, rowsPerPage]);
 
   const totalRevenue = filteredData
     .filter(item => item.status === 'สด')
@@ -393,8 +426,18 @@ export default function HistoryPage() {
 
           {/* ตารางประวัติ */}
           {isLoading && (
-            <div className="flex items-center justify-center text-base md:text-lg py-8 gap-3">
-              <FaSpinner className="animate-spin" /> กำลังโหลดข้อมูล...
+            <div className="flex items-center justify-center text-base md:text-lg py-8 gap-3 w-full">
+              <div className="w-full">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="animate-pulse flex space-x-4 mb-4">
+                    <div className="rounded bg-gray-200 dark:bg-gray-700 h-6 w-1/6"></div>
+                    <div className="rounded bg-gray-200 dark:bg-gray-700 h-6 w-1/4"></div>
+                    <div className="rounded bg-gray-200 dark:bg-gray-700 h-6 w-1/5"></div>
+                    <div className="rounded bg-gray-200 dark:bg-gray-700 h-6 w-1/5"></div>
+                    <div className="rounded bg-gray-200 dark:bg-gray-700 h-6 w-1/6"></div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
@@ -407,7 +450,7 @@ export default function HistoryPage() {
           {!isLoading && !error && (
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="min-w-full">
+                <table className="min-w-full rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600">
                   <thead className="bg-gray-50 dark:bg-gray-700">
                     <tr>
                       <th className="align-middle text-center px-6 py-4 text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">เลขที่บิล</th>
@@ -420,7 +463,7 @@ export default function HistoryPage() {
                       <th className="align-middle text-center px-6 py-4 text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">สถานะ</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                  <tbody>
                     {paginatedData.length === 0 ? (
                       <tr className="h-16">
                         <td colSpan={9} className="align-middle text-center px-6 py-8 text-gray-500 dark:text-gray-400">
@@ -431,52 +474,7 @@ export default function HistoryPage() {
                       </tr>
                     ) : (
                       paginatedData.map((item) => (
-                        <tr key={item.id} className="h-16 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                          <td className="align-middle text-center px-6 py-4 whitespace-nowrap font-mono font-bold text-blue-700 dark:text-blue-300">{item.billNo}</td>
-                          <td className="align-middle text-center px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center justify-center">
-                              <FaUser className="text-gray-400 mr-2" />
-                              <span className="text-sm font-medium text-gray-900 dark:text-white">
-                                {item.customerName}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="align-middle text-center px-6 py-4 whitespace-nowrap">
-                            <span className="text-sm text-gray-900 dark:text-white">
-                              {item.serviceName}
-                            </span>
-                            {item.notes && (
-                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                {item.notes}
-                              </p>
-                            )}
-                          </td>
-                          <td className="align-middle text-center px-6 py-4 whitespace-nowrap">
-                            <span className="text-sm text-gray-900 dark:text-white">
-                              {item.serviceCategory}
-                            </span>
-                          </td>
-                          <td className="align-middle text-center px-6 py-4 whitespace-nowrap">
-                            <span className="text-sm font-medium text-green-600 dark:text-green-400">
-                              ฿{formatPrice(item.price)}
-                            </span>
-                          </td>
-                          <td className="align-middle text-center px-6 py-4 whitespace-nowrap">
-                            <span className="text-sm text-gray-900 dark:text-white">
-                              {formatDate(item.date)}
-                            </span>
-                          </td>
-                          <td className="align-middle text-center px-6 py-4 whitespace-nowrap">
-                            <span className="text-sm text-gray-900 dark:text-white">
-                              {item.phone}
-                            </span>
-                          </td>
-                          <td className="align-middle text-center px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(item.status)}`}>
-                              {getStatusText(item.status)}
-                            </span>
-                          </td>
-                        </tr>
+                        <HistoryRow key={item.id} item={item} />
                       ))
                     )}
                   </tbody>

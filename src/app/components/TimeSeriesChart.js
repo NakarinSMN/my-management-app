@@ -74,8 +74,14 @@ export function TimeSeriesChart({ data, dataKey, name, chartType = 'line', chart
       }
     });
 
-    const labels = Object.keys(processed).sort();
-    const values = labels.map(label => processed[label]);
+    let labels = Object.keys(processed).sort();
+    let values = labels.map(label => processed[label]);
+    // Limit chart points to 100 for performance
+    if (labels.length > 100) {
+      const step = Math.ceil(labels.length / 100);
+      labels = labels.filter((_, idx) => idx % step === 0);
+      values = values.filter((_, idx) => idx % step === 0);
+    }
 
     return { labels, values };
   }, [dataKey]); // dataKey is a dependency for this function
