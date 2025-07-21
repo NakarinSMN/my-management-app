@@ -9,6 +9,8 @@ import useSWR from 'swr';
 import { motion } from 'framer-motion';
 
 import AnimatedPage, { itemVariants } from '../components/AnimatedPage';
+import Modal from '../components/Modal';
+import AddCustomerForm from '../components/AddCustomerForm';
 
 import {
   faSearch,
@@ -120,6 +122,23 @@ function getPageNumbers(currentPage: number, totalPages: number, maxPages = 5) {
   return Array.from({ length: end - start + 1 }, (_, i) => start + i);
 }
 
+// ฟังก์ชันแสดงวันที่ตรงกับชีต รองรับทั้ง YYYY-MM-DD และ DD/MM/YYYY
+function formatDateFlexible(dateStr: string) {
+  if (!dateStr || typeof dateStr !== 'string') return '';
+  // ถ้าเป็น YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    const [yyyy, mm, dd] = dateStr.split('-');
+    return `${dd}/${mm}/${yyyy}`;
+  }
+  // ถ้าเป็น DD/MM/YYYY
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+    const [dd, mm, yyyy] = dateStr.split('/');
+    return `${dd.padStart(2, '0')}/${mm.padStart(2, '0')}/${yyyy}`;
+  }
+  // คืนค่าต้นฉบับถ้า format ไม่ถูกต้อง
+  return dateStr;
+}
+
 
 export default function CustomerInfoPage() {
   const [search, setSearch] = useState<string>('');
@@ -131,6 +150,7 @@ export default function CustomerInfoPage() {
   const [error, setError] = useState<string | null>(null); // เพิ่ม state สำหรับ error message
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   // **** เปลี่ยน URL นี้เป็น URL ของ Web App ของคุณจริงๆ ที่ได้จาก Google Apps Script ****
   const GOOGLE_SHEET_CUSTOMER_API_URL: string = 'https://script.google.com/macros/s/AKfycbxN9rG3NhDyhlXVKgNndNcJ6kHopPaf5GRma_dRYjtP64svMYUFCSALwTEX4mYCHoDd6g/exec?getAll=1';
@@ -177,34 +197,29 @@ export default function CustomerInfoPage() {
 
   const filteredData: CustomerData[] = useMemo(() => data
     .filter(item => {
-      // กรองรายการที่ไม่มีวันที่ลงทะเบียน หรือวันที่ไม่ถูกต้อง
-      if (!item.registerDate || item.registerDate.split('-').length !== 3) {
-        return false;
-      }
-      const [year, monthRaw, dayRaw] = item.registerDate.split('-');
-
-      // แปลงวันและเดือนเป็นรูปแบบที่ใช้ในการกรอง (เช่น "1", "2" แทน "01", "02")
-      const day: string = String(Number(dayRaw));
-      const monthMap: string[] = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-      const month: string = monthMap[Number(monthRaw) - 1] || '';
-
-      // เงื่อนไขการค้นหา (ไม่คำนึงถึงตัวพิมพ์เล็ก-ใหญ่)
-      const matchSearch: boolean = item.licensePlate.toLowerCase().includes(search.toLowerCase()) ||
-                                   item.customerName.toLowerCase().includes(search.toLowerCase());
-      // เงื่อนไขการกรองวันที่
-      const matchDay: boolean = !filterDay || day === filterDay;
-      const matchMonth: boolean = !filterMonth || month === filterMonth;
-      const matchYear: boolean = !filterYear || year === filterYear;
-
+      const dateStr = formatDateFlexible(item.registerDate);
+      const [dd, mm, yyyy] = dateStr.split('/');
+      if (!dd || !mm || !yyyy) return false;
+      const matchSearch = item.licensePlate.toLowerCase().includes(search.toLowerCase()) ||
+                         item.customerName.toLowerCase().includes(search.toLowerCase());
+      const matchDay = !filterDay || dd === filterDay.padStart(2, '0');
+      const matchMonth = !filterMonth || mm === filterMonth.padStart(2, '0');
+      const matchYear = !filterYear || yyyy === filterYear;
       return matchSearch && matchDay && matchMonth && matchYear;
     }), [data, search, filterDay, filterMonth, filterYear]);
 
   const paginatedData: CustomerData[] = useMemo(() => itemsPerPage === filteredData.length ? filteredData : filteredData.slice(startIdx, startIdx + itemsPerPage), [filteredData, itemsPerPage, startIdx]);
   const totalPages: number = itemsPerPage === filteredData.length ? 1 : Math.ceil(filteredData.length / itemsPerPage);
 
-  // สร้างตัวเลือกสำหรับ dropdown
-  const days: string[] = Array.from({ length: 31 }, (_, i) => `${i + 1}`);
-  const months: string[] = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+  // สร้างตัวเลือกสำหรับ dropdown (ปี ค.ศ. จริง)
+  const days: string[] = Array.from({ length: 31 }, (_, i) => `${(i + 1).toString().padStart(2, '0')}`);
+  const months: string[] = Array.from({ length: 12 }, (_, i) => `${(i + 1).toString().padStart(2, '0')}`); // 01-12
+  // ดึงปีจากข้อมูลจริง (ปี ค.ศ.)
+  const years: string[] = Array.from(new Set(data.map(item => {
+    const dateStr = formatDateFlexible(item.registerDate);
+    const [,,yyyy] = dateStr.split('/');
+    return yyyy || null;
+  }))).filter(Boolean) as string[];
 
 
   return (
@@ -222,12 +237,20 @@ export default function CustomerInfoPage() {
                   รายการลูกค้าทั้งหมดและข้อมูลการต่อภาษี
                 </motion.p>
               </div>
-              <Link
-                href="/tax-expiry-next-year"
-                className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
-              >
-                ภาษีครั้งถัดไป
-              </Link>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setIsAddModalOpen(true)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                >
+                  + เพิ่มข้อมูลลูกค้า
+                </button>
+                <Link
+                  href="/tax-expiry-next-year"
+                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
+                >
+                  ภาษีครั้งถัดไป
+                </Link>
+              </div>
             </div>
 
             {/* สถิติสรุป */}
@@ -303,6 +326,13 @@ export default function CustomerInfoPage() {
                 icon={faCalendarAlt}
                 placeholder="กรองตามเดือน"
                 options={months}
+              />
+              <SelectFilter
+                value={filterYear}
+                onChange={val => { setFilterYear(val); setCurrentPage(1); }}
+                icon={faCalendarAlt}
+                placeholder="กรองตามปี"
+                options={years}
               />
               <select
                 className="w-full py-2 px-3 rounded-lg bg-gray-50 dark:bg-gray-700 text-black dark:text-white focus:outline-none border border-gray-300 dark:border-gray-600"
@@ -441,6 +471,13 @@ export default function CustomerInfoPage() {
           </div>
         </div>
       </motion.div>
+      {/* Modal สำหรับเพิ่มข้อมูลลูกค้า */}
+      <Modal isOpen={isAddModalOpen}>
+        <AddCustomerForm
+          onSuccess={() => { setIsAddModalOpen(false); mutate(); }}
+          onCancel={() => setIsAddModalOpen(false)}
+        />
+      </Modal>
     </AnimatedPage>
   );
 }
@@ -452,7 +489,7 @@ const CustomerRow = memo(function CustomerRow({ item }: { item: CustomerData }) 
       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{item.licensePlate}</td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.customerName}</td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.phone}</td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{new Date(item.registerDate).toLocaleDateString('th-TH')}</td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{formatDateFlexible(item.registerDate)}</td>
       <td className="px-6 py-4 whitespace-nowrap">
         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor[item.status]}`}>
           <FontAwesomeIcon icon={statusIcon[item.status]} className="mr-1" />

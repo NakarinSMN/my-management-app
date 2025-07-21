@@ -244,12 +244,12 @@ export default function PricingPage() {
         </div>
       </main>
       {isModalOpen && (
-        <Modal isOpen={isModalOpen} onClose={handleCloseModal}>
+        <Modal isOpen={isModalOpen}>
           <ServiceForm onSuccess={handleSuccess} onCancel={handleCloseModal} categoryOptions={categoryOptions} />
         </Modal>
       )}
       {isEditCategoryOpen && editingCategory && (
-        <Modal isOpen={isEditCategoryOpen} onClose={handleEditCategoryClose}>
+        <Modal isOpen={isEditCategoryOpen}>
           <EditCategoryForm
             category={editingCategory}
             onSuccess={handleEditCategorySuccess}

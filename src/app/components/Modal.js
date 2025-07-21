@@ -18,7 +18,7 @@ const modalVariants = {
   }
 };
 
-export default function Modal({ isOpen, onClose, children }) {
+export default function Modal({ isOpen, children }) {
   const controls = useAnimation();
 
   useEffect(() => {
@@ -27,10 +27,7 @@ export default function Modal({ isOpen, onClose, children }) {
     }
   }, [isOpen, controls]);
 
-  const handleBackdropClick = () => {
-    if (onClose) onClose();
-    else controls.start("shake");
-  };
+  // ลบ handleBackdropClick ถ้าไม่ได้ใช้แล้ว
 
   if (!isOpen) return null;
 
@@ -43,7 +40,7 @@ export default function Modal({ isOpen, onClose, children }) {
           initial="hidden"
           animate="visible"
           exit="hidden"
-          onClick={handleBackdropClick}
+          // onClick={handleBackdropClick} // ลบ handleBackdropClick ถ้าไม่ได้ใช้แล้ว
         >
           <motion.div
             className="relative p-6 m-4 max-w-lg w-full"
