@@ -14,7 +14,6 @@ import AddCustomerForm from '../components/AddCustomerForm';
 
 import {
   faSearch,
-  faCalendarDay,
   faCalendarAlt,
   faClock,
   faCheckCircle,
@@ -142,9 +141,8 @@ function formatDateFlexible(dateStr: string) {
 
 export default function CustomerInfoPage() {
   const [search, setSearch] = useState<string>('');
-  const [filterDay, setFilterDay] = useState<string>('');
   const [filterMonth, setFilterMonth] = useState<string>('');
-  const [filterYear, setFilterYear] = useState<string>('');
+  const [filterStatus, setFilterStatus] = useState<string>('');
   const [data, setData] = useState<CustomerData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null); // เพิ่ม state สำหรับ error message
@@ -187,9 +185,8 @@ export default function CustomerInfoPage() {
 
   const resetFilters = () => {
     setSearch('');
-    setFilterDay('');
     setFilterMonth('');
-    setFilterYear('');
+    setFilterStatus('');
     setCurrentPage(1); // เมื่อรีเซ็ตตัวกรอง ให้กลับไปหน้าแรก
   };
 
@@ -202,24 +199,28 @@ export default function CustomerInfoPage() {
       if (!dd || !mm || !yyyy) return false;
       const matchSearch = item.licensePlate.toLowerCase().includes(search.toLowerCase()) ||
                          item.customerName.toLowerCase().includes(search.toLowerCase());
-      const matchDay = !filterDay || dd === filterDay.padStart(2, '0');
+      // ลบ matchDay ออก
       const matchMonth = !filterMonth || mm === filterMonth.padStart(2, '0');
-      const matchYear = !filterYear || yyyy === filterYear;
-      return matchSearch && matchDay && matchMonth && matchYear;
-    }), [data, search, filterDay, filterMonth, filterYear]);
+      const matchStatus = !filterStatus || item.status === filterStatus;
+      return matchSearch && matchMonth && matchStatus;
+    }), [data, search, filterMonth, filterStatus]);
 
   const paginatedData: CustomerData[] = useMemo(() => itemsPerPage === filteredData.length ? filteredData : filteredData.slice(startIdx, startIdx + itemsPerPage), [filteredData, itemsPerPage, startIdx]);
   const totalPages: number = itemsPerPage === filteredData.length ? 1 : Math.ceil(filteredData.length / itemsPerPage);
 
   // สร้างตัวเลือกสำหรับ dropdown (ปี ค.ศ. จริง)
-  const days: string[] = Array.from({ length: 31 }, (_, i) => `${(i + 1).toString().padStart(2, '0')}`);
   const months: string[] = Array.from({ length: 12 }, (_, i) => `${(i + 1).toString().padStart(2, '0')}`); // 01-12
   // ดึงปีจากข้อมูลจริง (ปี ค.ศ.)
-  const years: string[] = Array.from(new Set(data.map(item => {
-    const dateStr = formatDateFlexible(item.registerDate);
-    const [,,yyyy] = dateStr.split('/');
-    return yyyy || null;
-  }))).filter(Boolean) as string[];
+  // ลบ const years ที่ไม่ได้ใช้
+
+  const statusOptions = [
+    '',
+    'ต่อภาษีแล้ว',
+    'กำลังจะครบกำหนด',
+    'ใกล้ครบกำหนด',
+    'เกินกำหนด',
+    'รอดำเนินการ',
+  ];
 
 
   return (
@@ -313,13 +314,7 @@ export default function CustomerInfoPage() {
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              <SelectFilter
-                value={filterDay}
-                onChange={val => { setFilterDay(val); setCurrentPage(1); }}
-                icon={faCalendarDay}
-                placeholder="กรองตามวัน"
-                options={days}
-              />
+              {/* ใน filter UI ลบ SelectFilter ของวันออก */}
               <SelectFilter
                 value={filterMonth}
                 onChange={val => { setFilterMonth(val); setCurrentPage(1); }}
@@ -328,11 +323,11 @@ export default function CustomerInfoPage() {
                 options={months}
               />
               <SelectFilter
-                value={filterYear}
-                onChange={val => { setFilterYear(val); setCurrentPage(1); }}
-                icon={faCalendarAlt}
-                placeholder="กรองตามปี"
-                options={years}
+                value={filterStatus}
+                onChange={val => { setFilterStatus(val); setCurrentPage(1); }}
+                icon={faCheckCircle}
+                placeholder="กรองตามสถานะ"
+                options={statusOptions}
               />
               <select
                 className="w-full py-2 px-3 rounded-lg bg-gray-50 dark:bg-gray-700 text-black dark:text-white focus:outline-none border border-gray-300 dark:border-gray-600"

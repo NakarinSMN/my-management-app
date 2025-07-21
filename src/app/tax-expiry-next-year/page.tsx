@@ -285,7 +285,14 @@ export default function TaxExpiryNextYearPage() {
     label: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'][i]
   }));
 
-  const statusOptions = ['รอดำเนินการ', 'กำลังจะครบกำหนด', 'ใกล้ครบกำหนด', 'เกินกำหนด', 'ต่อภาษีแล้ว'];
+  const statusOptions = [
+    '',
+    'ต่อภาษีแล้ว',
+    'กำลังจะครบกำหนด',
+    'ใกล้ครบกำหนด',
+    'เกินกำหนด',
+    'รอดำเนินการ',
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
@@ -380,8 +387,8 @@ export default function TaxExpiryNextYearPage() {
             
             <SelectFilter
               value={filterStatus}
-              onChange={setFilterStatus}
-              icon={faClock}
+              onChange={val => { setFilterStatus(val); setCurrentPage(1); }}
+              icon={faCheckCircle}
               placeholder="กรองตามสถานะ"
               options={statusOptions}
             />
