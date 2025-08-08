@@ -17,6 +17,7 @@ import {
   faCalendarAlt,
   faAngleLeft,
   faBars,
+  faClock,
 } from "@fortawesome/free-solid-svg-icons";
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 
@@ -221,6 +222,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               text="ประวัติ"
               isSidebarOpen={isMobile || isSidebarOpen}
             />
+            <SidebarMenuItem
+              href="https://billingv2.netlify.app/adjust-carpet"
+              icon={faClock}
+              text="ปรับรอบพรบ."
+              isSidebarOpen={isMobile || isSidebarOpen}
+            />
+
+
             <motion.h3 
               className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-6 mb-2 px-3"
               initial={{ opacity: 0, x: -20 }}
