@@ -160,8 +160,8 @@ html {
   
   /* ปรับการแสดงผล */
   @page {
-    size: A5 portrait;
-    margin: 5mm;
+    size: A4 portrait;
+    margin: 2mm;
   }
   
   html, body {
@@ -257,26 +257,26 @@ html {
     visibility: visible !important;
   }
   
-  /* ปรับ spacing สำหรับ A5 หน้าเดียว */
+  /* ปรับ spacing สำหรับครึ่ง A4 */
   .print-area .p-6,
   .print-area .p-8 {
-    padding: 3mm !important;
+    padding: 2mm !important;
   }
   
   .print-area .mb-8 {
-    margin-bottom: 3mm !important;
+    margin-bottom: 2mm !important;
   }
   
   .print-area .mb-6 {
-    margin-bottom: 3mm !important;
+    margin-bottom: 2mm !important;
   }
   
   .print-area .mb-4 {
-    margin-bottom: 2mm !important;
+    margin-bottom: 1.5mm !important;
   }
   
   .print-area .mb-3 {
-    margin-bottom: 2mm !important;
+    margin-bottom: 1.5mm !important;
   }
   
   .print-area .mb-2 {
@@ -284,25 +284,25 @@ html {
   }
   
   .print-area .mt-6 {
-    margin-top: 3mm !important;
-  }
-  
-  .print-area .mt-3 {
     margin-top: 2mm !important;
   }
   
-  /* ขนาดฟอนต์สำหรับ A5 หน้าเดียว */
+  .print-area .mt-3 {
+    margin-top: 1.5mm !important;
+  }
+  
+  /* ขนาดฟอนต์สำหรับครึ่ง A4 */
   .print-area .text-sm {
-    font-size: 9pt !important;
+    font-size: 8pt !important;
   }
   
   .print-area .text-xs {
-    font-size: 8pt !important;
+    font-size: 7pt !important;
   }
   
   /* ขนาดตาราง */
   .print-area table {
-    font-size: 8pt !important;
+    font-size: 7pt !important;
   }
   
   .print-area th,
@@ -312,14 +312,14 @@ html {
   
   /* ขนาด header */
   .print-area h1 {
-    font-size: 11pt !important;
-  }
-  
-  .print-area h2 {
     font-size: 10pt !important;
   }
   
-  .print-area h3 {
+  .print-area h2 {
     font-size: 9pt !important;
+  }
+  
+  .print-area h3 {
+    font-size: 8pt !important;
   }
 }

@@ -3,6 +3,7 @@
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPrint, faTimes } from '@fortawesome/free-solid-svg-icons';
+import Image from 'next/image';
 
 interface BillItem {
   id: number;
@@ -153,159 +154,227 @@ export default function ReceiptPreview({ data, onClose }: ReceiptPreviewProps) {
         </button>
       </div>
 
-      {/* ฟอร์มใบเสร็จ - A5 หน้าเดียว */}
-      <div className="print-area bg-white max-w-md w-full mx-auto my-4 shadow-2xl">
+      {/* ฟอร์มใบเสร็จ - A4 แนวตั้ง */}
+      <div className="print-area bg-white max-w-4xl w-full mx-auto my-4">
         {/* ใบเสร็จตัวจริง */}
         <div className="receipt-copy receipt-original">
-          <div className="p-3">
+          <div className="p-1">
           {/* Header ใบเสร็จ */}
-          <div className="text-center border-b-2 border-black pb-2 mb-3">
-            <h1 className="text-base font-bold mb-0.5">สถานตรวจสภาพรถเอกชน บังรี ท่าอิฐ</h1>
-            <p className="text-xs mt-0.5">เลขที่ 91/130 หมู่ 5 ต.บางรักน้อย</p>
-            <p className="text-xs">อ.เมืองนนทบุรี จ.นนทบุรี 11000</p>
-            <p className="text-xs">โทร 065-893-3571, 089-013-3571</p>
-            <p className="text-xs mt-1 font-semibold">เลขประจำตัวผู้เสียภาษี 3-1204-00299-64-3 (นายวีระ มะเล็งลอย)</p>
-            <h2 className="text-sm font-bold mt-2 border-t border-black pt-2">ใบเสร็จรับเงิน</h2>
-          </div>
-
-          {/* เลขที่และวันที่ */}
-          <div className="grid grid-cols-2 gap-3 mb-3 text-xs">
-            <div>
-              <p><strong>เลขที่:</strong> {data.billId || '_________________'}</p>
+          <div className="border-b-2 border-black pb-1 mb-1">
+            {/* หัวข้อหลัก */}
+            <div className="text-center mb-1">
+              <h1 className="text-sm font-bold mb-1">ใบเสร็จรับเงิน</h1>
             </div>
-            <div className="text-right">
-              <p><strong>วันที่:</strong> {data.billDate ? new Date(data.billDate).toLocaleDateString('th-TH', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              }) : '_________________'}</p>
-            </div>
-          </div>
 
-          {/* ข้อมูลลูกค้า */}
-          <div className="mb-2 border border-black p-2">
-            <h3 className="font-bold text-xs bg-gray-200 -m-2 p-1 mb-2 text-left">ข้อมูลลูกค้า</h3>
-            <div className="space-y-0.5 text-xs">
-              <div className="grid grid-cols-2 gap-4">
-                <p className="text-left"><strong>ชื่อ-นามสกุล:</strong> {data.customer.title} {data.customer.firstName} {data.customer.lastName}</p>
-                <p className="text-left"><strong>เบอร์โทร:</strong> {data.customer.phone || '-'}</p>
+            {/* Logo และข้อมูลบริษัท */}
+            <div className="flex items-start gap-3 mb-1">
+              {/* Logo */}
+              <div className="flex-shrink-0">
+              <Image 
+                src="/ToRoOo.png" 
+                alt="สถานตรวจสภาพรถเอกชน บังรี ท่าอิฐ"
+                width={80}
+                height={80}
+                className="object-contain"
+              />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <p className="text-left"><strong>เลขบัตรประชาชน:</strong> {data.customer.idNumber || '-'}</p>
-                <p className="text-left"><strong>วันนัดรับรถ:</strong> {data.customer.pickupDate ? new Date(data.customer.pickupDate).toLocaleDateString('th-TH', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                }) : '-'}</p>
+              
+              {/* ข้อมูลบริษัท */}
+              <div className="flex-1 text-left">
+                <h2 className="text-base font-bold mb-1">สถานตรวจสภาพรถเอกชน บังรี ท่าอิฐ</h2>
+                <p className="text-xs">เลขที่ 91/130 หมู่ 5 ต.บางรักน้อย</p>
+                <p className="text-xs">อ.เมืองนนทบุรี จ.นนทบุรี 11000</p>
+                <p className="text-xs">โทร 065-893-3571, 089-013-3571</p>
+                <p className="text-xs font-semibold">เลขประจำตัวผู้เสียภาษี 3-1204-00299-64-3 (นายวีระ มะเล็งลอย)</p>
               </div>
-              <div>
-                <p className="text-left"><strong>ที่อยู่:</strong> {
-                  [
-                    data.customer.houseNo && `เลขที่ ${data.customer.houseNo}`,
-                    data.customer.moo && `หมู่ ${data.customer.moo}`,
-                    data.customer.soi && `ซอย ${data.customer.soi}`,
-                    data.customer.road && `ถนน ${data.customer.road}`,
-                    data.customer.subDistrict && `ตำบล ${data.customer.subDistrict}`,
-                    data.customer.district && `อำเภอ ${data.customer.district}`,
-                    data.customer.province && `จังหวัด ${data.customer.province}`,
-                    data.customer.zipCode
-                  ].filter(Boolean).join(' ') || '-'
-                }</p>
+
+              {/* เลขที่และวันที่ - ข้างข้อมูลบริษัท */}
+              <div className="flex-shrink-0 text-right text-xs">
+                <p><strong>เลขที่:</strong> {data.billId || '_________________'}</p>
+                <p><strong>วันที่:</strong> {data.billDate ? new Date(data.billDate).toLocaleDateString('th-TH', { 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                }) : '_________________'}</p>
               </div>
             </div>
           </div>
 
-          {/* ข้อมูลรถยนต์ */}
-          <div className="mb-2 border border-black p-2">
-            <h3 className="font-bold text-xs bg-gray-200 -m-2 p-1 mb-2 text-left">ข้อมูลรถยนต์</h3>
-            <div className="grid grid-cols-3 gap-3 text-xs">
-              <p className="text-left"><strong>ทะเบียนรถ:</strong> {data.car.licensePlate || '-'}</p>
-              <p className="text-left"><strong>ยี่ห้อ:</strong> {data.car.carBrand || '-'}</p>
-              <p className="text-left"><strong>รุ่น:</strong> {data.car.carModel || '-'}</p>
+
+          {/* ข้อมูลลูกค้า - Layout ใหม่ */}
+          <div className="mb-1 border border-black">
+            <div className="bg-gray-200 border-b border-black p-1">
+              <h3 className="font-bold text-xs text-left">ข้อมูลลูกค้า</h3>
+            </div>
+            <div className="p-1">
+              <div className="grid grid-cols-3 gap-3 text-xs">
+                <div className="flex">
+                  <span className="w-20 font-bold text-left">ชื่อ-นามสกุล:</span>
+                  <span className="flex-1 text-left">{data.customer.title} {data.customer.firstName} {data.customer.lastName}</span>
+                </div>
+                <div className="flex">
+                  <span className="w-16 font-bold text-left">เบอร์โทร:</span>
+                  <span className="flex-1 text-left">{data.customer.phone || '-'}</span>
+                </div>
+                <div className="flex">
+                  <span className="w-16 font-bold text-left">วันนัดรับรถ:</span>
+                  <span className="flex-1 text-left">{data.customer.pickupDate ? new Date(data.customer.pickupDate).toLocaleDateString('th-TH', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  }) : '-'}</span>
+                </div>
+                <div className="col-span-2 flex">
+                  <span className="w-24 font-bold text-left">เลขบัตรประชาชน:</span>
+                  <span className="flex-1 text-left">{data.customer.idNumber || '-'}</span>
+                </div>
+                <div className="flex">
+                  <span className="w-20 font-bold text-left">รหัสไปรษณีย์:</span>
+                  <span className="flex-1 text-left">{data.customer.zipCode || '-'}</span>
+                </div>
+                <div className="col-span-3 flex">
+                  <span className="w-9 font-bold text-left">ที่อยู่:</span>
+                  <span className="flex-1 text-left ml-1">{
+                    [
+                      data.customer.houseNo && `เลขที่ ${data.customer.houseNo}`,
+                      data.customer.moo && `หมู่ ${data.customer.moo}`,
+                      data.customer.soi && `ซอย ${data.customer.soi}`,
+                      data.customer.road && `ถนน ${data.customer.road}`,
+                      data.customer.subDistrict && `ตำบล ${data.customer.subDistrict}`,
+                      data.customer.district && `อำเภอ ${data.customer.district}`,
+                      data.customer.province && `จังหวัด ${data.customer.province}`
+                    ].filter(Boolean).join(' ') || '-'
+                  }</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ข้อมูลรถยนต์ - แถวนอน */}
+          <div className="mb-1 border border-black">
+            <div className="bg-gray-200 border-b border-black p-1">
+              <h3 className="font-bold text-xs text-left">ข้อมูลรถยนต์</h3>
+            </div>
+            <div className="p-1">
+              <div className="grid grid-cols-3 gap-4 text-xs">
+                <div className="flex">
+                  <span className="w-20 font-bold text-left">ทะเบียนรถ:</span>
+                  <span className="flex-1 text-left">{data.car.licensePlate || '-'}</span>
+                </div>
+                <div className="flex">
+                  <span className="w-20 font-bold text-left">ยี่ห้อ:</span>
+                  <span className="flex-1 text-left">{data.car.carBrand || '-'}</span>
+                </div>
+                <div className="flex">
+                  <span className="w-20 font-bold text-left">รุ่น:</span>
+                  <span className="flex-1 text-left">{data.car.carModel || '-'}</span>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* รายการค่าใช้จ่าย */}
-          <div className="mb-2">
-            <h3 className="font-bold text-xs mb-1 text-left">รายการค่าใช้จ่าย</h3>
-            <table className="w-full border-collapse border border-black text-xs">
-              <thead>
-                <tr className="bg-gray-200">
-                  <th className="border border-black p-1 text-center w-10">ลำดับ</th>
-                  <th className="border border-black p-1 text-left">รายการ</th>
-                  <th className="border border-black p-1 text-right w-28">จำนวนเงิน (บาท)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.billItems.map((item, index) => (
-                  <tr key={item.id}>
-                    <td className="border border-black p-1 text-center">{index + 1}</td>
-                    <td className="border border-black p-1 text-left">{item.description || '-'}</td>
-                    <td className="border border-black p-1 text-right">
-                      {item.amount ? formatNumberWithCommas(item.amount) : '0.00'}
-                    </td>
+          <div className="mb-1 border border-black">
+            <div className="bg-gray-200 border-b border-black p-1">
+              <h3 className="font-bold text-xs text-left">รายการค่าใช้จ่าย</h3>
+            </div>
+            <div className="p-1">
+              <table className="w-full border-collapse text-xs">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="border border-black p-1 text-center w-12">ลำดับ</th>
+                    <th className="border border-black p-1 text-left">รายการ</th>
+                    <th className="border border-black p-1 text-right w-24">จำนวนเงิน (บาท)</th>
                   </tr>
-                ))}
-                      {/* เพิ่มแถวว่างให้ครบ 7 แถว */}
-                      {data.billItems.length < 7 && Array.from({ length: 7 - data.billItems.length }).map((_, idx) => (
-                        <tr key={`empty-${idx}`}>
-                          <td className="border border-black p-1 text-center">{data.billItems.length + idx + 1}</td>
-                          <td className="border border-black p-1 h-5 text-left">&nbsp;</td>
-                          <td className="border border-black p-1 text-right">&nbsp;</td>
-                        </tr>
-                      ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {data.billItems.map((item, index) => (
+                    <tr key={item.id}>
+                      <td className="border border-black p-1 text-center">{index + 1}</td>
+                      <td className="border border-black p-1 text-left">{item.description || '-'}</td>
+                      <td className="border border-black p-1 text-right">
+                        {item.amount ? formatNumberWithCommas(item.amount) : '0.00'}
+                      </td>
+                    </tr>
+                  ))}
+                  {/* เพิ่มแถวว่างให้ครบ 7 แถว */}
+                  {data.billItems.length < 7 && Array.from({ length: 7 - data.billItems.length }).map((_, idx) => (
+                    <tr key={`empty-${idx}`}>
+                      <td className="border border-black p-1 text-center">{data.billItems.length + idx + 1}</td>
+                      <td className="border border-black p-1 h-5 text-left">&nbsp;</td>
+                      <td className="border border-black p-1 text-right">&nbsp;</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
-          {/* ยอดรวมและช่องทางการชำระ */}
-          <div className="mb-3">
-            <div className="grid grid-cols-2 gap-2">
-              {/* ช่องทางการชำระ */}
-              <div className="border border-black p-2">
-                <h4 className="font-bold text-xs mb-1.5 text-left">ช่องทางการชำระเงิน</h4>
+          {/* ยอดรวมและช่องทางการชำระ - Layout ใหม่ */}
+          <div className="mb-1 grid grid-cols-3 gap-3">
+            {/* ช่องทางการชำระ */}
+            <div className="border border-black">
+              <div className="bg-gray-200 border-b border-black p-1">
+                <h3 className="font-bold text-xs text-left">ช่องทางการชำระเงิน</h3>
+              </div>
+              <div className="p-1">
                 <div className="space-y-1 text-xs">
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3.5 h-3.5 border border-black flex items-center justify-center font-bold text-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border border-black flex items-center justify-center font-bold text-xs">
                       {(!data.paymentMethod || data.paymentMethod === 'cash') && '✓'}
                     </div>
-                    <span className="text-left">เงินสด</span>
+                    <span>เงินสด</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3.5 h-3.5 border border-black flex items-center justify-center font-bold text-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border border-black flex items-center justify-center font-bold text-xs">
                       {data.paymentMethod === 'transfer' && '✓'}
                     </div>
-                    <span className="text-left">โอนเงิน</span>
+                    <span>โอนเงิน</span>
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* ยอดรวม */}
-              <div className="border border-black p-2">
-                <div className="flex justify-between text-sm font-bold mb-1">
-                  <span className="text-left">ยอดรวมทั้งสิ้น:</span>
-                  <span className="text-right">{formatNumberWithCommas(data.totalAmount)} บาท</span>
+            {/* ยอดรวม */}
+            <div className="border border-black">
+              <div className="bg-gray-200 border-b border-black p-1">
+                <h3 className="font-bold text-xs text-left">ยอดรวม</h3>
+              </div>
+              <div className="p-1">
+                <div className="text-center text-sm font-bold mb-1">
+                  {formatNumberWithCommas(data.totalAmount)} บาท
                 </div>
-                <div className="text-center text-xs border-t border-black pt-1 mt-1">
+                <div className="text-center text-xs border-t border-black pt-1">
                   ({numberToThaiText(parseFloat(data.totalAmount) || 0)})
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* ลายเซ็นผู้รับเงิน */}
-          <div className="mt-6 mb-3">
-            <div className="text-center max-w-xs mx-auto">
-              <p className="mb-8 text-xs">ผู้รับเงิน</p>
-              <div className="border-b border-dotted border-black mb-1"></div>
-              <p className="text-xs">(.......................................)</p>
-              <p className="text-xs mt-1">วันที่ ........./........./.........</p>
+            {/* ลายเซ็น */}
+            <div className="border border-black">
+              <div className="bg-gray-200 border-b border-black p-1">
+                <h3 className="font-bold text-xs text-left">ลายเซ็น</h3>
+              </div>
+              <div className="p-1">
+                <div className="text-center text-xs">
+                  <p className="mb-2">ผู้รับเงิน</p>
+                  <div className="border-b border-dotted border-black mb-1"></div>
+                  <p>(.......................................)</p>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* หมายเหตุ */}
-          <div className="mt-3 text-xs text-center border-t border-black pt-2">
-            <p>หมายเหตุ: กรุณาเก็บใบเสร็จนี้ไว้เป็นหลักฐาน</p>
+          <div className="mb-1 border border-black">
+            <div className="bg-gray-200 border-b border-black p-1">
+              <h3 className="font-bold text-xs text-left">หมายเหตุ</h3>
+            </div>
+            <div className="p-1">
+              <div className="text-center text-xs">
+                <p>กรุณาเก็บใบเสร็จนี้ไว้เป็นหลักฐาน</p>
+              </div>
+            </div>
           </div>
           </div>
         </div>
