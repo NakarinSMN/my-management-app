@@ -272,7 +272,10 @@ export default function TaxExpiryNextYearPage() {
           };
         })
         .filter((item: TaxExpiryData | null): item is TaxExpiryData => item !== null);
-      setData(formatted);
+      
+      // เรียงข้อมูลให้แถวล่าสุดอยู่บนสุด (reverse order)
+      const reversedData = formatted.reverse();
+      setData(reversedData);
       setError(null);
     } else if (swrError) {
       setError('ไม่สามารถโหลดข้อมูลได้: ' + swrError.message);

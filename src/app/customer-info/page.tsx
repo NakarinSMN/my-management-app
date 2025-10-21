@@ -233,7 +233,10 @@ export default function CustomerInfoPage() {
       });
       
       console.log('Formatted data first item:', formatted[0]);
-      setData(formatted);
+      
+      // เรียงข้อมูลให้แถวล่าสุดอยู่บนสุด (reverse order)
+      const reversedData = formatted.reverse();
+      setData(reversedData);
       setError(null);
     } else if (swrError) {
       setError('ไม่สามารถโหลดข้อมูลลูกค้าได้: ' + swrError.message);
