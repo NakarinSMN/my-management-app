@@ -6,14 +6,92 @@ import AnimatedPage, { itemVariants } from '../components/AnimatedPage';
 import { Card } from '../components/ui/Card';
 import { TimeSeriesChart } from '../components/TimeSeriesChart';
 import { RecentActivities } from '../components/RecentActivities';
-import { useMemo, useEffect, useState } from 'react'; // For memoizing data
+import { useMemo, useEffect, useState } from 'react';
+import useSWR from 'swr';
 
 export default function DashboardPage() {
+  // State สำหรับข้อมูลจริง
+  const [totalCustomers, setTotalCustomers] = useState(0);
+  const [thisMonthRenewals, setThisMonthRenewals] = useState(0);
+  const [upcomingExpiry, setUpcomingExpiry] = useState(0);
+  const [overdueCount, setOverdueCount] = useState(0);
+
+  // API URL
+  const GOOGLE_SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbxN9rG3NhDyhlXVKgNndNcJ6kHopPaf5GRma_dRYjtP64svMYUFCSALwTEX4mYCHoDd6g/exec?getAll=1';
+  
+  const fetcher = (url: string) => fetch(url).then(res => res.json());
+  const { data: customerData } = useSWR(GOOGLE_SHEET_API_URL, fetcher, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+  });
+
+  // ชื่อเดือนภาษาไทย
+  const [currentMonthName, setCurrentMonthName] = useState('');
+
+  // คำนวณสถิติจากข้อมูลจริง
+  useEffect(() => {
+    if (customerData && customerData.data) {
+      const now = new Date();
+      const currentMonth = now.getMonth() + 1;
+      const currentYear = now.getFullYear();
+      
+      const monthNames = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 
+                          'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+      setCurrentMonthName(monthNames[currentMonth - 1]);
+      
+      let monthCount = 0;
+      let upcomingCount = 0;
+      let overdueCount = 0;
+      
+      customerData.data.forEach((item: Record<string, string | number>) => {
+        // นับรถที่ต่อภาษีในเดือนนี้ (จากวันที่ชำระล่าสุด)
+        const lastTaxDate = String(item['วันที่ชำระภาษีล่าสุด'] || '');
+        if (lastTaxDate) {
+          let month = 0;
+          let year = 0;
+          
+          // แปลงวันที่
+          if (/^\d{2}\/\d{2}\/\d{4}$/.test(lastTaxDate)) {
+            const [, mm, yyyy] = lastTaxDate.split('/');
+            month = parseInt(mm);
+            year = parseInt(yyyy);
+          } else if (/^\d{4}-\d{2}-\d{2}$/.test(lastTaxDate)) {
+            const [yyyy, mm] = lastTaxDate.split('-');
+            month = parseInt(mm);
+            year = parseInt(yyyy);
+          }
+          
+          if (month === currentMonth && year === currentYear) {
+            monthCount++;
+          }
+        }
+        
+        // นับสถานะ
+        const status = String(item['สถานะ'] || item['สถานะการเตือน'] || '');
+        if (status === 'กำลังจะครบกำหนด' || status === 'ใกล้ครบกำหนด') {
+          upcomingCount++;
+        } else if (status === 'เกินกำหนด') {
+          overdueCount++;
+        }
+      });
+      
+      setTotalCustomers(customerData.data.length);
+      setThisMonthRenewals(monthCount);
+      setUpcomingExpiry(upcomingCount);
+      setOverdueCount(overdueCount);
+    }
+  }, [customerData]);
+
   const dashboardStats = [
-    { label: "ผู้ใช้งานทั้งหมด", value: "1,234", icon: "📊", description: "จำนวนผู้ใช้งานที่ลงทะเบียนในระบบ" },
-    { label: "ยอดขายวันนี้", value: "฿5,678", icon: "💰", description: "รวมยอดขายทั้งหมด ณ ปัจจุบัน" },
-    { label: "คำสั่งซื้อใหม่", value: "42", icon: "📦", description: "จำนวนคำสั่งซื้อที่เข้ามาใหม่วันนี้" },
-    { label: "สินค้าคงคลัง", value: "987", icon: "🛒", description: "จำนวนสินค้าทั้งหมดที่ยังคงคลังอยู่" },
+    { label: "ลูกค้าทั้งหมด", value: totalCustomers.toString(), icon: "👥", description: "จำนวนลูกค้าทั้งหมดในระบบ" },
+    { 
+      label: `ต่อภาษี${currentMonthName}`, 
+      value: thisMonthRenewals.toString(), 
+      icon: "🚗", 
+      description: `จำนวนรถที่ต่อภาษีในเดือน${currentMonthName}` 
+    },
+    { label: "ใกล้ครบกำหนด", value: upcomingExpiry.toString(), icon: "⚠️", description: "รถที่ใกล้ครบกำหนดต่อภาษี" },
+    { label: "เกินกำหนด", value: overdueCount.toString(), icon: "🔴", description: "รถที่เกินกำหนดต่อภาษีแล้ว" },
   ];
 
   const userAccessData = useMemo(() => [
