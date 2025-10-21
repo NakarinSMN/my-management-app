@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { FaSave, FaTimes, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
 
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxN9rG3NhDyhlXVKgNndNcJ6kHopPaf5GRma_dRYjtP64svMYUFCSALwTEX4mYCHoDd6g/exec?api=customerweb';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxN9rG3NhDyhlXVKgNndNcJ6kHopPaf5GRma_dRYjtP64svMYUFCSALwTEX4mYCHoDd6g/exec';
 
 interface AddCustomerFormProps {
   onSuccess: () => void;
@@ -33,13 +33,16 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
     setError('');
     console.log('DEBUG: formData', formData); // เพิ่ม debug log
     try {
+      // ใช้ FormData แทน JSON เพื่อหลีกเลี่ยง CORS preflight
+      const formDataToSend = new FormData();
+      formDataToSend.append('action', 'addCustomer');
+      Object.keys(formData).forEach(key => {
+        formDataToSend.append(key, formData[key as keyof typeof formData]);
+      });
+
       const response = await fetch(GOOGLE_SCRIPT_URL, {
         method: 'POST',
-        body: JSON.stringify({
-          action: 'addCustomer',
-          ...formData,
-        }),
-        redirect: 'follow',
+        body: formDataToSend,
       });
       const text = await response.text();
       let result;

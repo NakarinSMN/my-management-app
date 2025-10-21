@@ -38,7 +38,8 @@ interface RawTaxExpiryDataItem {
   'ชื่อลูกค้า'?: string;
   'เบอร์ติดต่อ'?: string | number;
   'วันที่ชำระภาษีล่าสุด'?: string;
-  'ภาษีครั้งถัดไป'?: string; // คอลัมน์ J
+  'ครบกำหนด'?: string; // คอลัมน์ J
+  'ภาษีครั้งถัดไป'?: string;
   'สถานะ'?: string;
 }
 
@@ -104,6 +105,36 @@ function PageButton({ onClick, disabled, icon }: PageButtonProps) {
   );
 }
 
+// ฟังก์ชันแปลงวันที่เป็นรูปแบบ DD/MM/YYYY
+function formatDate(dateStr: string): string {
+  if (!dateStr) return '-';
+  
+  try {
+    // ถ้าเป็น YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      const [yyyy, mm, dd] = dateStr.split('-');
+      return `${dd}/${mm}/${yyyy}`;
+    }
+    // ถ้าเป็น DD/MM/YYYY อยู่แล้ว
+    else if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+      return dateStr;
+    }
+    // ถ้าเป็น format อื่น
+    else {
+      const dateObj = new Date(dateStr);
+      if (isNaN(dateObj.getTime())) {
+        return dateStr; // คืนค่าเดิมถ้าไม่สามารถแปลงได้
+      }
+      const day = dateObj.getDate().toString().padStart(2, '0');
+      const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+      const year = dateObj.getFullYear();
+      return `${day}/${month}/${year}`;
+    }
+  } catch {
+    return dateStr;
+  }
+}
+
 // ฟังก์ชันคำนวณจำนวนวันที่เหลือจากวันสิ้นอายุ
 function calculateDaysUntilExpiry(expiryDate: string): number {
   const expiry = new Date(expiryDate);
@@ -128,8 +159,8 @@ const TaxExpiryRow = memo(function TaxExpiryRow({ item }: { item: TaxExpiryData 
       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{item.licensePlate}</td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.customerName}</td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.phone}</td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.lastTaxDate ? new Date(item.lastTaxDate).toLocaleDateString('th-TH') : '-'}</td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.expiryDate ? new Date(item.expiryDate).toLocaleDateString('th-TH') : '-'}</td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{formatDate(item.lastTaxDate)}</td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{formatDate(item.expiryDate)}</td>
       <td className="px-6 py-4 whitespace-nowrap font-medium">
         <span className={
           item.daysUntilExpiry < 0 ? 'text-red-600 dark:text-red-400' :
@@ -174,50 +205,51 @@ export default function TaxExpiryNextYearPage() {
 
   useEffect(() => {
     if (swrData && swrData.data) {
+      console.log('=== DEBUG TAX EXPIRY DATA ===');
+      console.log('First item keys:', swrData.data[0] ? Object.keys(swrData.data[0]) : 'No data');
+      console.log('First item:', swrData.data[0]);
+      
       const formatted: TaxExpiryData[] = (swrData.data || [])
         .map((item: RawTaxExpiryDataItem) => {
-          const expiryDate = item['ภาษีครั้งถัดไป'] || '';
-          if (!expiryDate || expiryDate.split('-').length !== 3) {
+          // ดึงวันครบกำหนดจากคอลัมน์ J (ครบกำหนด)
+          let expiryDate = item['ครบกำหนด'] || item['ภาษีครั้งถัดไป'] || '';
+          
+          // ถ้าไม่มีข้อมูลวันครบกำหนด ให้คำนวณจากวันที่ชำระล่าสุด + 365 วัน
+          if (!expiryDate) {
+            const lastTaxDate = item['วันที่ชำระภาษีล่าสุด'] || '';
+            if (lastTaxDate) {
+              // แปลงวันที่เป็น Date object
+              let dateObj: Date | null = null;
+              if (/^\d{2}\/\d{2}\/\d{4}$/.test(lastTaxDate)) {
+                const [dd, mm, yyyy] = lastTaxDate.split('/');
+                dateObj = new Date(parseInt(yyyy), parseInt(mm) - 1, parseInt(dd));
+              } else if (/^\d{4}-\d{2}-\d{2}$/.test(lastTaxDate)) {
+                dateObj = new Date(lastTaxDate);
+              }
+              
+              if (dateObj && !isNaN(dateObj.getTime())) {
+                // เพิ่ม 365 วัน
+                dateObj.setDate(dateObj.getDate() + 365);
+                // แปลงกลับเป็น YYYY-MM-DD
+                const yyyy = dateObj.getFullYear();
+                const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const dd = String(dateObj.getDate()).padStart(2, '0');
+                expiryDate = `${yyyy}-${mm}-${dd}`;
+              }
+            }
+          }
+          
+          // ถ้ายังไม่มีข้อมูลวันครบกำหนด ให้ข้ามรายการนี้
+          if (!expiryDate) {
             return null;
           }
-          const daysUntilExpiry = calculateDaysUntilExpiry(expiryDate);
-          const rawPhone: string = (item['เบอร์ติดต่อ'] || '').toString();
-          const phone: string = rawPhone.startsWith('0') || rawPhone.length === 0 ? rawPhone : `0${rawPhone}`;
-          let status = 'รอดำเนินการ';
-          if (daysUntilExpiry < 0) {
-            status = 'เกินกำหนด';
-          } else if (daysUntilExpiry <= 30) {
-            status = 'ใกล้ครบกำหนด';
-          } else if (daysUntilExpiry <= 90) {
-            status = 'กำลังจะครบกำหนด';
+          
+          // แปลง DD/MM/YYYY เป็น YYYY-MM-DD ถ้าจำเป็น
+          if (/^\d{2}\/\d{2}\/\d{4}$/.test(expiryDate)) {
+            const [dd, mm, yyyy] = expiryDate.split('/');
+            expiryDate = `${yyyy}-${mm}-${dd}`;
           }
-          return {
-            licensePlate: item['ทะเบียนรถ'] || '',
-            customerName: item['ชื่อลูกค้า'] || '',
-            phone,
-            lastTaxDate: item['วันที่ชำระภาษีล่าสุด'] || '',
-            expiryDate,
-            daysUntilExpiry,
-            status
-          };
-        })
-        .filter((item: TaxExpiryData | null): item is TaxExpiryData => item !== null);
-      setData(formatted);
-      setError(null);
-    } else if (swrError) {
-      setError('ไม่สามารถโหลดข้อมูลได้: ' + swrError.message);
-    }
-    setLoading(false);
-  }, [swrData, swrError]);
-
-  useEffect(() => {
-    if (swrData && swrData.data) {
-      const formatted: TaxExpiryData[] = (swrData.data || [])
-        .map((item: RawTaxExpiryDataItem) => {
-          const expiryDate = item['ภาษีครั้งถัดไป'] || '';
-          if (!expiryDate || expiryDate.split('-').length !== 3) {
-            return null;
-          }
+          
           const daysUntilExpiry = calculateDaysUntilExpiry(expiryDate);
           const rawPhone: string = (item['เบอร์ติดต่อ'] || '').toString();
           const phone: string = rawPhone.startsWith('0') || rawPhone.length === 0 ? rawPhone : `0${rawPhone}`;

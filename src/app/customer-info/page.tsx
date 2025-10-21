@@ -11,6 +11,8 @@ import { motion } from 'framer-motion';
 import AnimatedPage, { itemVariants } from '../components/AnimatedPage';
 import Modal from '../components/Modal';
 import AddCustomerForm from '../components/AddCustomerForm';
+import EditCustomerForm from '../components/EditCustomerForm';
+import TestAPI from '../components/TestAPI';
 
 import {
   faSearch,
@@ -21,28 +23,34 @@ import {
   faTimesCircle,
   faChevronLeft,
   faChevronRight,
-  faInfoCircle
+  faInfoCircle,
+  faEdit
 } from '@fortawesome/free-solid-svg-icons';
 
 // กำหนด Interface สำหรับข้อมูลลูกค้าที่ถูกจัดรูปแบบแล้ว
 interface CustomerData {
   licensePlate: string;
+  brand?: string;
   customerName: string;
   phone: string;
   registerDate: string;
   status: string;
-  // rowIndex?: number; // หาก Google Apps Script ส่ง rowIndex มาด้วย ให้เพิ่มบรรทัดนี้
+  note?: string;
+  userId?: string;
+  day?: number;
 }
 
 // กำหนด Interface สำหรับข้อมูลดิบที่มาจาก Google Sheet API
 // คีย์ต้องตรงกับชื่อคอลัมน์ใน Google Sheet และสิ่งที่ doGet ส่งมา
 interface RawCustomerDataItem {
   'ทะเบียนรถ'?: string;
+  'ยี่ห้อ / รุ่น'?: string;
   'ชื่อลูกค้า'?: string;
   'เบอร์ติดต่อ'?: string | number;
   'วันที่ชำระภาษีล่าสุด'?: string;
   'สถานะ'?: string;
   'สถานะการเตือน'?: string;
+  'หมายเหตุ'?: string;
   // rowIndex?: number; // หาก Google Apps Script ส่ง rowIndex มาด้วย ให้เพิ่มบรรทัดนี้
 }
 
@@ -124,18 +132,35 @@ function getPageNumbers(currentPage: number, totalPages: number, maxPages = 5) {
 // ฟังก์ชันแสดงวันที่ตรงกับชีต รองรับทั้ง YYYY-MM-DD และ DD/MM/YYYY
 function formatDateFlexible(dateStr: string) {
   if (!dateStr || typeof dateStr !== 'string') return '';
-  // ถ้าเป็น YYYY-MM-DD
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-    const [yyyy, mm, dd] = dateStr.split('-');
-    return `${dd}/${mm}/${yyyy}`;
+  
+  try {
+    // ถ้าเป็น YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      const [yyyy, mm, dd] = dateStr.split('-');
+      return `${dd.padStart(2, '0')}/${mm.padStart(2, '0')}/${yyyy}`;
+    }
+    // ถ้าเป็น DD/MM/YYYY อยู่แล้ว
+    else if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+      return dateStr;
+    }
+    // ถ้าเป็น format อื่น ลองแปลง
+    else {
+      const dateObj = new Date(dateStr);
+      if (isNaN(dateObj.getTime())) {
+        return dateStr; // คืนค่าต้นฉบับถ้าไม่สามารถแปลงได้
+      }
+      
+      // แสดงผลในรูปแบบ DD/MM/YYYY โดยใช้ค่าจาก Date object
+      const day = dateObj.getDate().toString().padStart(2, '0');
+      const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+      const year = dateObj.getFullYear();
+      
+      return `${day}/${month}/${year}`;
+    }
+  } catch (error) {
+    console.error('Error formatting date:', dateStr, error);
+    return dateStr; // คืนค่าต้นฉบับถ้าเกิดข้อผิดพลาด
   }
-  // ถ้าเป็น DD/MM/YYYY
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
-    const [dd, mm, yyyy] = dateStr.split('/');
-    return `${dd.padStart(2, '0')}/${mm.padStart(2, '0')}/${yyyy}`;
-  }
-  // คืนค่าต้นฉบับถ้า format ไม่ถูกต้อง
-  return dateStr;
 }
 
 
@@ -149,6 +174,9 @@ export default function CustomerInfoPage() {
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerData | null>(null);
+  const [isTestModalOpen, setIsTestModalOpen] = useState(false);
 
   // **** เปลี่ยน URL นี้เป็น URL ของ Web App ของคุณจริงๆ ที่ได้จาก Google Apps Script ****
   const GOOGLE_SHEET_CUSTOMER_API_URL: string = 'https://script.google.com/macros/s/AKfycbxN9rG3NhDyhlXVKgNndNcJ6kHopPaf5GRma_dRYjtP64svMYUFCSALwTEX4mYCHoDd6g/exec?getAll=1';
@@ -162,19 +190,49 @@ export default function CustomerInfoPage() {
 
   useEffect(() => {
     if (swrData && swrData.data) {
+      console.log('=== DEBUG API DATA ===');
+      console.log('First item keys:', swrData.data[0] ? Object.keys(swrData.data[0]) : 'No data');
+      console.log('First item:', swrData.data[0]);
+      
       const formatted: CustomerData[] = (swrData.data || []).map((item: RawCustomerDataItem) => {
         const dtField: string = item['วันที่ชำระภาษีล่าสุด'] || '';
-        const registerDate: string = dtField.includes('T') ? dtField.split('T')[0] : dtField;
+        
+        // จัดการวันที่ให้ถูกต้อง
+        let registerDate = '';
+        if (dtField) {
+          // ถ้าเป็น ISO format (YYYY-MM-DDTHH:mm:ss)
+          if (dtField.includes('T')) {
+            registerDate = dtField.split('T')[0];
+          }
+          // ถ้าเป็น DD/MM/YYYY อยู่แล้ว
+          else if (/^\d{2}\/\d{2}\/\d{4}$/.test(dtField)) {
+            registerDate = dtField;
+          }
+          // ถ้าเป็น YYYY-MM-DD
+          else if (/^\d{4}-\d{2}-\d{2}$/.test(dtField)) {
+            registerDate = dtField;
+          }
+          // อื่นๆ ใช้ค่าเดิม
+          else {
+            registerDate = dtField;
+          }
+        }
+        
         const rawPhone: string = (item['เบอร์ติดต่อ'] || '').toString();
         const phone: string = rawPhone.startsWith('0') || rawPhone.length === 0 ? rawPhone : `0${rawPhone}`;
+        
         return {
           licensePlate: item['ทะเบียนรถ'] || '',
+          brand: item['ยี่ห้อ / รุ่น'] || '',
           customerName: item['ชื่อลูกค้า'] || '',
           phone,
           registerDate,
           status: item['สถานะ'] || item['สถานะการเตือน'] || 'รอดำเนินการ',
+          note: item['หมายเหตุ'] || '',
         };
       });
+      
+      console.log('Formatted data first item:', formatted[0]);
       setData(formatted);
       setError(null);
     } else if (swrError) {
@@ -244,6 +302,12 @@ export default function CustomerInfoPage() {
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                 >
                   + เพิ่มข้อมูลลูกค้า
+                </button>
+                <button
+                  onClick={() => setIsTestModalOpen(true)}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                >
+                  🔧 ทดสอบ API
                 </button>
                 <Link
                   href="/tax-expiry-next-year"
@@ -387,18 +451,26 @@ export default function CustomerInfoPage() {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">เบอร์โทร</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">วันที่ชำระล่าสุด</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">สถานะ</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">จัดการ</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                       {paginatedData.length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
+                          <td colSpan={6} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
                             ไม่พบข้อมูลที่ตรงกับตัวกรอง
                           </td>
                         </tr>
                       ) : (
                         paginatedData.map((item, idx) => (
-                          <CustomerRow key={item.licensePlate + item.customerName + idx} item={item} />
+                          <CustomerRow 
+                            key={item.licensePlate + item.customerName + idx} 
+                            item={item} 
+                            onEdit={(customer) => {
+                              setSelectedCustomer(customer);
+                              setIsEditModalOpen(true);
+                            }}
+                          />
                         ))
                       )}
                     </tbody>
@@ -473,12 +545,42 @@ export default function CustomerInfoPage() {
           onCancel={() => setIsAddModalOpen(false)}
         />
       </Modal>
+
+      {/* Modal สำหรับแก้ไขข้อมูลลูกค้า */}
+      <Modal isOpen={isEditModalOpen}>
+        <EditCustomerForm
+          customerData={selectedCustomer || { 
+            licensePlate: '', 
+            brand: '',
+            customerName: '', 
+            phone: '', 
+            registerDate: '', 
+            status: '',
+            note: '' 
+          }}
+          onSuccess={() => { setIsEditModalOpen(false); setSelectedCustomer(null); mutate(); }}
+          onCancel={() => { setIsEditModalOpen(false); setSelectedCustomer(null); }}
+        />
+      </Modal>
+
+      {/* Modal สำหรับทดสอบ API */}
+      <Modal isOpen={isTestModalOpen}>
+        <TestAPI />
+        <div className="flex justify-end mt-4">
+          <button
+            onClick={() => setIsTestModalOpen(false)}
+            className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+          >
+            ปิด
+          </button>
+        </div>
+      </Modal>
     </AnimatedPage>
   );
 }
 
 // Table Row Memoized
-const CustomerRow = memo(function CustomerRow({ item }: { item: CustomerData }) {
+const CustomerRow = memo(function CustomerRow({ item, onEdit }: { item: CustomerData; onEdit: (customer: CustomerData) => void }) {
   return (
     <tr key={item.licensePlate + item.customerName} className="hover:bg-gray-50 dark:hover:bg-gray-700">
       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{item.licensePlate}</td>
@@ -490,6 +592,15 @@ const CustomerRow = memo(function CustomerRow({ item }: { item: CustomerData }) 
           <FontAwesomeIcon icon={statusIcon[item.status]} className="mr-1" />
           {item.status}
         </span>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+        <button
+          onClick={() => onEdit(item)}
+          className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-colors"
+        >
+          <FontAwesomeIcon icon={faEdit} className="mr-1" />
+          แก้ไข
+        </button>
       </td>
     </tr>
   );
