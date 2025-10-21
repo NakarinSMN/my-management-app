@@ -11,9 +11,11 @@ import {
   faTrash,
   faFilePdf,
   faExclamationCircle,
-  faSearch
+  faSearch,
+  faPrint
 } from "@fortawesome/free-solid-svg-icons";
 import { useState } from "react";
+import { ReceiptPreview } from "../../components/ReceiptPreview";
 
 // สร้าง Type สำหรับข้อมูลบิลเพื่อความชัดเจน
 interface BillItem {
@@ -27,6 +29,7 @@ interface CustomerData {
   firstName: string;
   lastName: string;
   idNumber: string;
+  phone: string;
   houseNo: string;
   moo: string;
   soi: string;
@@ -46,12 +49,13 @@ interface CarData {
 }
 
 interface BillFormData {
-  billId?: string; // billId อาจจะไม่มีค่าตอนสร้างบิลใหม่
+  billId?: string;
   customer: CustomerData;
   car: CarData;
   billItems: BillItem[];
-  totalAmount: string; // เก็บเป็น string
+  totalAmount: string;
   billDate: string;
+  paymentMethod: 'cash' | 'transfer' | '';
 }
 
 // สร้าง Type สำหรับ Form Errors เพื่อให้ระบุได้ว่า error อยู่ที่ field ไหน
@@ -70,19 +74,84 @@ const formatNumberWithCommas = (value: string | number): string => {
   });
 };
 
+// *** ฟังก์ชันแปลงตัวเลขเป็นตัวอักษรไทย ***
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const numberToThaiText = (num: number): string => {
+  const digits = ['ศูนย์', 'หนึ่ง', 'สอง', 'สาม', 'สี่', 'ห้า', 'หก', 'เจ็ด', 'แปด', 'เก้า'];
+  const positions = ['', 'สิบ', 'ร้อย', 'พัน', 'หมื่น', 'แสน', 'ล้าน'];
+  
+  if (num === 0) return 'ศูนย์บาทถ้วน';
+  
+  const [intPart, decPart] = num.toFixed(2).split('.');
+  let result = '';
+  
+  // แปลงส่วนจำนวนเต็ม
+  const numStr = intPart.toString();
+  const len = numStr.length;
+  
+  for (let i = 0; i < len; i++) {
+    const digit = parseInt(numStr[i]);
+    const pos = len - i - 1;
+    
+    if (digit === 0) continue;
+    
+    if (pos === 1 && digit === 1) {
+      result += 'สิบ';
+    } else if (pos === 1 && digit === 2) {
+      result += 'ยี่สิบ';
+    } else if (pos === 0 && digit === 1 && len > 1) {
+      result += 'เอ็ด';
+    } else {
+      result += digits[digit] + positions[pos];
+    }
+  }
+  
+  result += 'บาท';
+  
+  // แปลงส่วนทศนิยม
+  if (parseInt(decPart) > 0) {
+    const decDigits = decPart.split('');
+    let decText = '';
+    
+    if (decDigits[0] !== '0') {
+      if (decDigits[0] === '1') {
+        decText += 'สิบ';
+      } else if (decDigits[0] === '2') {
+        decText += 'ยี่สิบ';
+      } else {
+        decText += digits[parseInt(decDigits[0])] + 'สิบ';
+      }
+    }
+    
+    if (decDigits[1] !== '0') {
+      if (decDigits[1] === '1' && decDigits[0] !== '0') {
+        decText += 'เอ็ด';
+      } else {
+        decText += digits[parseInt(decDigits[1])];
+      }
+    }
+    
+    result += decText + 'สตางค์';
+  } else {
+    result += 'ถ้วน';
+  }
+  
+  return result;
+};
+
 
 export default function CarBillForm({ onBack }: { onBack: () => void }) {
   const [billId, setBillId] = useState<string>('');
   const [isSaved, setIsSaved] = useState(false);
-  // แก้ไข: กำหนด type ที่ชัดเจนสำหรับ formErrors
   const [formErrors, setFormErrors] = useState<FormErrors>({});
-  const [focusedItemId, setFocusedItemId] = useState<number | null>(null); // สถานะใหม่: สำหรับติดตาม input ที่ถูกโฟกัส
+  const [focusedItemId, setFocusedItemId] = useState<number | null>(null);
+  const [showReceipt, setShowReceipt] = useState(false);
 
   const MAX_BILL_ITEMS = 7;
 
   const [formData, setFormData] = useState<BillFormData>({
     customer: {
-      title: "", firstName: "", lastName: "", idNumber: "",
+      title: "", firstName: "", lastName: "", idNumber: "", phone: "",
       houseNo: "", moo: "", soi: "", road: "", subDistrict: "",
       district: "", province: "", zipCode: "",
       visitDate: "", pickupDate: ""
@@ -92,7 +161,8 @@ export default function CarBillForm({ onBack }: { onBack: () => void }) {
     },
     billItems: [{ id: 1, description: "", amount: "" }],
     totalAmount: "0.00",
-    billDate: ""
+    billDate: "",
+    paymentMethod: "cash"
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>, section: 'customer' | 'car' | 'general') => {
@@ -117,20 +187,32 @@ export default function CarBillForm({ onBack }: { onBack: () => void }) {
   const addBillItem = () => {
     if (formData.billItems.length < MAX_BILL_ITEMS) {
       const newId = formData.billItems.length > 0 ? Math.max(...formData.billItems.map(item => item.id)) + 1 : 1;
-      setFormData(prev => ({
-        ...prev,
-        billItems: [...prev.billItems, { id: newId, description: "", amount: "" }]
-      }));
+      setFormData(prev => {
+        const newItems = [...prev.billItems, { id: newId, description: "", amount: "" }];
+        // คำนวณยอดรวมใหม่
+        const total = newItems.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+        return {
+          ...prev,
+          billItems: newItems,
+          totalAmount: total.toFixed(2)
+        };
+      });
       setIsSaved(false);
       setFormErrors({});
     }
   };
 
   const removeBillItem = (id: number) => {
-    setFormData(prev => ({
-      ...prev,
-      billItems: prev.billItems.filter(item => item.id !== id)
-    }));
+    setFormData(prev => {
+      const newItems = prev.billItems.filter(item => item.id !== id);
+      // คำนวณยอดรวมใหม่
+      const total = newItems.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+      return {
+        ...prev,
+        billItems: newItems,
+        totalAmount: total.toFixed(2)
+      };
+    });
     setIsSaved(false);
     setFormErrors({});
   };
@@ -145,7 +227,16 @@ export default function CarBillForm({ onBack }: { onBack: () => void }) {
       } else {
         newItems[index] = { ...newItems[index], description: value };
       }
-      return { ...prev, billItems: newItems };
+      
+      // คำนวณยอดรวมใหม่อัตโนมัติ
+      const total = newItems.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+      const totalFormatted = total.toFixed(2);
+      
+      return { 
+        ...prev, 
+        billItems: newItems,
+        totalAmount: totalFormatted
+      };
     });
     setIsSaved(false);
   };
@@ -230,6 +321,7 @@ export default function CarBillForm({ onBack }: { onBack: () => void }) {
         billId: "BILL001",
         customer: {
           title: "นาย", firstName: "สมชาย", lastName: "ใจดี", idNumber: "1234567890123",
+          phone: "081-234-5678",
           houseNo: "10/1", moo: "5", soi: "สุขุมวิท", road: "สุขุมวิท", subDistrict: "คลองเตย",
           district: "คลองเตย", province: "กรุงเทพมหานคร", zipCode: "10110",
           visitDate: "2024-06-01", pickupDate: "2024-06-05"
@@ -242,12 +334,14 @@ export default function CarBillForm({ onBack }: { onBack: () => void }) {
           { id: 2, description: "เปลี่ยนแบตเตอรี่", amount: "2500.00" }
         ],
         totalAmount: "4000.00",
-        billDate: "2024-06-15"
+        billDate: "2024-06-15",
+        paymentMethod: "cash"
       },
       {
         billId: "BILL002",
         customer: {
           title: "นางสาว", firstName: "สมหญิง", lastName: "รักเรียน", idNumber: "9876543210987",
+          phone: "092-345-6789",
           houseNo: "20", moo: "1", soi: "", road: "พหลโยธิน", subDistrict: "สามเสนใน",
           district: "พญาไท", province: "กรุงเทพมหานคร", zipCode: "10400",
           visitDate: "2024-05-10", pickupDate: "2024-05-12"
@@ -259,7 +353,8 @@ export default function CarBillForm({ onBack }: { onBack: () => void }) {
           { id: 1, description: "ซ่อมสีรอบคัน", amount: "12000.00" }
         ],
         totalAmount: "12000.00",
-        billDate: "2024-05-20"
+        billDate: "2024-05-20",
+        paymentMethod: "transfer"
       }
     ];
 
@@ -281,7 +376,7 @@ export default function CarBillForm({ onBack }: { onBack: () => void }) {
       alert(`ไม่พบข้อมูลบิลเลขที่ ${billId}`);
       setFormData({
         customer: {
-          title: "", firstName: "", lastName: "", idNumber: "",
+          title: "", firstName: "", lastName: "", idNumber: "", phone: "",
           houseNo: "", moo: "", soi: "", road: "", subDistrict: "",
           district: "", province: "", zipCode: "",
           visitDate: "", pickupDate: ""
@@ -291,7 +386,8 @@ export default function CarBillForm({ onBack }: { onBack: () => void }) {
         },
         billItems: [{ id: 1, description: "", amount: "" }],
         totalAmount: "0.00",
-        billDate: ""
+        billDate: "",
+        paymentMethod: "cash"
       });
       setIsSaved(false);
       setFormErrors({});
@@ -322,12 +418,40 @@ export default function CarBillForm({ onBack }: { onBack: () => void }) {
   };
 
   const handleExportPdf = () => {
-    if (isSaved) {
-      console.log("ส่งออกบิลเป็น PDF!");
-      alert("จำลองการส่งออก PDF (ในเวอร์ชันจริงจะสร้างไฟล์ PDF)");
-    } else {
+    if (!isSaved) {
       alert("กรุณาบันทึกบิลก่อนส่งออกเป็น PDF");
+      return;
     }
+    
+    // ใช้ browser's print dialog เพื่อบันทึกเป็น PDF
+    window.print();
+  };
+
+  const handlePrint = () => {
+    // ตรวจสอบว่ากรอกข้อมูลครบหรือไม่
+    if (!formData.customer.firstName || !formData.customer.lastName || 
+        !formData.car.licensePlate || !formData.car.carBrand || 
+        formData.billItems.some(item => !item.description || !item.amount)) {
+      alert('กรุณากรอกข้อมูลให้ครบถ้วนก่อนดูใบเสร็จ');
+      return;
+    }
+    
+    // คำนวณยอดรวมอีกครั้งก่อนแสดงใบเสร็จ
+    const total = formData.billItems.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+    
+    console.log('=== DEBUG PRINT ===');
+    console.log('Bill Items:', formData.billItems);
+    console.log('Calculated Total:', total);
+    console.log('Current totalAmount:', formData.totalAmount);
+    
+    // อัปเดตยอดรวมและแสดงใบเสร็จทันที
+    setFormData(prev => ({
+      ...prev,
+      totalAmount: total.toFixed(2)
+    }));
+    
+    // แสดงใบเสร็จทันที
+    setShowReceipt(true);
   };
 
   return (
@@ -337,7 +461,7 @@ export default function CarBillForm({ onBack }: { onBack: () => void }) {
       transition={{ duration: 0.5 }}
       className="p-6 md:p-8 lg:p-10 bg-gray-100 dark:bg-gray-900 min-h-screen"
     >
-      <div className="flex items-center mb-8">
+      <div className="flex items-center mb-8 no-print">
         <button
           onClick={onBack}
           className="mr-4 p-3 rounded-full bg-white dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 transition-all duration-300 shadow-sm"
@@ -351,12 +475,12 @@ export default function CarBillForm({ onBack }: { onBack: () => void }) {
         </h1>
       </div>
 
-      <p className="text-gray-600 dark:text-gray-400 mb-8 text-lg">
+      <p className="text-gray-600 dark:text-gray-400 mb-8 text-lg no-print">
         กรุณากรอกข้อมูลสำหรับการออกบิลเงินสดสำหรับรถยนต์ให้ครบถ้วน
       </p>
 
       {/* ส่วนค้นหาข้อมูล */}
-      <div className="p-6 md:p-8 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 shadow-lg mb-8">
+      <div className="p-6 md:p-8 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 shadow-lg mb-8 no-print">
         <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-6 border-b border-gray-200 dark:border-gray-700 pb-4">ค้นหาข้อมูลบิล</h2>
         <div className="flex flex-col sm:flex-row gap-4 items-end">
           <div className="flex-grow w-full">
@@ -380,6 +504,7 @@ export default function CarBillForm({ onBack }: { onBack: () => void }) {
           </button>
         </div>
       </div>
+
 
       {/* ข้อมูลลูกค้า */}
       <div className="p-6 md:p-8 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 shadow-lg mb-8">
@@ -447,6 +572,21 @@ export default function CarBillForm({ onBack }: { onBack: () => void }) {
                 ${formErrors.idNumber ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
             />
             {formErrors.idNumber && <p className="text-red-500 text-xs mt-1 flex items-center"><FontAwesomeIcon icon={faExclamationCircle} className="mr-1" />{formErrors.idNumber}</p>}
+          </div>
+          <div>
+            <label htmlFor="phone" className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-2">
+              เบอร์โทรศัพท์ <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="tel"
+              id="phone"
+              placeholder="0XX-XXX-XXXX"
+              value={formData.customer.phone}
+              onChange={(e) => handleInputChange(e, 'customer')}
+              className={`shadow-sm border rounded-lg w-full py-2.5 px-3 text-gray-700 dark:text-gray-100 bg-gray-50 dark:bg-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200
+                ${formErrors.phone ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
+            />
+            {formErrors.phone && <p className="text-red-500 text-xs mt-1 flex items-center"><FontAwesomeIcon icon={faExclamationCircle} className="mr-1" />{formErrors.phone}</p>}
           </div>
           <div>
             <label htmlFor="houseNo" className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-2">
@@ -718,30 +858,53 @@ export default function CarBillForm({ onBack }: { onBack: () => void }) {
           </span>
         </div>
 
-        <div className="mb-4 mt-6">
-          <label htmlFor="billDate" className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-2">
-            วันที่ออกบิล <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="date"
-            id="billDate"
-            value={formData.billDate}
-            onChange={(e) => handleInputChange(e, 'general')}
-            className={`shadow-sm border rounded-lg w-full py-2.5 px-3 text-gray-700 dark:text-gray-100 bg-gray-50 dark:bg-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200
-              ${formErrors.billDate ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
-          />
-          {formErrors.billDate && <p className="text-red-500 text-xs mt-1 flex items-center"><FontAwesomeIcon icon={faExclamationCircle} className="mr-1" />{formErrors.billDate}</p>}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+          <div>
+            <label htmlFor="billDate" className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-2">
+              วันที่ออกบิล <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              id="billDate"
+              value={formData.billDate}
+              onChange={(e) => handleInputChange(e, 'general')}
+              className={`shadow-sm border rounded-lg w-full py-2.5 px-3 text-gray-700 dark:text-gray-100 bg-gray-50 dark:bg-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200
+                ${formErrors.billDate ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
+            />
+            {formErrors.billDate && <p className="text-red-500 text-xs mt-1 flex items-center"><FontAwesomeIcon icon={faExclamationCircle} className="mr-1" />{formErrors.billDate}</p>}
+          </div>
+          <div>
+            <label htmlFor="paymentMethod" className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-2">
+              ช่องทางการชำระเงิน <span className="text-red-500">*</span>
+            </label>
+            <select
+              id="paymentMethod"
+              value={formData.paymentMethod}
+              onChange={(e) => handleInputChange(e, 'general')}
+              className="shadow-sm border border-gray-300 dark:border-gray-600 rounded-lg w-full py-2.5 px-3 text-gray-700 dark:text-gray-100 bg-gray-50 dark:bg-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200"
+            >
+              <option value="cash">เงินสด</option>
+              <option value="transfer">โอนเงิน</option>
+            </select>
+          </div>
         </div>
       </div>
-
+      
       {/* ปุ่มบันทึกและส่งออก */}
-      <div className="flex gap-4 mt-8">
+      <div className="flex gap-4 mt-8 no-print">
         <button
           onClick={handleSaveBill}
           className={`py-3 px-6 rounded-lg focus:outline-none focus:shadow-outline flex items-center justify-center min-w-[180px] transition-all duration-300 text-lg shadow-md
             bg-blue-600 hover:bg-blue-700 text-white`}
         >
           <FontAwesomeIcon icon={faSave} className="mr-3 text-xl" /> {formData.billId ? "อัปเดตบิล" : "บันทึกบิล"}
+        </button>
+
+        <button
+          onClick={handlePrint}
+          className="py-3 px-6 rounded-lg bg-purple-600 hover:bg-purple-700 text-white focus:outline-none focus:shadow-outline flex items-center justify-center min-w-[180px] transition-all duration-300 text-lg shadow-md"
+        >
+          <FontAwesomeIcon icon={faPrint} className="mr-3 text-xl" /> ปริ้น/บันทึก PDF
         </button>
 
         <button
@@ -753,9 +916,25 @@ export default function CarBillForm({ onBack }: { onBack: () => void }) {
               : "bg-gray-300 text-gray-500 cursor-not-allowed dark:bg-gray-600 dark:text-gray-400"
             }`}
         >
-          <FontAwesomeIcon icon={faFilePdf} className="mr-3 text-xl" /> ส่งออก PDF
+          <FontAwesomeIcon icon={faFilePdf} className="mr-3 text-xl" /> ดาวน์โหลด PDF
         </button>
       </div>
+
+      {/* แสดงใบเสร็จเมื่อกดปริ้น */}
+      {showReceipt && (
+        <ReceiptPreview
+          data={{
+            billId: formData.billId || '',
+            billDate: formData.billDate,
+            customer: formData.customer,
+            car: formData.car,
+            billItems: formData.billItems,
+            totalAmount: formData.totalAmount,
+            paymentMethod: formData.paymentMethod
+          }}
+          onClose={() => setShowReceipt(false)}
+        />
+      )}
     </motion.div>
   );
 }
