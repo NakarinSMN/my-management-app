@@ -124,18 +124,73 @@ html {
     top: 0;
     width: 100%;
     height: 100vh;
-    padding: 5mm;
+    padding: 2mm;
     overflow: hidden;
+    font-size: 9px;
+  }
+  
+  /* สำหรับพรีวิว - แสดงบิลเต็มๆ */
+  .receipt-preview {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .receipt-preview .print-area {
+    position: relative;
+    width: auto;
+    height: auto;
+    max-width: 85vw;
+    max-height: 85vh;
+    transform: scale(0.6);
+    transform-origin: center;
+    overflow: hidden;
+  }
+  
+  /* ปรับขนาดตัวอักษรสำหรับพรีวิว */
+  .receipt-preview .print-area h1 {
+    font-size: 8px !important;
+  }
+  
+  .receipt-preview .print-area h2 {
+    font-size: 7px !important;
+  }
+  
+  .receipt-preview .print-area h3 {
+    font-size: 6px !important;
+  }
+  
+  .receipt-preview .print-area p, 
+  .receipt-preview .print-area span, 
+  .receipt-preview .print-area div {
+    font-size: 5px !important;
+    line-height: 1.0 !important;
+  }
+  
+  .receipt-preview .print-area table {
+    font-size: 5px !important;
+  }
+  
+  .receipt-preview .print-area th, 
+  .receipt-preview .print-area td {
+    font-size: 5px !important;
+    padding: 0.5px 1px !important;
   }
   
   /* ใบเสร็จ - A5 หน้าเดียว */
   .receipt-copy {
     width: 100%;
     height: auto;
-    border: 1px solid #000;
-    padding: 4mm;
+    border: 1px solid #00000000;
+    padding: 2mm;
     box-sizing: border-box;
     background: white;
+    font-size: 8px;
+    line-height: 1.2;
   }
   
   /* ใบเสร็จตัวจริง */
@@ -257,18 +312,71 @@ html {
     visibility: visible !important;
   }
   
+  /* ปรับขนาดตัวอักษรและระยะห่างให้เหมาะสม */
+  .print-area h1 {
+    font-size: 11px !important;
+    margin: 2px 0 !important;
+    padding: 1px 0 !important;
+  }
+  
+  .print-area h2 {
+    font-size: 10px !important;
+    margin: 2px 0 !important;
+    padding: 1px 0 !important;
+  }
+  
+  .print-area h3 {
+    font-size: 9px !important;
+    margin: 1px 0 !important;
+    padding: 1px 0 !important;
+  }
+  
+  .print-area p, .print-area span, .print-area div {
+    font-size: 8px !important;
+    line-height: 1.1 !important;
+    margin: 1px 0 !important;
+    padding: 1px 0 !important;
+  }
+  
+  .print-area table {
+    font-size: 8px !important;
+    line-height: 1.1 !important;
+  }
+  
+  .print-area th, .print-area td {
+    padding: 1px 2px !important;
+    font-size: 8px !important;
+    line-height: 1.1 !important;
+  }
+  
+  .print-area .mb-1 {
+    margin-bottom: 3px !important;
+  }
+  
+  .print-area .p-1 {
+    padding: 1px !important;
+  }
+  
+  .print-area .gap-3 {
+    gap: 3px !important;
+  }
+  
+  .print-area .gap-4 {
+    gap: 3px !important;
+  }
+  
   /* ปรับ spacing สำหรับครึ่ง A4 */
   .print-area .p-6,
   .print-area .p-8 {
-    padding: 2mm !important;
+    padding: 1mm !important;
   }
   
   .print-area .mb-8 {
-    margin-bottom: 2mm !important;
+    margin-bottom: 1mm !important;
   }
   
   .print-area .mb-6 {
-    margin-bottom: 2mm !important;
+    margin-bottom: 1mm !important;
   }
   
   .print-area .mb-4 {
@@ -284,7 +392,7 @@ html {
   }
   
   .print-area .mt-6 {
-    margin-top: 2mm !important;
+    margin-top: 1mm !important;
   }
   
   .print-area .mt-3 {
