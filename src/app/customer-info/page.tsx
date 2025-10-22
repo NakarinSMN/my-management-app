@@ -11,7 +11,6 @@ import AnimatedPage, { itemVariants } from '../components/AnimatedPage';
 import Modal from '../components/Modal';
 import AddCustomerForm from '../components/AddCustomerForm';
 import EditCustomerForm from '../components/EditCustomerForm';
-import TestAPI from '../components/TestAPI';
 
 // ⚡ ใช้ Custom Hook แทน SWR โดยตรง
 import { useCustomerData, CustomerData } from '@/lib/useCustomerData';
@@ -147,7 +146,6 @@ export default function CustomerInfoPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerData | null>(null);
-  const [isTestModalOpen, setIsTestModalOpen] = useState(false);
 
   // ⚡ ใช้ Custom Hook แทน useSWR โดยตรง
   const { data, error, isLoading, mutate, refreshData } = useCustomerData();
@@ -222,12 +220,6 @@ export default function CustomerInfoPage() {
                 >
                   + เพิ่มข้อมูลลูกค้า
                 </button>
-                {/* <button
-                  onClick={() => setIsTestModalOpen(true)}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
-                >
-                  🔧 ทดสอบ API
-                </button> */}
                 <Link
                   href="/tax-expiry-next-year"
                   className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
@@ -480,19 +472,6 @@ export default function CustomerInfoPage() {
           onSuccess={() => { setIsEditModalOpen(false); setSelectedCustomer(null); mutate(); }}
           onCancel={() => { setIsEditModalOpen(false); setSelectedCustomer(null); }}
         />
-      </Modal>
-
-      {/* Modal สำหรับทดสอบ API */}
-      <Modal isOpen={isTestModalOpen}>
-        <TestAPI />
-        <div className="flex justify-end mt-4">
-          <button
-            onClick={() => setIsTestModalOpen(false)}
-            className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
-          >
-            ปิด
-          </button>
-        </div>
       </Modal>
     </AnimatedPage>
   );
