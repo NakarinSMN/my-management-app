@@ -19,7 +19,8 @@ import {
   faInfoCircle
 } from '@fortawesome/free-solid-svg-icons';
 
-import useSWR from 'swr';
+// ⚡ ใช้ Custom Hook แทน useSWR
+import { useCustomerData } from '@/lib/useCustomerData';
 
 // กำหนด Interface สำหรับข้อมูลลูกค้าที่มีวันสิ้นอายุภาษีปีถัดไป
 interface TaxExpiryData {
@@ -188,20 +189,11 @@ export default function TaxExpiryNextYearPage() {
   const [filterMonth, setFilterMonth] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [data, setData] = useState<TaxExpiryData[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
 
-  // URL ของ Google Apps Script API
-  const GOOGLE_SHEET_CUSTOMER_API_URL: string = 'https://script.google.com/macros/s/AKfycbxN9rG3NhDyhlXVKgNndNcJ6kHopPaf5GRma_dRYjtP64svMYUFCSALwTEX4mYCHoDd6g/exec?getAll=1';
-
-  const fetcher = (url: string) => fetch(url).then(res => res.json());
-
-  const { data: swrData, error: swrError, mutate } = useSWR(GOOGLE_SHEET_CUSTOMER_API_URL, fetcher, {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: false,
-  });
+  // ⚡ ใช้ Custom Hook พร้อม Cache
+  const { rawData: swrData, error: swrError, isLoading } = useCustomerData();
 
   useEffect(() => {
     if (swrData && swrData.data) {
@@ -276,11 +268,7 @@ export default function TaxExpiryNextYearPage() {
       // เรียงข้อมูลให้แถวล่าสุดอยู่บนสุด (reverse order)
       const reversedData = formatted.reverse();
       setData(reversedData);
-      setError(null);
-    } else if (swrError) {
-      setError('ไม่สามารถโหลดข้อมูลได้: ' + swrError.message);
     }
-    setLoading(false);
   }, [swrData, swrError]);
 
   const resetFilters = () => {
@@ -452,7 +440,7 @@ export default function TaxExpiryNextYearPage() {
 
         {/* Data Table */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-          {loading ? (
+          {isLoading ? (
             <div className="flex items-center justify-center p-8 w-full">
               <div className="w-full">
                 {[...Array(5)].map((_, i) => (
@@ -466,11 +454,11 @@ export default function TaxExpiryNextYearPage() {
                 ))}
               </div>
             </div>
-          ) : error ? (
+          ) : swrError ? (
             <div className="p-8 text-center">
-              <p className="text-red-500 mb-4">{error}</p>
+              <p className="text-red-500 mb-4">เกิดข้อผิดพลาดในการโหลดข้อมูล</p>
               <button
-                onClick={mutate}
+                onClick={() => window.location.reload()}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 ลองใหม่

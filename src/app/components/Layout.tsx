@@ -217,7 +217,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               isSidebarOpen={isMobile || isSidebarOpen}
             />
             <SidebarMenuItem
-              href="/history"
+              href="/billing"
               icon={faCalendarAlt}
               text="ประวัติ"
               isSidebarOpen={isMobile || isSidebarOpen}

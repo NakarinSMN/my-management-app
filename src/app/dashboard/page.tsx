@@ -7,7 +7,9 @@ import { Card } from '../components/ui/Card';
 import { TimeSeriesChart } from '../components/TimeSeriesChart';
 import { RecentActivities } from '../components/RecentActivities';
 import { useMemo, useEffect, useState } from 'react';
-import useSWR from 'swr';
+
+// ⚡ ใช้ Custom Hook แทน useSWR
+import { useCustomerData } from '@/lib/useCustomerData';
 
 export default function DashboardPage() {
   // State สำหรับข้อมูลจริง
@@ -16,14 +18,8 @@ export default function DashboardPage() {
   const [upcomingExpiry, setUpcomingExpiry] = useState(0);
   const [overdueCount, setOverdueCount] = useState(0);
 
-  // API URL
-  const GOOGLE_SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbxN9rG3NhDyhlXVKgNndNcJ6kHopPaf5GRma_dRYjtP64svMYUFCSALwTEX4mYCHoDd6g/exec?getAll=1';
-  
-  const fetcher = (url: string) => fetch(url).then(res => res.json());
-  const { data: customerData } = useSWR(GOOGLE_SHEET_API_URL, fetcher, {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: false,
-  });
+  // ⚡ ใช้ Custom Hook พร้อม Cache
+  const { rawData: customerData } = useCustomerData();
 
   // ชื่อเดือนภาษาไทย
   const [currentMonthName, setCurrentMonthName] = useState('');
@@ -199,12 +195,18 @@ export default function DashboardPage() {
           </motion.p>
         </div>
         <motion.div variants={itemVariants} className="flex gap-2" transition={{ duration: 0.2 }}>
-                      <Link
-              href="/tax-expiry-next-year"
-              className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
-            >
-              ภาษีครั้งถัดไป
-            </Link>
+          <Link
+            href="/billing"
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+          >
+            📄 รายการบิล
+          </Link>
+          <Link
+            href="/tax-expiry-next-year"
+            className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
+          >
+            ภาษีครั้งถัดไป
+          </Link>
         </motion.div>
       </div>
 

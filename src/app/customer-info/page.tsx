@@ -2,10 +2,9 @@
 'use client';
 
 import Link from 'next/link';
-import React, { useState, useEffect, useMemo, memo } from 'react';
+import React, { useState, useMemo, memo } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { IconDefinition } from '@fortawesome/fontawesome-svg-core'; // สำคัญ: ต้อง Import IconDefinition
-import useSWR from 'swr';
 import { motion } from 'framer-motion';
 
 import AnimatedPage, { itemVariants } from '../components/AnimatedPage';
@@ -13,6 +12,9 @@ import Modal from '../components/Modal';
 import AddCustomerForm from '../components/AddCustomerForm';
 import EditCustomerForm from '../components/EditCustomerForm';
 import TestAPI from '../components/TestAPI';
+
+// ⚡ ใช้ Custom Hook แทน SWR โดยตรง
+import { useCustomerData, CustomerData } from '@/lib/useCustomerData';
 
 import {
   faSearch,
@@ -24,37 +26,9 @@ import {
   faChevronLeft,
   faChevronRight,
   faInfoCircle,
-  faEdit
+  faEdit,
+  faSync
 } from '@fortawesome/free-solid-svg-icons';
-
-// กำหนด Interface สำหรับข้อมูลลูกค้าที่ถูกจัดรูปแบบแล้ว
-interface CustomerData {
-  licensePlate: string;
-  brand?: string;
-  customerName: string;
-  phone: string;
-  registerDate: string;
-  status: string;
-  note?: string;
-  userId?: string;
-  day?: number;
-}
-
-// กำหนด Interface สำหรับข้อมูลดิบที่มาจาก Google Sheet API
-// คีย์ต้องตรงกับชื่อคอลัมน์ใน Google Sheet และสิ่งที่ doGet ส่งมา
-interface RawCustomerDataItem {
-  'ทะเบียนรถ'?: string;
-  'ยี่ห้อ / รุ่น'?: string;
-  'ชื่อลูกค้า'?: string;
-  'เบอร์ติดต่อ'?: string | number;
-  'วันที่ชำระภาษีล่าสุด'?: string;
-  'สถานะ'?: string;
-  'สถานะการเตือน'?: string;
-  'หมายเหตุ'?: string;
-  // rowIndex?: number; // หาก Google Apps Script ส่ง rowIndex มาด้วย ให้เพิ่มบรรทัดนี้
-}
-
-
 // Interfaces สำหรับ Component ลูก
 interface SelectFilterProps {
   value: string;
@@ -168,9 +142,6 @@ export default function CustomerInfoPage() {
   const [search, setSearch] = useState<string>('');
   const [filterMonth, setFilterMonth] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('');
-  const [data, setData] = useState<CustomerData[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null); // เพิ่ม state สำหรับ error message
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -178,71 +149,8 @@ export default function CustomerInfoPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerData | null>(null);
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
 
-  // **** เปลี่ยน URL นี้เป็น URL ของ Web App ของคุณจริงๆ ที่ได้จาก Google Apps Script ****
-  const GOOGLE_SHEET_CUSTOMER_API_URL: string = 'https://script.google.com/macros/s/AKfycbxN9rG3NhDyhlXVKgNndNcJ6kHopPaf5GRma_dRYjtP64svMYUFCSALwTEX4mYCHoDd6g/exec?getAll=1';
-
-  const fetcher = (url: string) => fetch(url).then(res => res.json());
-
-  const { data: swrData, error: swrError, mutate } = useSWR(GOOGLE_SHEET_CUSTOMER_API_URL, fetcher, {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: false,
-  });
-
-  useEffect(() => {
-    if (swrData && swrData.data) {
-      console.log('=== DEBUG API DATA ===');
-      console.log('First item keys:', swrData.data[0] ? Object.keys(swrData.data[0]) : 'No data');
-      console.log('First item:', swrData.data[0]);
-      
-      const formatted: CustomerData[] = (swrData.data || []).map((item: RawCustomerDataItem) => {
-        const dtField: string = item['วันที่ชำระภาษีล่าสุด'] || '';
-        
-        // จัดการวันที่ให้ถูกต้อง
-        let registerDate = '';
-        if (dtField) {
-          // ถ้าเป็น ISO format (YYYY-MM-DDTHH:mm:ss)
-          if (dtField.includes('T')) {
-            registerDate = dtField.split('T')[0];
-          }
-          // ถ้าเป็น DD/MM/YYYY อยู่แล้ว
-          else if (/^\d{2}\/\d{2}\/\d{4}$/.test(dtField)) {
-            registerDate = dtField;
-          }
-          // ถ้าเป็น YYYY-MM-DD
-          else if (/^\d{4}-\d{2}-\d{2}$/.test(dtField)) {
-            registerDate = dtField;
-          }
-          // อื่นๆ ใช้ค่าเดิม
-          else {
-            registerDate = dtField;
-          }
-        }
-        
-        const rawPhone: string = (item['เบอร์ติดต่อ'] || '').toString();
-        const phone: string = rawPhone.startsWith('0') || rawPhone.length === 0 ? rawPhone : `0${rawPhone}`;
-        
-        return {
-          licensePlate: item['ทะเบียนรถ'] || '',
-          brand: item['ยี่ห้อ / รุ่น'] || '',
-          customerName: item['ชื่อลูกค้า'] || '',
-          phone,
-          registerDate,
-          status: item['สถานะ'] || item['สถานะการเตือน'] || 'รอดำเนินการ',
-          note: item['หมายเหตุ'] || '',
-        };
-      });
-      
-      console.log('Formatted data first item:', formatted[0]);
-      
-      // เรียงข้อมูลให้แถวล่าสุดอยู่บนสุด (reverse order)
-      const reversedData = formatted.reverse();
-      setData(reversedData);
-      setError(null);
-    } else if (swrError) {
-      setError('ไม่สามารถโหลดข้อมูลลูกค้าได้: ' + swrError.message);
-    }
-    setLoading(false);
-  }, [swrData, swrError]);
+  // ⚡ ใช้ Custom Hook แทน useSWR โดยตรง
+  const { data, error, isLoading, mutate, refreshData } = useCustomerData();
 
   const resetFilters = () => {
     setSearch('');
@@ -301,17 +209,25 @@ export default function CustomerInfoPage() {
               </div>
               <div className="flex gap-2">
                 <button
+                  onClick={refreshData}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium flex items-center gap-2"
+                  title="รีเฟรชข้อมูล (ล้าง cache)"
+                >
+                  <FontAwesomeIcon icon={faSync} className={isLoading ? 'animate-spin' : ''} />
+                  รีเฟรช
+                </button>
+                <button
                   onClick={() => setIsAddModalOpen(true)}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                 >
                   + เพิ่มข้อมูลลูกค้า
                 </button>
-                <button
+                {/* <button
                   onClick={() => setIsTestModalOpen(true)}
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
                 >
                   🔧 ทดสอบ API
-                </button>
+                </button> */}
                 <Link
                   href="/tax-expiry-next-year"
                   className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
@@ -419,7 +335,7 @@ export default function CustomerInfoPage() {
 
           {/* Data Table */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-            {loading ? (
+            {isLoading ? (
               <div className="flex items-center justify-center p-8 w-full">
                 <div className="w-full">
                   {[...Array(5)].map((_, i) => (
@@ -435,9 +351,9 @@ export default function CustomerInfoPage() {
               </div>
             ) : error ? (
               <div className="p-8 text-center">
-                <p className="text-red-500 mb-4">{error}</p>
+                <p className="text-red-500 mb-4">เกิดข้อผิดพลาดในการโหลดข้อมูล</p>
                 <button
-                  onClick={mutate}
+                  onClick={refreshData}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   ลองใหม่
