@@ -78,7 +78,7 @@ const fetcherWithCache = async (url: string) => {
 };
 
 // ฟังก์ชันแปลงข้อมูลดิบเป็น CustomerData
-export function formatCustomerData(item: any): CustomerData {
+export function formatCustomerData(item: RawCustomerDataItem): CustomerData {
   // ตรวจสอบว่าเป็นข้อมูลจาก MongoDB หรือ Google Sheets
   const isMongoDBData = item.licensePlate !== undefined;
   
