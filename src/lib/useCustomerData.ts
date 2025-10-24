@@ -11,6 +11,17 @@ const CACHE_TIMESTAMP_KEY = 'customer_data_cache_timestamp';
 const CACHE_DURATION = 5 * 60 * 1000; // 5 นาที
 
 interface RawCustomerDataItem {
+  // MongoDB fields
+  licensePlate?: string;
+  brand?: string;
+  customerName?: string;
+  phone?: string;
+  registerDate?: string;
+  status?: string;
+  note?: string;
+  userId?: string;
+  day?: number;
+  // Google Sheets fields (เดิม)
   'ทะเบียนรถ'?: string;
   'ยี่ห้อ / รุ่น'?: string;
   'ชื่อลูกค้า'?: string;
@@ -67,42 +78,87 @@ const fetcherWithCache = async (url: string) => {
 };
 
 // ฟังก์ชันแปลงข้อมูลดิบเป็น CustomerData
-export function formatCustomerData(item: RawCustomerDataItem): CustomerData {
-  const dtField: string = item['วันที่ชำระภาษีล่าสุด'] || '';
+export function formatCustomerData(item: any): CustomerData {
+  // ตรวจสอบว่าเป็นข้อมูลจาก MongoDB หรือ Google Sheets
+  const isMongoDBData = item.licensePlate !== undefined;
   
-  // จัดการวันที่ให้ถูกต้อง
-  let registerDate = '';
-  if (dtField) {
-    // ถ้าเป็น ISO format (YYYY-MM-DDTHH:mm:ss)
-    if (dtField.includes('T')) {
-      registerDate = dtField.split('T')[0];
+  if (isMongoDBData) {
+    // ข้อมูลจาก MongoDB
+    const dtField: string = item.registerDate || '';
+    
+    // จัดการวันที่ให้ถูกต้อง
+    let registerDate = '';
+    if (dtField) {
+      // ถ้าเป็น ISO format (YYYY-MM-DDTHH:mm:ss)
+      if (dtField.includes('T')) {
+        registerDate = dtField.split('T')[0];
+      }
+      // ถ้าเป็น DD/MM/YYYY อยู่แล้ว
+      else if (/^\d{2}\/\d{2}\/\d{4}$/.test(dtField)) {
+        registerDate = dtField;
+      }
+      // ถ้าเป็น YYYY-MM-DD
+      else if (/^\d{4}-\d{2}-\d{2}$/.test(dtField)) {
+        registerDate = dtField;
+      }
+      // อื่นๆ ใช้ค่าเดิม
+      else {
+        registerDate = dtField;
+      }
     }
-    // ถ้าเป็น DD/MM/YYYY อยู่แล้ว
-    else if (/^\d{2}\/\d{2}\/\d{4}$/.test(dtField)) {
-      registerDate = dtField;
+    
+    const rawPhone: string = (item.phone || '').toString();
+    const phone: string = rawPhone.startsWith('0') || rawPhone.length === 0 ? rawPhone : `0${rawPhone}`;
+    
+    return {
+      licensePlate: item.licensePlate || '',
+      brand: item.brand || '',
+      customerName: item.customerName || '',
+      phone,
+      registerDate,
+      status: item.status || 'รอดำเนินการ',
+      note: item.note || '',
+      userId: item.userId || '',
+      day: item.day || 365,
+    };
+  } else {
+    // ข้อมูลจาก Google Sheets (เดิม)
+    const dtField: string = item['วันที่ชำระภาษีล่าสุด'] || '';
+    
+    // จัดการวันที่ให้ถูกต้อง
+    let registerDate = '';
+    if (dtField) {
+      // ถ้าเป็น ISO format (YYYY-MM-DDTHH:mm:ss)
+      if (dtField.includes('T')) {
+        registerDate = dtField.split('T')[0];
+      }
+      // ถ้าเป็น DD/MM/YYYY อยู่แล้ว
+      else if (/^\d{2}\/\d{2}\/\d{4}$/.test(dtField)) {
+        registerDate = dtField;
+      }
+      // ถ้าเป็น YYYY-MM-DD
+      else if (/^\d{4}-\d{2}-\d{2}$/.test(dtField)) {
+        registerDate = dtField;
+      }
+      // อื่นๆ ใช้ค่าเดิม
+      else {
+        registerDate = dtField;
+      }
     }
-    // ถ้าเป็น YYYY-MM-DD
-    else if (/^\d{4}-\d{2}-\d{2}$/.test(dtField)) {
-      registerDate = dtField;
-    }
-    // อื่นๆ ใช้ค่าเดิม
-    else {
-      registerDate = dtField;
-    }
+    
+    const rawPhone: string = (item['เบอร์ติดต่อ'] || '').toString();
+    const phone: string = rawPhone.startsWith('0') || rawPhone.length === 0 ? rawPhone : `0${rawPhone}`;
+    
+    return {
+      licensePlate: item['ทะเบียนรถ'] || '',
+      brand: item['ยี่ห้อ / รุ่น'] || '',
+      customerName: item['ชื่อลูกค้า'] || '',
+      phone,
+      registerDate,
+      status: item['สถานะ'] || item['สถานะการเตือน'] || 'รอดำเนินการ',
+      note: item['หมายเหตุ'] || '',
+    };
   }
-  
-  const rawPhone: string = (item['เบอร์ติดต่อ'] || '').toString();
-  const phone: string = rawPhone.startsWith('0') || rawPhone.length === 0 ? rawPhone : `0${rawPhone}`;
-  
-  return {
-    licensePlate: item['ทะเบียนรถ'] || '',
-    brand: item['ยี่ห้อ / รุ่น'] || '',
-    customerName: item['ชื่อลูกค้า'] || '',
-    phone,
-    registerDate,
-    status: item['สถานะ'] || item['สถานะการเตือน'] || 'รอดำเนินการ',
-    note: item['หมายเหตุ'] || '',
-  };
 }
 
 // Custom Hook หลัก
@@ -124,9 +180,12 @@ export function useCustomerData() {
 
   useEffect(() => {
     if (swrData && swrData.data) {
+      console.log('🔍 [useCustomerData] Raw data received:', swrData.data);
       const formatted: CustomerData[] = (swrData.data || []).map((item: RawCustomerDataItem) => 
         formatCustomerData(item)
       );
+      
+      console.log('🔍 [useCustomerData] Formatted data:', formatted);
       
       // เรียงข้อมูลให้แถวล่าสุดอยู่บนสุด (reverse order)
       const reversedData = formatted.reverse();
