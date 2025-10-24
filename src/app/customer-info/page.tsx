@@ -11,6 +11,7 @@ import AnimatedPage, { itemVariants } from '../components/AnimatedPage';
 import Modal from '../components/Modal';
 import AddCustomerForm from '../components/AddCustomerForm';
 import EditCustomerForm from '../components/EditCustomerForm';
+import FilterDropdown from '../components/FilterDropdown';
 
 // ⚡ ใช้ Custom Hook แทน SWR โดยตรง
 import { useCustomerData, CustomerData } from '@/lib/useCustomerData';
@@ -26,16 +27,8 @@ import {
   faChevronRight,
   faInfoCircle,
   faEdit,
-  faSync
 } from '@fortawesome/free-solid-svg-icons';
 // Interfaces สำหรับ Component ลูก
-interface SelectFilterProps {
-  value: string;
-  onChange: (value: string) => void;
-  icon: IconDefinition;
-  placeholder: string;
-  options: string[];
-}
 
 interface PageButtonProps {
   onClick: () => void;
@@ -62,22 +55,6 @@ const statusIcon: { [key: string]: IconDefinition } = {
 };
 
 
-// Component ลูก: SelectFilter
-function SelectFilter({ value, onChange, icon, placeholder, options }: SelectFilterProps) {
-  return (
-    <div className="relative">
-      <FontAwesomeIcon icon={icon} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-300" />
-      <select
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        className="pl-8 pr-3 py-2 rounded-lg bg-gray-50 dark:bg-neutral-700 text-black dark:text-white focus:outline-none"
-      >
-        <option value="">{placeholder}</option>
-        {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-      </select>
-    </div>
-  );
-}
 
 // Component ลูก: PageButton
 function PageButton({ onClick, disabled, icon }: PageButtonProps) {
@@ -175,18 +152,30 @@ export default function CustomerInfoPage() {
   const paginatedData: CustomerData[] = useMemo(() => itemsPerPage === filteredData.length ? filteredData : filteredData.slice(startIdx, startIdx + itemsPerPage), [filteredData, itemsPerPage, startIdx]);
   const totalPages: number = itemsPerPage === filteredData.length ? 1 : Math.ceil(filteredData.length / itemsPerPage);
 
-  // สร้างตัวเลือกสำหรับ dropdown (ปี ค.ศ. จริง)
-  const months: string[] = Array.from({ length: 12 }, (_, i) => `${(i + 1).toString().padStart(2, '0')}`); // 01-12
-  // ดึงปีจากข้อมูลจริง (ปี ค.ศ.)
-  // ลบ const years ที่ไม่ได้ใช้
+  // สร้างตัวเลือกสำหรับ dropdown
+  const monthOptions = [
+    { value: '', label: 'ทุกเดือน', color: '#6B7280' },
+    { value: '01', label: 'มกราคม', color: '#EF4444' },
+    { value: '02', label: 'กุมภาพันธ์', color: '#F97316' },
+    { value: '03', label: 'มีนาคม', color: '#F59E0B' },
+    { value: '04', label: 'เมษายน', color: '#10B981' },
+    { value: '05', label: 'พฤษภาคม', color: '#06B6D4' },
+    { value: '06', label: 'มิถุนายน', color: '#3B82F6' },
+    { value: '07', label: 'กรกฎาคม', color: '#8B5CF6' },
+    { value: '08', label: 'สิงหาคม', color: '#EC4899' },
+    { value: '09', label: 'กันยายน', color: '#84CC16' },
+    { value: '10', label: 'ตุลาคม', color: '#F59E0B' },
+    { value: '11', label: 'พฤศจิกายน', color: '#EF4444' },
+    { value: '12', label: 'ธันวาคม', color: '#6B7280' },
+  ];
 
   const statusOptions = [
-    '',
-    'ต่อภาษีแล้ว',
-    'กำลังจะครบกำหนด',
-    'ใกล้ครบกำหนด',
-    'เกินกำหนด',
-    'รอดำเนินการ',
+    { value: '', label: 'ทุกสถานะ', color: '#6B7280' },
+    { value: 'ต่อภาษีแล้ว', label: 'ต่อภาษีแล้ว', color: '#10B981' },
+    { value: 'กำลังจะครบกำหนด', label: 'กำลังจะครบกำหนด', color: '#F59E0B' },
+    { value: 'ครบกำหนดวันนี้', label: 'ครบกำหนดวันนี้', color: '#EF4444' },
+    { value: 'เกินกำหนด', label: 'เกินกำหนด', color: '#DC2626' },
+    { value: 'รอดำเนินการ', label: 'รอดำเนินการ', color: '#6B7280' },
   ];
 
 
@@ -206,14 +195,6 @@ export default function CustomerInfoPage() {
                 </motion.p>
               </div>
               <div className="flex gap-2">
-                <button
-                  onClick={refreshData}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium flex items-center gap-2"
-                  title="รีเฟรชข้อมูล (ล้าง cache)"
-                >
-                  <FontAwesomeIcon icon={faSync} className={isLoading ? 'animate-spin' : ''} />
-                  รีเฟรช
-                </button>
                 <button
                   onClick={() => setIsAddModalOpen(true)}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
@@ -277,8 +258,8 @@ export default function CustomerInfoPage() {
           </div>
 
           {/* Filters */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
               <div className="relative">
                 <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
@@ -286,41 +267,46 @@ export default function CustomerInfoPage() {
                   placeholder="ค้นหาทะเบียนรถ, ชื่อลูกค้า, เบอร์โทร"
                   value={search}
                   onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
               </div>
               {/* ใน filter UI ลบ SelectFilter ของวันออก */}
-              <SelectFilter
+              <FilterDropdown
                 value={filterMonth}
                 onChange={val => { setFilterMonth(val); setCurrentPage(1); }}
                 icon={faCalendarAlt}
                 placeholder="กรองตามเดือน"
-                options={months}
+                options={monthOptions}
               />
-              <SelectFilter
+              <FilterDropdown
                 value={filterStatus}
                 onChange={val => { setFilterStatus(val); setCurrentPage(1); }}
-                icon={faCheckCircle}
+                icon={faClock}
                 placeholder="กรองตามสถานะ"
                 options={statusOptions}
               />
-              <select
-                className="w-full py-2 px-3 rounded-lg bg-gray-50 dark:bg-gray-700 text-black dark:text-white focus:outline-none border border-gray-300 dark:border-gray-600"
-                value={itemsPerPage}
-                onChange={e => {
-                  const val = e.target.value;
+              <FilterDropdown
+                value={itemsPerPage === filteredData.length ? 'all' : itemsPerPage.toString()}
+                onChange={val => {
                   setItemsPerPage(val === 'all' ? filteredData.length : Number(val));
                   setCurrentPage(1);
                 }}
-              >
-                {[10, 20, 30, 40, 50].map(n => <option key={n} value={n}>{n} รายการ</option>)}
-                <option value="all">ทั้งหมด</option>
-              </select>
+                icon={faInfoCircle}
+                placeholder="จำนวนรายการ"
+                options={[
+                  { value: '10', label: '10', color: '#6B7280' },
+                  { value: '20', label: '20', color: '#3B82F6' },
+                  { value: '30', label: '30', color: '#10B981' },
+                  { value: '40', label: '40', color: '#F59E0B' },
+                  { value: '50', label: '50', color: '#EF4444' },
+                  { value: 'all', label: 'ทั้งหมด', color: '#8B5CF6' },
+                ]}
+              />
               <button
                 onClick={resetFilters}
-                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors w-full font-semibold text-base"
+                className="px-3 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors w-full font-medium text-sm"
               >
-                รีเซ็ตตัวกรอง
+                รีเซ็ต
               </button>
             </div>
           </div>

@@ -6,9 +6,6 @@ import { useEffect, useState } from 'react';
 
 // เปลี่ยนจาก Google Sheets API เป็น MongoDB API
 const MONGODB_BILLING_API_URL = '/api/billing';
-const CACHE_KEY = 'billing_data_cache';
-const CACHE_TIMESTAMP_KEY = 'billing_data_cache_timestamp';
-const CACHE_DURATION = 5 * 60 * 1000; // 5 นาที
 
 // Interface สำหรับข้อมูลบิล
 export interface BillingData {
@@ -36,36 +33,12 @@ interface RawBillingDataItem {
   'รายการและยอดเงิน'?: string;
 }
 
-// ฟังก์ชัน fetcher ที่มี localStorage cache
-const fetcherWithCache = async (url: string) => {
-  // ตรวจสอบ cache ใน localStorage ก่อน
-  if (typeof window !== 'undefined') {
-    const cached = localStorage.getItem(CACHE_KEY);
-    const timestamp = localStorage.getItem(CACHE_TIMESTAMP_KEY);
-    
-    if (cached && timestamp) {
-      const age = Date.now() - parseInt(timestamp);
-      if (age < CACHE_DURATION) {
-        console.log('✅ ใช้ข้อมูลบิลจาก localStorage cache (อายุ:', Math.round(age / 1000), 'วินาที)');
-        return JSON.parse(cached);
-      } else {
-        console.log('⏰ Cache บิลหมดอายุแล้ว กำลังดึงข้อมูลใหม่...');
-      }
-    }
-  }
-
-  // ดึงข้อมูลจาก API
-  console.log('🌐 กำลังดึงข้อมูลบิลจาก Google Sheets...');
-  const response = await fetch(`${url}?getBills=1`);
+// ฟังก์ชัน fetcher แบบง่ายๆ ไม่มี cache
+const fetcher = async (url: string) => {
+  console.log('🌐 กำลังดึงข้อมูลบิลจาก MongoDB API...');
+  const response = await fetch(url);
   const data = await response.json();
-
-  // บันทึกลง localStorage
-  if (typeof window !== 'undefined' && data) {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-    localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
-    console.log('💾 บันทึกข้อมูลบิลลง cache แล้ว');
-  }
-
+  console.log('✅ ดึงข้อมูลบิลจาก MongoDB สำเร็จ');
   return data;
 };
 
@@ -117,14 +90,14 @@ export function useBillingData() {
   
   const { data: swrData, error: swrError, mutate, isLoading } = useSWR(
     MONGODB_BILLING_API_URL,
-    fetcherWithCache,
+    fetcher,
     {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-      dedupingInterval: 10000,
-      revalidateIfStale: false,
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      dedupingInterval: 0,
+      revalidateIfStale: true,
       revalidateOnMount: true,
-      focusThrottleInterval: 30000,
+      refreshInterval: 0,
     }
   );
 
@@ -140,19 +113,8 @@ export function useBillingData() {
     }
   }, [swrData]);
 
-  // ฟังก์ชันสำหรับ clear cache
-  const clearCache = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem(CACHE_KEY);
-      localStorage.removeItem(CACHE_TIMESTAMP_KEY);
-      console.log('🗑️ ล้าง cache บิลแล้ว');
-    }
-    mutate();
-  };
-
   // ฟังก์ชันสำหรับ refresh ข้อมูล
   const refreshData = async () => {
-    clearCache();
     await mutate();
   };
 
@@ -162,7 +124,6 @@ export function useBillingData() {
     error: swrError,
     isLoading,
     mutate,
-    clearCache,
     refreshData,
   };
 }

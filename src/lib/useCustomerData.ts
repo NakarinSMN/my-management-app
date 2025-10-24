@@ -6,9 +6,6 @@ import { useEffect, useState } from 'react';
 
 // เปลี่ยนจาก Google Sheets API เป็น MongoDB API
 const MONGODB_CUSTOMER_API_URL = '/api/customers';
-const CACHE_KEY = 'customer_data_cache';
-const CACHE_TIMESTAMP_KEY = 'customer_data_cache_timestamp';
-const CACHE_DURATION = 5 * 60 * 1000; // 5 นาที
 
 interface RawCustomerDataItem {
   // MongoDB fields
@@ -44,38 +41,63 @@ export interface CustomerData {
   day?: number;
 }
 
-// ฟังก์ชัน fetcher ที่มี localStorage cache
-const fetcherWithCache = async (url: string) => {
-  // ตรวจสอบ cache ใน localStorage ก่อน
-  if (typeof window !== 'undefined') {
-    const cached = localStorage.getItem(CACHE_KEY);
-    const timestamp = localStorage.getItem(CACHE_TIMESTAMP_KEY);
-    
-    if (cached && timestamp) {
-      const age = Date.now() - parseInt(timestamp);
-      if (age < CACHE_DURATION) {
-        console.log('✅ ใช้ข้อมูลจาก localStorage cache (อายุ:', Math.round(age / 1000), 'วินาที)');
-        return JSON.parse(cached);
-      } else {
-        console.log('⏰ Cache หมดอายุแล้ว กำลังดึงข้อมูลใหม่...');
-      }
-    }
-  }
-
-  // ดึงข้อมูลจาก API
-  console.log('🌐 กำลังดึงข้อมูลจาก Google Sheets...');
+// ฟังก์ชัน fetcher แบบง่ายๆ ไม่มี cache
+const fetcher = async (url: string) => {
+  console.log('🌐 กำลังดึงข้อมูลจาก MongoDB API...');
   const response = await fetch(url);
   const data = await response.json();
-
-  // บันทึกลง localStorage
-  if (typeof window !== 'undefined' && data) {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-    localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
-    console.log('💾 บันทึกข้อมูลลง cache แล้ว');
-  }
-
+  console.log('✅ ดึงข้อมูลจาก MongoDB สำเร็จ');
   return data;
 };
+
+// ฟังก์ชันคำนวณสถานะตามวันที่ชำระภาษี
+function calculateStatus(registerDate: string): string {
+  if (!registerDate) return 'รอดำเนินการ';
+  
+  try {
+    // แปลงวันที่เป็น Date object
+    let date: Date;
+    
+    // ถ้าเป็น DD/MM/YYYY
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(registerDate)) {
+      const [day, month, year] = registerDate.split('/');
+      date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    }
+    // ถ้าเป็น YYYY-MM-DD
+    else if (/^\d{4}-\d{2}-\d{2}$/.test(registerDate)) {
+      date = new Date(registerDate);
+    }
+    // ถ้าเป็น ISO format
+    else if (registerDate.includes('T')) {
+      date = new Date(registerDate);
+    }
+    else {
+      return 'รอดำเนินการ';
+    }
+    
+    // คำนวณวันที่ครบกำหนด (1 ปีหลังจากวันที่ชำระ)
+    const expiryDate = new Date(date);
+    expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+    
+    // คำนวณ gap (วันที่ครบกำหนด - วันนี้)
+    const today = new Date();
+    const gap = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    
+    // คำนวณสถานะตามสูตร
+    if (gap < 0) {
+      return 'เกินกำหนด';
+    } else if (gap === 0) {
+      return 'ครบกำหนดวันนี้';
+    } else if (gap <= 90) {
+      return 'กำลังจะครบกำหนด';
+    } else {
+      return 'ต่อภาษีแล้ว';
+    }
+  } catch (error) {
+    console.error('Error calculating status:', error);
+    return 'รอดำเนินการ';
+  }
+}
 
 // ฟังก์ชันแปลงข้อมูลดิบเป็น CustomerData
 export function formatCustomerData(item: RawCustomerDataItem): CustomerData {
@@ -116,7 +138,7 @@ export function formatCustomerData(item: RawCustomerDataItem): CustomerData {
       customerName: item.customerName || '',
       phone,
       registerDate,
-      status: item.status || 'รอดำเนินการ',
+      status: calculateStatus(registerDate), // คำนวณสถานะอัตโนมัติ
       note: item.note || '',
       userId: item.userId || '',
       day: item.day || 365,
@@ -155,7 +177,7 @@ export function formatCustomerData(item: RawCustomerDataItem): CustomerData {
       customerName: item['ชื่อลูกค้า'] || '',
       phone,
       registerDate,
-      status: item['สถานะ'] || item['สถานะการเตือน'] || 'รอดำเนินการ',
+      status: calculateStatus(registerDate), // คำนวณสถานะอัตโนมัติ
       note: item['หมายเหตุ'] || '',
     };
   }
@@ -167,14 +189,14 @@ export function useCustomerData() {
   
   const { data: swrData, error: swrError, mutate, isLoading } = useSWR(
     MONGODB_CUSTOMER_API_URL,
-    fetcherWithCache,
+    fetcher,
     {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-      dedupingInterval: 10000, // ไม่ให้โหลดซ้ำภายใน 10 วินาที
-      revalidateIfStale: false, // ไม่ revalidate ถ้าข้อมูลยัง fresh
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      dedupingInterval: 0, // ไม่มี deduping
+      revalidateIfStale: true,
       revalidateOnMount: true,
-      focusThrottleInterval: 30000, // throttle focus revalidation
+      refreshInterval: 0, // ไม่ auto refresh
     }
   );
 
@@ -193,19 +215,8 @@ export function useCustomerData() {
     }
   }, [swrData]);
 
-  // ฟังก์ชันสำหรับ clear cache
-  const clearCache = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem(CACHE_KEY);
-      localStorage.removeItem(CACHE_TIMESTAMP_KEY);
-      console.log('🗑️ ล้าง cache แล้ว');
-    }
-    mutate(); // Revalidate ข้อมูลใหม่
-  };
-
   // ฟังก์ชันสำหรับ refresh ข้อมูล
   const refreshData = async () => {
-    clearCache();
     await mutate();
   };
 
@@ -215,7 +226,6 @@ export function useCustomerData() {
     error: swrError,
     isLoading,
     mutate,
-    clearCache,
     refreshData,
   };
 }

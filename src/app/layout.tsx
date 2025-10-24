@@ -7,6 +7,8 @@ import "./globals.css"; // Global styles, e.g., Tailwind CSS
 import Layout from "./components/Layout"; // Import the main Layout component
 import PageTransition from "./components/PageTransition";
 import { ThemeProvider } from 'next-themes';
+import { NotificationProvider } from './contexts/NotificationContext';
+import NotificationManager from './components/NotificationManager';
 
 // กำหนดฟอนต์ Inter และให้เป็น CSS variable
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -36,11 +38,14 @@ export default function RootLayout({
     <html lang="th" suppressHydrationWarning>
       <body className={`${inter.variable} ${kanit.variable}`} suppressHydrationWarning={true}>
         <ThemeProvider attribute="class">
-          <Layout>
-            <PageTransition>
-              {children}
-            </PageTransition>
-          </Layout>
+          <NotificationProvider>
+            <Layout>
+              <PageTransition>
+                {children}
+              </PageTransition>
+            </Layout>
+            <NotificationManager />
+          </NotificationProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -18,6 +18,8 @@ import {
   faAngleLeft,
   faBars,
   faClock,
+  faSun,
+  faMoon,
 } from "@fortawesome/free-solid-svg-icons";
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 
@@ -56,6 +58,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true); // sidebar state (mobile เท่านั้น)
   const [isMobile, setIsMobile] = useState(false); // Mobile state
   const [sidebarWidth, setSidebarWidth] = useState(300); // default 300px
+  const [isDarkMode, setIsDarkMode] = useState(false); // Dark mode state
 
   useEffect(() => {
     const handleResize = () => {
@@ -79,6 +82,34 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       setSidebarWidth(300);
     }
   }, [isMobile]);
+
+  // Dark mode management
+  useEffect(() => {
+    // ตรวจสอบ localStorage สำหรับ theme preference
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+      setIsDarkMode(true);
+      document.documentElement.classList.add('dark');
+    } else {
+      setIsDarkMode(false);
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
+
+  const toggleDarkMode = () => {
+    const newDarkMode = !isDarkMode;
+    setIsDarkMode(newDarkMode);
+    
+    if (newDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  };
 
   const toggleMobileSidebar = () => {
     if (isMobile) setIsSidebarOpen((open) => !open);
@@ -166,6 +197,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <FontAwesomeIcon icon={faAngleLeft} className="text-xl" />
             </motion.button>
           )}
+
+          {/* ปุ่มปรับโหมดสว่าง/มืด */}
+          <motion.button
+            onClick={toggleDarkMode}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none transition-colors duration-200"
+            aria-label={isDarkMode ? "เปลี่ยนเป็นโหมดสว่าง" : "เปลี่ยนเป็นโหมดมืด"}
+          >
+            <FontAwesomeIcon 
+              icon={isDarkMode ? faSun : faMoon} 
+              className="text-xl" 
+            />
+          </motion.button>
           
           {/* ลบปุ่มย่อ/ขยายสำหรับเดสก์ท็อป */}
           {/* <motion.button
@@ -216,12 +261,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               text="ออกบิล"
               isSidebarOpen={isMobile || isSidebarOpen}
             />
-             <SidebarMenuItem
-              href="/test-mongodb"
-              icon={faFileAlt}
-              text="เทส mongodb"
-              isSidebarOpen={isMobile || isSidebarOpen}
-            />
+
             
             <SidebarMenuItem
               href="/billing"
@@ -236,6 +276,23 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               isSidebarOpen={isMobile || isSidebarOpen}
             />
 
+<motion.h3 
+              className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-6 mb-2 px-3"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ 
+                opacity: (isMobile || isSidebarOpen) ? 1 : 0,
+                x: (isMobile || isSidebarOpen) ? 0 : -20
+              }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+            >
+              {(isMobile || isSidebarOpen) ? "Admin Menu" : ""}
+            </motion.h3>
+            <SidebarMenuItem
+              href="/devtool"
+              icon={faFileAlt}
+              text="DevMenu"
+              isSidebarOpen={isMobile || isSidebarOpen}
+            />
 
             <motion.h3 
               className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-6 mb-2 px-3"
@@ -293,7 +350,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             >
               ตรอ.บังรีท่าอิฐ
             </motion.h1>
-            <div className="w-10"></div> {/* Spacer for centering */}
+            
+            {/* ปุ่มปรับโหมดสว่าง/มืดสำหรับมือถือ */}
+            <motion.button
+              onClick={toggleDarkMode}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none transition-colors duration-200"
+              aria-label={isDarkMode ? "เปลี่ยนเป็นโหมดสว่าง" : "เปลี่ยนเป็นโหมดมืด"}
+            >
+              <FontAwesomeIcon 
+                icon={isDarkMode ? faSun : faMoon} 
+                className="text-xl" 
+              />
+            </motion.button>
           </div>
         </motion.header>
         

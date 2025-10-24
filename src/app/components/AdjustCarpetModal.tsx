@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes, faSave, faUndo, faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
 import { motion } from 'framer-motion';
+import { useNotification } from '../contexts/NotificationContext';
 
 interface AdjustCarpetModalProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ export default function AdjustCarpetModal({ isOpen, onClose }: AdjustCarpetModal
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCarpets, setSelectedCarpets] = useState<string[]>([]);
   const [newPeriod, setNewPeriod] = useState('');
+  const { showSuccess } = useNotification();
 
   // ข้อมูลตัวอย่าง (ในอนาคตจะดึงจาก API)
   const [carpetData] = useState<CarpetData[]>([
@@ -80,7 +82,7 @@ export default function AdjustCarpetModal({ isOpen, onClose }: AdjustCarpetModal
       selectedCarpets,
       newPeriod
     });
-    alert('บันทึกการปรับรอบเรียบร้อยแล้ว!');
+    showSuccess('บันทึกการปรับรอบเรียบร้อยแล้ว!', 'การปรับรอบพรมได้รับการบันทึกเรียบร้อยแล้ว');
     onClose();
   };
 

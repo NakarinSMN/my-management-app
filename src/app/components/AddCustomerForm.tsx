@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { FaSave, FaTimes, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
 
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxN9rG3NhDyhlXVKgNndNcJ6kHopPaf5GRma_dRYjtP64svMYUFCSALwTEX4mYCHoDd6g/exec';
-
 interface AddCustomerFormProps {
   onSuccess: () => void;
   onCancel: () => void;
@@ -31,31 +29,33 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
     setIsSubmitting(true);
     setMessage('');
     setError('');
-    console.log('DEBUG: formData', formData); // เพิ่ม debug log
+    console.log('DEBUG: formData', formData);
+    
     try {
-      // ใช้ FormData แทน JSON เพื่อหลีกเลี่ยง CORS preflight
-      const formDataToSend = new FormData();
-      formDataToSend.append('action', 'addCustomer');
-      Object.keys(formData).forEach(key => {
-        formDataToSend.append(key, formData[key as keyof typeof formData]);
+      // ใช้ MongoDB API แทน Google Sheets
+      const response = await fetch('/api/customers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          licensePlate: formData.licensePlate,
+          brand: formData.brand,
+          customerName: formData.customerName,
+          phone: formData.phone,
+          registerDate: formData.registerDate,
+          status: 'รอดำเนินการ', // ตั้งค่าเริ่มต้น
+          note: formData.note,
+        }),
       });
 
-      const response = await fetch(GOOGLE_SCRIPT_URL, {
-        method: 'POST',
-        body: formDataToSend,
-      });
-      const text = await response.text();
-      let result;
-      try {
-        result = JSON.parse(text);
-      } catch {
-        throw new Error('Response is not valid JSON: ' + text);
-      }
-      if (result.result === 'success') {
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
         setMessage('เพิ่มข้อมูลลูกค้าสำเร็จ!');
         setTimeout(() => onSuccess(), 1500);
       } else {
-        throw new Error(result.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+        throw new Error(result.error || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล');
       }
     } catch (err) {
       let msg = '';
@@ -106,7 +106,16 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
           <FaTimes /> ยกเลิก
         </button>
         <button type="submit" disabled={isSubmitting} className="flex items-center gap-2 px-7 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 text-base">
-          <FaSave /> {isSubmitting ? 'กำลังบันทึก...' : 'บันทึกข้อมูล'}
+          {isSubmitting ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              กำลังบันทึก...
+            </>
+          ) : (
+            <>
+              <FaSave /> บันทึกข้อมูล
+            </>
+          )}
         </button>
       </div>
     </form>

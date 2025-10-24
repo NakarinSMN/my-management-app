@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { ServiceCategory, Service } from '../pricing/page';
+import type { ServiceCategory, ServiceData } from '@/lib/useServiceData';
 
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz3WJmHNJ2h8Yj1rm2tc_mXj6JNCYz8T-yOmg9kC6aKgpAAuXmH5Z3DNZQF8ecGZUGw/exec';
 
@@ -19,7 +19,7 @@ interface EditCategoryFormProps {
 export default function EditCategoryForm({ category, onSuccess, onCancel }: EditCategoryFormProps) {
   const [name, setName] = useState(category.name);
   const [description, setDescription] = useState(category.description);
-  const [services, setServices] = useState<ServiceItem[]>(category.services.map((svc: Service) => ({
+  const [services, setServices] = useState<ServiceItem[]>(category.services.map((svc: ServiceData) => ({
     serviceName: svc.serviceName,
     serviceDetails: svc.serviceDetails,
     servicePrice: svc.servicePrice,

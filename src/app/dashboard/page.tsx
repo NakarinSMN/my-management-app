@@ -4,25 +4,40 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import AnimatedPage, { itemVariants } from '../components/AnimatedPage';
 import { Card } from '../components/ui/Card';
-import { TimeSeriesChart } from '../components/TimeSeriesChart';
-import { RecentActivities } from '../components/RecentActivities';
-import { useMemo, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { 
+  faFileAlt, 
+  faCalendarAlt, 
+  faClock,
+  faMoneyBillWave,
+  faCar
+} from '@fortawesome/free-solid-svg-icons';
 
 // ⚡ ใช้ Custom Hook แทน useSWR
 import { useCustomerData } from '@/lib/useCustomerData';
+import { useBillingData } from '@/lib/useBillingData';
 
 export default function DashboardPage() {
   // State สำหรับข้อมูลจริง
-  const [totalCustomers, setTotalCustomers] = useState(0);
   const [thisMonthRenewals, setThisMonthRenewals] = useState(0);
   const [upcomingExpiry, setUpcomingExpiry] = useState(0);
   const [overdueCount, setOverdueCount] = useState(0);
+  
+  // State สำหรับข้อมูลบิล
+  const [totalBills, setTotalBills] = useState(0);
+  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [paidRevenue, setPaidRevenue] = useState(0);
+  const [pendingRevenue, setPendingRevenue] = useState(0);
+  const [recentBills, setRecentBills] = useState([]);
+  const [nextYearTax, setNextYearTax] = useState([]);
+  const [monthlyRevenue, setMonthlyRevenue] = useState(0);
+  const [todayRevenue, setTodayRevenue] = useState(0);
 
   // ⚡ ใช้ Custom Hook พร้อม Cache
   const { rawData: customerData } = useCustomerData();
+  const { rawData: billingData } = useBillingData();
 
-  // ชื่อเดือนภาษาไทย
-  const [currentMonthName, setCurrentMonthName] = useState('');
 
   // คำนวณสถิติจากข้อมูลจริง
   useEffect(() => {
@@ -31,15 +46,12 @@ export default function DashboardPage() {
       const currentMonth = now.getMonth() + 1;
       const currentYear = now.getFullYear();
       
-      const monthNames = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 
-                          'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
-      setCurrentMonthName(monthNames[currentMonth - 1]);
       
       let monthCount = 0;
       let upcomingCount = 0;
       let overdueCount = 0;
       
-      customerData.data.forEach((item: Record<string, string | number>) => {
+      customerData.data.forEach((item: Record<string, unknown>) => {
         // นับรถที่ต่อภาษีในเดือนนี้ (จากวันที่ชำระล่าสุด)
         const lastTaxDate = String(item['วันที่ชำระภาษีล่าสุด'] || '');
         if (lastTaxDate) {
@@ -71,85 +83,143 @@ export default function DashboardPage() {
         }
       });
       
-      setTotalCustomers(customerData.data.length);
       setThisMonthRenewals(monthCount);
       setUpcomingExpiry(upcomingCount);
       setOverdueCount(overdueCount);
     }
   }, [customerData]);
 
+  // คำนวณข้อมูลบิล
+  useEffect(() => {
+    if (billingData && billingData.data) {
+      let totalRevenue = 0;
+      let paidRevenue = 0;
+      let pendingRevenue = 0;
+      
+      // เรียงข้อมูลตามวันที่ล่าสุด
+      const sortedBills = [...billingData.data].sort((a: Record<string, unknown>, b: Record<string, unknown>) => {
+        const dateA = new Date(a.date as string || 0);
+        const dateB = new Date(b.date as string || 0);
+        return dateB.getTime() - dateA.getTime();
+      });
+      
+      const recentBills = sortedBills.slice(0, 5); // 5 บิลล่าสุด
+      
+      billingData.data.forEach((bill: Record<string, unknown>) => {
+        const price = bill.price || bill.totalAmount || 0;
+        if (typeof price === 'number') {
+          totalRevenue += price;
+          
+          if (bill.status === 'ชำระแล้ว') {
+            paidRevenue += price;
+          } else if (bill.status === 'รอชำระ') {
+            pendingRevenue += price;
+          }
+        }
+      });
+      
+      // คำนวณรายได้รายเดือนและรายวัน
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+      const today = now.toISOString().split('T')[0];
+      
+      let monthlyRevenue = 0;
+      let todayRevenue = 0;
+      
+      billingData.data.forEach((bill: Record<string, unknown>) => {
+        const billDate = new Date(bill.date || 0);
+        const billDateStr = billDate.toISOString().split('T')[0];
+        const price = bill.price || bill.totalAmount || 0;
+        
+        if (billDate.getMonth() === currentMonth && billDate.getFullYear() === currentYear) {
+          monthlyRevenue += price;
+        }
+        
+        if (billDateStr === today) {
+          todayRevenue += price;
+        }
+      });
+      
+      setTotalBills(billingData.data.length);
+      setTotalRevenue(totalRevenue);
+      setPaidRevenue(paidRevenue);
+      setPendingRevenue(pendingRevenue);
+      setMonthlyRevenue(monthlyRevenue);
+      setTodayRevenue(todayRevenue);
+      setRecentBills(recentBills);
+      
+      // อัปเดตข้อมูลเพิ่มเติม
+      console.log('📊 Dashboard Data Updated:', {
+        totalBills: billingData.data.length,
+        totalRevenue,
+        paidRevenue,
+        pendingRevenue,
+        monthlyRevenue,
+        todayRevenue,
+        recentBillsCount: recentBills.length
+      });
+    }
+  }, [billingData]);
+
+  // คำนวณภาษีครั้งถัดไป
+  useEffect(() => {
+    if (customerData && customerData.data) {
+      const now = new Date();
+      const nextYear = now.getFullYear() + 1;
+      const nextYearTax = customerData.data.filter((item: Record<string, unknown>) => {
+        const lastTaxDate = String(item['วันที่ชำระภาษีล่าสุด'] || '');
+        if (lastTaxDate) {
+          let year = 0;
+          if (/^\d{2}\/\d{2}\/\d{4}$/.test(lastTaxDate)) {
+            const [, , yyyy] = lastTaxDate.split('/');
+            year = parseInt(yyyy);
+          } else if (/^\d{4}-\d{2}-\d{2}$/.test(lastTaxDate)) {
+            const [yyyy] = lastTaxDate.split('-');
+            year = parseInt(yyyy);
+          }
+          return year === nextYear;
+        }
+        return false;
+      });
+      
+      setNextYearTax(nextYearTax.slice(0, 10)); // 10 รายการแรก
+    }
+  }, [customerData]);
+
   const dashboardStats = [
-    { label: "ลูกค้าทั้งหมด", value: totalCustomers.toString(), icon: "👥", description: "จำนวนลูกค้าทั้งหมดในระบบ" },
     { 
-      label: `ต่อภาษี${currentMonthName}`, 
-      value: thisMonthRenewals.toString(), 
-      icon: "🚗", 
-      description: `จำนวนรถที่ต่อภาษีในเดือน${currentMonthName}` 
+      label: "รายการบิลทั้งหมด", 
+      value: totalBills.toString(), 
+      icon: faFileAlt, 
+      description: "จำนวนบิลทั้งหมดในระบบ",
+      color: "blue"
     },
-    { label: "ใกล้ครบกำหนด", value: upcomingExpiry.toString(), icon: "⚠️", description: "รถที่ใกล้ครบกำหนดต่อภาษี" },
-    { label: "เกินกำหนด", value: overdueCount.toString(), icon: "🔴", description: "รถที่เกินกำหนดต่อภาษีแล้ว" },
+    { 
+      label: "ยอดรวมรายได้", 
+      value: `฿${totalRevenue.toLocaleString()}`, 
+      icon: faMoneyBillWave, 
+      description: "ยอดรวมรายได้จากบิลทั้งหมด",
+      color: "green"
+    },
+    { 
+      label: "รายได้เดือนนี้", 
+      value: `฿${monthlyRevenue.toLocaleString()}`, 
+      icon: faCalendarAlt, 
+      description: "รายได้ในเดือนปัจจุบัน",
+      color: "purple"
+    },
+    { 
+      label: "รายได้วันนี้", 
+      value: `฿${todayRevenue.toLocaleString()}`, 
+      icon: faClock, 
+      description: "รายได้ในวันนี้",
+      color: "orange"
+    },
   ];
 
-  const userAccessData = useMemo(() => [
-    { date: '2025-05-01', value: 120 }, { date: '2025-05-02', value: 150 },
-    { date: '2025-05-03', value: 130 }, { date: '2025-05-04', value: 180 },
-    { date: '2025-05-05', value: 160 }, { date: '2025-05-06', value: 190 },
-    { date: '2025-05-07', value: 175 }, { date: '2025-05-08', value: 200 },
-    { date: '2025-05-09', value: 210 }, { date: '2025-05-10', value: 185 },
-    { date: '2025-05-11', value: 220 }, { date: '2025-05-12', value: 205 },
-    { date: '2025-05-13', value: 230 }, { date: '2025-05-14', value: 215 },
-    { date: '2025-05-15', value: 240 }, { date: '2025-05-16', value: 225 },
-    { date: '2025-05-17', value: 250 }, { date: '2025-05-18', value: 235 },
-    { date: '2025-05-19', value: 260 }, { date: '2025-05-20', value: 245 },
-    { date: '2025-05-21', value: 270 }, { date: '2025-05-22', value: 255 },
-    { date: '2025-05-23', value: 280 }, { date: '2025-05-24', value: 265 },
-    { date: '2025-05-25', value: 290 }, { date: '2025-05-26', value: 275 },
-    { date: '2025-05-27', value: 300 }, { date: '2025-05-28', value: 285 },
-    { date: '2025-05-29', value: 310 }, { date: '2025-05-30', value: 295 },
-    { date: '2025-05-31', value: 320 },
-  ], []);
 
-  const inspectionData = useMemo(() => ({
-    'รย.1': [
-      { date: '2025-05-01', value: 50 }, { date: '2025-05-05', value: 60 }, { date: '2025-05-10', value: 55 },
-      { date: '2025-05-15', value: 65 }, { date: '2025-05-20', value: 70 }, { date: '2025-05-25', value: 68 },
-      { date: '2025-05-30', value: 75 },
-    ],
-    'รย.2': [
-      { date: '2025-05-01', value: 30 }, { date: '2025-05-05', value: 35 }, { date: '2025-05-10', value: 32 },
-      { date: '2025-05-15', value: 40 }, { date: '2025-05-20', value: 38 }, { date: '2025-05-25', value: 42 },
-      { date: '2025-05-30', value: 45 },
-    ],
-    'รย.3': [
-      { date: '2025-05-01', value: 10 }, { date: '2025-05-05', value: 12 }, { date: '2025-05-10', value: 11 },
-      { date: '2025-05-15', value: 15 }, { date: '2025-05-20', value: 14 }, { date: '2025-05-25', value: 16 },
-      { date: '2025-05-30', value: 18 },
-    ],
-    'รย.12': [
-      { date: '2025-05-01', value: 5 }, { date: '2025-05-05', value: 8 }, { date: '2025-05-10', value: 7 },
-      { date: '2025-05-15', value: 10 }, { date: '2025-05-20', value: 9 }, { date: '2025-05-25', value: 11 },
-      { date: '2025-05-30', value: 13 },
-    ],
-  }), []);
 
-  const taxRenewalData = useMemo(() => [
-    { date: '2025-05-01', value: 80 }, { date: '2025-05-02', value: 95 },
-    { date: '2025-05-03', value: 88 }, { date: '2025-05-04', value: 105 },
-    { date: '2025-05-05', value: 92 }, { date: '2025-05-06', value: 110 },
-    { date: '2025-05-07', value: 100 }, { date: '2025-05-08', value: 115 },
-    { date: '2025-05-09', value: 120 }, { date: '2025-05-10', value: 108 },
-    { date: '2025-05-11', value: 125 }, { date: '2025-05-12', value: 112 },
-    { date: '2025-05-13', value: 130 }, { date: '2025-05-14', value: 118 },
-    { date: '2025-05-15', value: 135 }, { date: '2025-05-16', value: 122 },
-    { date: '2025-05-17', value: 140 }, { date: '2025-05-18', value: 128 },
-    { date: '2025-05-19', value: 145 }, { date: '2025-05-20', value: 132 },
-    { date: '2025-05-21', value: 150 }, { date: '2025-05-22', value: 138 },
-    { date: '2025-05-23', value: 155 }, { date: '2025-05-24', value: 142 },
-    { date: '2025-05-25', value: 160 }, { date: '2025-05-26', value: 148 },
-    { date: '2025-05-27', value: 165 }, { date: '2025-05-28', value: 152 },
-    { date: '2025-05-29', value: 170 }, { date: '2025-05-30', value: 158 },
-    { date: '2025-05-31', value: 175 },
-  ], []);
 
   // เพิ่ม state สำหรับวันที่อัปเดตล่าสุด (string)
   const [lastUpdate, setLastUpdate] = useState('');
@@ -181,7 +251,7 @@ export default function DashboardPage() {
             exit="exit"
             transition={{ duration: 0.5, ease: 'easeInOut' }}
           >
-            แดชบอร์ดภาพรวม
+            แดชบอร์ดรายการบิลและภาษี
           </motion.h1>
           <motion.p
             className="text-xl text-gray-600 dark:text-gray-400 mt-2"
@@ -191,150 +261,258 @@ export default function DashboardPage() {
             exit="exit"
             transition={{ duration: 0.5, ease: 'easeInOut' }}
           >
-            ภาพรวมของระบบ ข้อมูลสำคัญ และกิจกรรมล่าสุด
+            ภาพรวมรายการบิล รายได้ และภาษีครั้งถัดไป
           </motion.p>
         </div>
         <motion.div variants={itemVariants} className="flex gap-2" transition={{ duration: 0.2 }}>
           <Link
             href="/billing"
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center gap-2"
           >
-            📄 รายการบิล
+            <FontAwesomeIcon icon={faFileAlt} />
+            รายการบิล
           </Link>
           <Link
             href="/tax-expiry-next-year"
-            className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
+            className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium flex items-center gap-2"
           >
+            <FontAwesomeIcon icon={faCalendarAlt} />
             ภาษีครั้งถัดไป
           </Link>
         </motion.div>
       </div>
 
        {/* SECTION 2: Summary and Key Performance Indicators (KPIs) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        
-        {/* Overall Summary Card - spanning 2 columns on large screens */}
-        <motion.div variants={itemVariants} className="lg:col-span-2" transition={{ duration: 0.2 }}>
-          <Card title="ภาพรวมสรุป (Overall Summary)" className="h-full">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg shadow-sm">
-                <p className="text-sm font-medium text-blue-700 dark:text-blue-300">ผู้ใช้งานเฉลี่ยต่อวัน (เดือนนี้)</p>
-                <p className="text-2xl font-bold text-blue-900 dark:text-blue-100 mt-1">185</p>
-                <p className="text-xs text-blue-600 dark:text-blue-400">จาก 30 วันที่ผ่านมา</p>
-              </div>
-              <div className="p-3 bg-green-50 dark:bg-green-950 rounded-lg shadow-sm">
-                <p className="text-sm font-medium text-green-700 dark:text-green-300">รถที่ตรวจสภาพแล้ว (สัปดาห์นี้)</p>
-                <p className="text-2xl font-bold text-green-900 dark:text-green-100 mt-1">320 คัน</p>
-                <p className="text-xs text-green-600 dark:text-green-400">+12% จากสัปดาห์ก่อน</p>
-              </div>
-              <div className="p-3 bg-purple-50 dark:bg-purple-950 rounded-lg shadow-sm">
-                <p className="text-sm font-medium text-purple-700 dark:text-purple-300">ยอดต่อภาษี (รายปี)</p>
-                <p className="text-2xl font-bold text-purple-900 dark:text-purple-100 mt-1">1,560 ราย</p>
-                <p className="text-xs text-purple-600 dark:text-purple-400">เป้าหมาย: 2,000 ราย</p>
-              </div>
-            </div>
-            <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-              ข้อมูลอัปเดตล่าสุด: {lastUpdate} เวลา {lastUpdateTime}
-            </p>
-          </Card>
-        </motion.div>
-
-        {/* Individual KPI Cards Container - This div wraps the map */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-6">
-          {dashboardStats.map((stat) => (
-            <motion.div key={stat.label} variants={itemVariants} transition={{ duration: 0.2 }}>
-              {/* This is the corrected Card call with the required 'title' prop */}
-              <Card title={stat.label}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="mt-1 text-3xl font-semibold text-gray-900 dark:text-white">{stat.value}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{stat.description}</p>
-                  </div>
-                  <div className="text-4xl">{stat.icon}</div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {dashboardStats.map((stat, index) => (
+          <motion.div 
+            key={stat.label} 
+            variants={itemVariants} 
+            transition={{ duration: 0.2, delay: index * 0.1 }}
+          >
+            <Card title={stat.label} className="h-full">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{stat.value}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{stat.description}</p>
                 </div>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
-
+                <div className={`p-3 rounded-full ${
+                  stat.color === 'blue' ? 'bg-blue-100 dark:bg-blue-900' :
+                  stat.color === 'green' ? 'bg-green-100 dark:bg-green-900' :
+                  stat.color === 'purple' ? 'bg-purple-100 dark:bg-purple-900' :
+                  'bg-orange-100 dark:bg-orange-900'
+                }`}>
+                  <FontAwesomeIcon 
+                    icon={stat.icon} 
+                    className={`text-2xl ${
+                      stat.color === 'blue' ? 'text-blue-600 dark:text-blue-400' :
+                      stat.color === 'green' ? 'text-green-600 dark:text-green-400' :
+                      stat.color === 'purple' ? 'text-purple-600 dark:text-purple-400' :
+                      'text-orange-600 dark:text-orange-400'
+                    }`}
+                  />
+                </div>
+              </div>
+            </Card>
+          </motion.div>
+        ))}
       </div>
 
-      {/* SECTION 3: Primary Charts */}
-      <div className="grid grid-cols-2 lg:grid-cols-2 gap-6 mb-8">
-        {/* User Access Chart */}
-        <motion.div variants={itemVariants} transition={{ duration: 0.2 }}>
-          <Card title="ข้อมูลลูกค้าเข้าใช้งาน" className="h-full">
-            <TimeSeriesChart
-              data={userAccessData}
-              dataKey="value"
-              name="จำนวนผู้ใช้งาน"
-              chartType="line"
-              chartColor="rgba(75, 192, 192, 0.6)" // Teal-like color
-              borderColor="rgba(75, 192, 192, 1)"
-            />
-          </Card>
-        </motion.div>
-
-        {/* Tax Renewal Statistics Chart */}
-        <motion.div variants={itemVariants} transition={{ duration: 0.2 }}>
-          <Card title="สถิติต่อภาษี" className="h-full">
-            <TimeSeriesChart
-              data={taxRenewalData}
-              dataKey="value"
-              name="จำนวนการต่อภาษี"
-              chartType="bar"
-              chartColor="rgba(153, 102, 255, 0.6)" // Purple color
-              borderColor="rgba(153, 102, 255, 1)"
-            />
-          </Card>
-        </motion.div>
-      </div>
-
-      {/* SECTION 4: Detailed Charts & Activities */}
+      {/* SECTION 3: Recent Bills and Next Year Tax */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Vehicle Inspection Data Chart by Type */}
+        {/* Recent Bills */}
         <motion.div variants={itemVariants} transition={{ duration: 0.2 }}>
-          <Card title="ข้อมูลการตรวจสภาพรถ (ตามประเภท)" className="h-full">
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">แสดงจำนวนรถที่ได้รับการตรวจสภาพตามประเภท (รย.1, รย.2, รย.3, รย.12)</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {Object.entries(inspectionData).map(([type, data]) => (
-                <TimeSeriesChart
-                  key={type}
-                  data={data}
-                  dataKey="value"
-                  name={`จำนวน ${type}`}
-                  chartType="line"
-                  chartColor={type === 'รย.1' ? "rgba(255, 99, 132, 0.6)" :
-                    type === 'รย.2' ? "rgba(54, 162, 235, 0.6)" :
-                      type === 'รย.3' ? "rgba(255, 206, 86, 0.6)" :
-                        "rgba(75, 192, 192, 0.6)"}
-                  borderColor={type === 'รย.1' ? "rgba(255, 99, 132, 1)" :
-                    type === 'รย.2' ? "rgba(54, 162, 235, 1)" :
-                      type === 'รย.3' ? "rgba(255, 206, 86, 1)" :
-                        "rgba(75, 192, 192, 1)"}
-                  className="mb-4"
-                />
-              ))}
+          <Card title="รายการบิลล่าสุด" className="h-full">
+            <div className="space-y-3">
+              {recentBills.length > 0 ? (
+                recentBills.map((bill: Record<string, unknown>, index: number) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-green-100 dark:bg-green-900 rounded-full">
+                        <FontAwesomeIcon icon={faFileAlt} className="text-green-600 dark:text-green-400" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900 dark:text-white">{bill.billNumber || 'ไม่มีเลขที่บิล'}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{bill.customerName || 'ไม่มีชื่อลูกค้า'}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-green-600 dark:text-green-400">฿{bill.price?.toLocaleString() || '0'}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{bill.date || 'ไม่มีวันที่'}</p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  <FontAwesomeIcon icon={faFileAlt} className="text-4xl mb-2" />
+                  <p>ไม่มีข้อมูลบิล</p>
+                </div>
+              )}
+            </div>
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <Link 
+                href="/billing"
+                className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium flex items-center gap-2"
+              >
+                <FontAwesomeIcon icon={faFileAlt} />
+                ดูรายการบิลทั้งหมด
+              </Link>
             </div>
           </Card>
         </motion.div>
 
-        {/* Recent Activities */}
+        {/* Next Year Tax */}
         <motion.div variants={itemVariants} transition={{ duration: 0.2 }}>
-          <Card title="กิจกรรมล่าสุด (Recent Activities)" className="h-full">
-            <RecentActivities />
+          <Card title="ภาษีครั้งถัดไป" className="h-full">
+            <div className="space-y-3">
+              {nextYearTax.length > 0 ? (
+                nextYearTax.map((customer: Record<string, unknown>, index: number) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-full">
+                        <FontAwesomeIcon icon={faCar} className="text-orange-600 dark:text-orange-400" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900 dark:text-white">{customer.licensePlate || 'ไม่มีทะเบียน'}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{customer.customerName || 'ไม่มีชื่อลูกค้า'}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-orange-600 dark:text-orange-400 font-medium">ปีถัดไป</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{customer.registerDate || 'ไม่มีวันที่'}</p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  <FontAwesomeIcon icon={faCalendarAlt} className="text-4xl mb-2" />
+                  <p>ไม่มีข้อมูลภาษีปีถัดไป</p>
+                </div>
+              )}
+            </div>
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <Link 
+                href="/tax-expiry-next-year"
+                className="text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-300 text-sm font-medium flex items-center gap-2"
+              >
+                <FontAwesomeIcon icon={faCalendarAlt} />
+                ดูภาษีครั้งถัดไปทั้งหมด
+              </Link>
+            </div>
           </Card>
         </motion.div>
       </div>
 
-      {/* SECTION 5: Back to Home Button (or Footer) */}
+      {/* SECTION 4: Summary Information */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Revenue Summary */}
+        <motion.div variants={itemVariants} transition={{ duration: 0.2 }}>
+          <Card title="สรุปรายได้" className="h-full">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-green-100 dark:bg-green-900 rounded-full">
+                    <FontAwesomeIcon icon={faMoneyBillWave} className="text-green-600 dark:text-green-400 text-xl" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">ยอดรวมรายได้</p>
+                    <p className="text-2xl font-bold text-green-600 dark:text-green-400">฿{totalRevenue.toLocaleString()}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">รายได้เดือนนี้</p>
+                  <p className="text-xl font-bold text-blue-600 dark:text-blue-400">฿{monthlyRevenue.toLocaleString()}</p>
+                </div>
+                <div className="text-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">รายได้วันนี้</p>
+                  <p className="text-xl font-bold text-purple-600 dark:text-purple-400">฿{todayRevenue.toLocaleString()}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">ชำระแล้ว</p>
+                  <p className="text-xl font-bold text-green-600 dark:text-green-400">฿{paidRevenue.toLocaleString()}</p>
+                </div>
+                <div className="text-center p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">รอชำระ</p>
+                  <p className="text-xl font-bold text-yellow-600 dark:text-yellow-400">฿{pendingRevenue.toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </motion.div>
+
+        {/* Tax Status Summary */}
+        <motion.div variants={itemVariants} transition={{ duration: 0.2 }}>
+          <Card title="สถานะภาษี" className="h-full">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-orange-100 dark:bg-orange-900 rounded-full">
+                    <FontAwesomeIcon icon={faCalendarAlt} className="text-orange-600 dark:text-orange-400 text-xl" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">ภาษีปีถัดไป</p>
+                    <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{nextYearTax.length} รายการ</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">กำลังจะครบกำหนด</p>
+                  <p className="text-xl font-bold text-yellow-600 dark:text-yellow-400">{upcomingExpiry}</p>
+                </div>
+                <div className="text-center p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">เกินกำหนด</p>
+                  <p className="text-xl font-bold text-red-600 dark:text-red-400">{overdueCount}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">ต่อภาษีแล้ว</p>
+                  <p className="text-xl font-bold text-green-600 dark:text-green-400">
+                    {customerData?.data?.filter((item: Record<string, unknown>) => item.status === 'ต่อภาษีแล้ว').length || 0}
+                  </p>
+                </div>
+                <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">ต่อภาษีเดือนนี้</p>
+                  <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{thisMonthRenewals}</p>
+                </div>
+              </div>
+              
+              {/* เพิ่มข้อมูลสถานะเพิ่มเติม */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">ครบกำหนดวันนี้</p>
+                  <p className="text-xl font-bold text-purple-600 dark:text-purple-400">
+                    {customerData?.data?.filter((item: Record<string, unknown>) => item.status === 'ครบกำหนดวันนี้').length || 0}
+                  </p>
+                </div>
+                <div className="text-center p-3 bg-gray-50 dark:bg-gray-900/20 rounded-lg">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">รอดำเนินการ</p>
+                  <p className="text-xl font-bold text-gray-600 dark:text-gray-400">
+                    {customerData?.data?.filter((item: Record<string, unknown>) => item.status === 'รอดำเนินการ').length || 0}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </motion.div>
+      </div>
+
+      {/* SECTION 5: Last Update Info */}
       <motion.div variants={itemVariants} className="mt-8 text-center" transition={{ duration: 0.2 }}>
-        <Link
-          href="/"
-          className="inline-block px-8 py-4 bg-blue-600 text-white font-semibold rounded-lg shadow-lg hover:bg-blue-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          กลับหน้าหลัก
-        </Link>
+        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            ข้อมูลอัปเดตล่าสุด: {lastUpdate} เวลา {lastUpdateTime}
+          </p>
+        </div>
       </motion.div>
     </AnimatedPage>
   );

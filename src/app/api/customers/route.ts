@@ -185,8 +185,8 @@ export async function PUT(request: NextRequest) {
 // DELETE: ลบข้อมูลลูกค้า
 export async function DELETE(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const licensePlate = searchParams.get('licensePlate');
+    const body = await request.json();
+    const { licensePlate } = body;
     
     if (!licensePlate) {
       return NextResponse.json(

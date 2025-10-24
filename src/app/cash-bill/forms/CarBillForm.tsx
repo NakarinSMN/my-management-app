@@ -16,6 +16,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useState } from "react";
 import { ReceiptPreview } from "../../components/ReceiptPreview";
+import { useNotification } from "../../contexts/NotificationContext";
 
 // สร้าง Type สำหรับข้อมูลบิลเพื่อความชัดเจน
 interface BillItem {
@@ -146,6 +147,7 @@ export default function CarBillForm({ onBack }: { onBack: () => void }) {
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [focusedItemId, setFocusedItemId] = useState<number | null>(null);
   const [showReceipt, setShowReceipt] = useState(false);
+  const { showSuccess, showError, showWarning } = useNotification();
 
   const MAX_BILL_ITEMS = 7;
 
@@ -312,7 +314,7 @@ export default function CarBillForm({ onBack }: { onBack: () => void }) {
 
   const handleSearch = () => {
     if (!billId.trim()) {
-      alert("กรุณากรอกเลขที่บิลที่ต้องการค้นหา");
+      showWarning("กรุณากรอกเลขที่บิล", "กรุณากรอกเลขที่บิลที่ต้องการค้นหา");
       return;
     }
 
@@ -371,9 +373,9 @@ export default function CarBillForm({ onBack }: { onBack: () => void }) {
       });
       setIsSaved(true);
       setFormErrors({});
-      alert(`พบข้อมูลบิลเลขที่ ${billId} แล้ว!`);
+      showSuccess(`พบข้อมูลบิลเลขที่ ${billId}`, `พบข้อมูลบิลเลขที่ ${billId} แล้ว!`);
     } else {
-      alert(`ไม่พบข้อมูลบิลเลขที่ ${billId}`);
+      showError(`ไม่พบข้อมูลบิลเลขที่ ${billId}`, `ไม่พบข้อมูลบิลเลขที่ ${billId} ในระบบ`);
       setFormData({
         customer: {
           title: "", firstName: "", lastName: "", idNumber: "", phone: "",
@@ -396,7 +398,7 @@ export default function CarBillForm({ onBack }: { onBack: () => void }) {
 
   const handleSaveBill = () => {
     if (!validateForm()) {
-      alert("กรุณาแก้ไขข้อผิดพลาดในฟอร์มก่อนบันทึก");
+      showError("กรุณาแก้ไขข้อผิดพลาด", "กรุณาแก้ไขข้อผิดพลาดในฟอร์มก่อนบันทึก");
       return;
     }
 
@@ -414,12 +416,12 @@ export default function CarBillForm({ onBack }: { onBack: () => void }) {
     }
 
     setIsSaved(true);
-    alert(`${actionType}บิลเรียบร้อยแล้ว! ตอนนี้คุณสามารถส่งออก PDF ได้`);
+    showSuccess(`${actionType}บิลเรียบร้อยแล้ว!`, `ตอนนี้คุณสามารถส่งออก PDF ได้`);
   };
 
   const handleExportPdf = () => {
     if (!isSaved) {
-      alert("กรุณาบันทึกบิลก่อนส่งออกเป็น PDF");
+      showWarning("กรุณาบันทึกบิลก่อน", "กรุณาบันทึกบิลก่อนส่งออกเป็น PDF");
       return;
     }
     
@@ -432,7 +434,7 @@ export default function CarBillForm({ onBack }: { onBack: () => void }) {
     if (!formData.customer.firstName || !formData.customer.lastName || 
         !formData.car.licensePlate || !formData.car.carBrand || 
         formData.billItems.some(item => !item.description || !item.amount)) {
-      alert('กรุณากรอกข้อมูลให้ครบถ้วนก่อนดูใบเสร็จ');
+      showWarning('กรุณากรอกข้อมูลให้ครบถ้วน', 'กรุณากรอกข้อมูลให้ครบถ้วนก่อนดูใบเสร็จ');
       return;
     }
     

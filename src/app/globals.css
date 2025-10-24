@@ -1,5 +1,74 @@
 @import "tailwindcss";
 
+/* Custom Notification Styles */
+@layer components {
+  .notification-enter {
+    @apply transform translate-x-full opacity-0 scale-95;
+  }
+  
+  .notification-enter-active {
+    @apply transform translate-x-0 opacity-100 scale-100 transition-all duration-500 ease-out;
+  }
+  
+  .notification-exit {
+    @apply transform translate-x-0 opacity-100 scale-100;
+  }
+  
+  .notification-exit-active {
+    @apply transform translate-x-full opacity-0 scale-95 transition-all duration-300 ease-in;
+  }
+  
+  .notification-glow {
+    box-shadow: 
+      0 0 20px rgba(0, 0, 0, 0.3),
+      0 0 40px rgba(0, 0, 0, 0.1),
+      0 8px 32px rgba(0, 0, 0, 0.2);
+  }
+  
+         .notification-glow:hover {
+           box-shadow:
+             0 0 30px rgba(0, 0, 0, 0.4),
+             0 0 60px rgba(0, 0, 0, 0.15),
+             0 12px 48px rgba(0, 0, 0, 0.25);
+         }
+
+         .notification-glow-hover {
+           box-shadow:
+             0 0 40px rgba(0, 0, 0, 0.5),
+             0 0 80px rgba(0, 0, 0, 0.2),
+             0 16px 64px rgba(0, 0, 0, 0.3),
+             0 0 0 1px rgba(255, 255, 255, 0.1);
+         }
+  
+  .confirm-modal-enter {
+    @apply transform scale-95 opacity-0;
+  }
+  
+  .confirm-modal-enter-active {
+    @apply transform scale-100 opacity-100 transition-all duration-300 ease-out;
+  }
+  
+  .confirm-modal-exit {
+    @apply transform scale-100 opacity-100;
+  }
+  
+  .confirm-modal-exit-active {
+    @apply transform scale-95 opacity-0 transition-all duration-200 ease-in;
+  }
+  
+  .confirm-modal-glow {
+    box-shadow: 
+      0 25px 50px -12px rgba(0, 0, 0, 0.25),
+      0 0 0 1px rgba(255, 255, 255, 0.05);
+  }
+  
+  .confirm-modal-glow:hover {
+    box-shadow: 
+      0 32px 64px -12px rgba(0, 0, 0, 0.3),
+      0 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+}
+
 
 :root {
   --background: #ffffff;

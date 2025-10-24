@@ -46,43 +46,54 @@ export default function DebugMongoDBPage() {
       
       switch (test.name) {
         case 'Environment Variables':
-          const mongoUri = process.env.NEXT_PUBLIC_MONGODB_URI || 'Not set in client';
-          const mongoDb = process.env.NEXT_PUBLIC_MONGODB_DATABASE || 'Not set in client';
+          const envResponse = await fetch('/api/debug-mongodb', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ test: 'environment' })
+          });
           
-          return {
-            name: test.name,
-            status: 'success' as const,
-            message: '✅ Environment Variables พบแล้ว',
-            details: `MONGODB_URI: ${mongoUri.substring(0, 50)}...\nMONGODB_DATABASE: ${mongoDb}`
-          };
-
-        case 'MongoDB URI Format':
-          const uri = process.env.NEXT_PUBLIC_MONGODB_URI;
-          if (!uri) {
+          const envData = await envResponse.json();
+          
+          if (envData.success) {
+            return {
+              name: test.name,
+              status: 'success' as const,
+              message: '✅ Environment Variables พบแล้ว',
+              details: envData.message
+            };
+          } else {
             return {
               name: test.name,
               status: 'error' as const,
-              message: '❌ MONGODB_URI ไม่พบ',
-              details: 'กรุณาตั้งค่า MONGODB_URI ใน environment variables'
+              message: '❌ Environment Variables ไม่พบ',
+              details: envData.error
             };
           }
+
+        case 'MongoDB URI Format':
+          const uriResponse = await fetch('/api/debug-mongodb', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ test: 'uri_format' })
+          });
           
-          const isValidFormat = uri.startsWith('mongodb+srv://') && uri.includes('@') && uri.includes('.mongodb.net');
-          if (!isValidFormat) {
+          const uriData = await uriResponse.json();
+          
+          if (uriData.success) {
+            return {
+              name: test.name,
+              status: 'success' as const,
+              message: '✅ MongoDB URI Format ถูกต้อง',
+              details: uriData.message
+            };
+          } else {
             return {
               name: test.name,
               status: 'error' as const,
               message: '❌ MongoDB URI Format ไม่ถูกต้อง',
-              details: 'URI ต้องเริ่มต้นด้วย mongodb+srv:// และมี @ และ .mongodb.net'
+              details: uriData.error
             };
           }
-          
-          return {
-            name: test.name,
-            status: 'success' as const,
-            message: '✅ MongoDB URI Format ถูกต้อง',
-            details: `URI: ${uri.substring(0, 50)}...`
-          };
 
         case 'Network Connectivity':
           const response = await fetch('/api/debug-mongodb', {

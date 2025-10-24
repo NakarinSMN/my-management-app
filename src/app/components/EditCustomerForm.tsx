@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FaSave, FaTimes, FaCheckCircle, FaExclamationCircle, FaTrash, FaExclamationTriangle } from 'react-icons/fa';
 
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxN9rG3NhDyhlXVKgNndNcJ6kHopPaf5GRma_dRYjtP64svMYUFCSALwTEX4mYCHoDd6g/exec';
-
 interface CustomerData {
   licensePlate: string;
   brand?: string;
@@ -68,60 +66,36 @@ export default function EditCustomerForm({ customerData, onSuccess, onCancel }: 
     setError('');
     
     try {
-      // แปลงวันที่กลับเป็น DD/MM/YYYY สำหรับ Google Sheet
-      let formattedDate = '';
-      if (formData.registerDate) {
-        const [year, month, day] = formData.registerDate.split('-');
-        // แปลงเป็น DD/MM/YYYY โดยไม่ปรับวันที่
-        formattedDate = `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
-      }
-      
-      const updateData = {
-        action: 'updateCustomer',
-        originalLicensePlate: customerData.licensePlate, // ใช้ทะเบียนเดิมเป็น key
-        licensePlate: formData.licensePlate,
-        customerName: formData.customerName,
-        phone: formData.phone,
-        registerDate: formattedDate,
-        status: formData.status,
-        brand: formData.brand,
-        note: formData.note,
-      };
-      
       console.log('=== DEBUG EDIT FORM ===');
       console.log('customerData (original):', customerData);
       console.log('formData (current):', formData);
-      console.log('Original date:', formData.registerDate);
-      console.log('Formatted date:', formattedDate);
-      console.log('Sending update data:', updateData);
-      console.log('originalLicensePlate:', customerData.licensePlate);
       
-      // ใช้ FormData แทน JSON เพื่อหลีกเลี่ยง CORS preflight
-      const formDataToSend = new FormData();
-      Object.keys(updateData).forEach(key => {
-        formDataToSend.append(key, updateData[key as keyof typeof updateData]);
+      // ใช้ MongoDB API แทน Google Sheets
+      const response = await fetch('/api/customers', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          originalLicensePlate: customerData.licensePlate, // ใช้ทะเบียนเดิมเป็น key
+          licensePlate: formData.licensePlate,
+          customerName: formData.customerName,
+          phone: formData.phone,
+          registerDate: formData.registerDate,
+          status: formData.status,
+          brand: formData.brand,
+          note: formData.note,
+        }),
       });
 
-      const response = await fetch(GOOGLE_SCRIPT_URL, {
-        method: 'POST',
-        body: formDataToSend,
-      });
+      const result = await response.json();
+      console.log('DEBUG: Response:', result);
       
-      const text = await response.text();
-      console.log('DEBUG: Response text:', text);
-      
-      let result;
-      try {
-        result = JSON.parse(text);
-      } catch {
-        throw new Error('Response is not valid JSON: ' + text);
-      }
-      
-      if (result.result === 'success') {
+      if (response.ok && result.success) {
         setMessage('แก้ไขข้อมูลลูกค้าสำเร็จ!');
         setTimeout(() => onSuccess(), 1500);
       } else {
-        throw new Error(result.message || 'เกิดข้อผิดพลาดในการแก้ไขข้อมูล');
+        throw new Error(result.error || 'เกิดข้อผิดพลาดในการแก้ไขข้อมูล');
       }
     } catch (err) {
       let msg = '';
@@ -148,39 +122,28 @@ export default function EditCustomerForm({ customerData, onSuccess, onCancel }: 
     setError('');
     
     try {
-      const deleteData = {
-        action: 'deleteCustomer',
-        licensePlate: customerData.licensePlate,
-      };
-      
       console.log('=== DEBUG DELETE ===');
-      console.log('Deleting customer:', deleteData);
+      console.log('Deleting customer:', customerData.licensePlate);
       
-      const formDataToSend = new FormData();
-      Object.keys(deleteData).forEach(key => {
-        formDataToSend.append(key, deleteData[key as keyof typeof deleteData]);
+      // ใช้ MongoDB API แทน Google Sheets
+      const response = await fetch('/api/customers', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          licensePlate: customerData.licensePlate,
+        }),
       });
 
-      const response = await fetch(GOOGLE_SCRIPT_URL, {
-        method: 'POST',
-        body: formDataToSend,
-      });
+      const result = await response.json();
+      console.log('DEBUG: Response:', result);
       
-      const text = await response.text();
-      console.log('DEBUG: Response text:', text);
-      
-      let result;
-      try {
-        result = JSON.parse(text);
-      } catch {
-        throw new Error('Response is not valid JSON: ' + text);
-      }
-      
-      if (result.result === 'success') {
+      if (response.ok && result.success) {
         setMessage('ลบข้อมูลลูกค้าสำเร็จ!');
         setTimeout(() => onSuccess(), 1500);
       } else {
-        throw new Error(result.message || 'เกิดข้อผิดพลาดในการลบข้อมูล');
+        throw new Error(result.error || 'เกิดข้อผิดพลาดในการลบข้อมูล');
       }
     } catch (err) {
       let msg = '';
@@ -328,7 +291,16 @@ export default function EditCustomerForm({ customerData, onSuccess, onCancel }: 
               disabled={isSubmitting}
               className="flex items-center gap-1.5 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 active:bg-red-800 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold text-sm shadow-sm hover:shadow-md"
             >
-              <FaTrash className="text-sm" /> ลบข้อมูล
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  กำลังลบ...
+                </>
+              ) : (
+                <>
+                  <FaTrash className="text-sm" /> ลบข้อมูล
+                </>
+              )}
             </button>
             <div className="flex gap-2">
               <button 
@@ -344,8 +316,17 @@ export default function EditCustomerForm({ customerData, onSuccess, onCancel }: 
                 disabled={isSubmitting} 
                 className="flex items-center gap-1.5 px-5 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 active:from-yellow-700 active:to-yellow-800 text-white font-bold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-sm hover:shadow-md"
               >
-                <FaSave className="text-sm" /> 
-                {isSubmitting ? 'กำลังบันทึก...' : 'บันทึกการแก้ไข'}
+                {isSubmitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    กำลังบันทึก...
+                  </>
+                ) : (
+                  <>
+                    <FaSave className="text-sm" /> 
+                    บันทึกการแก้ไข
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -419,8 +400,17 @@ export default function EditCustomerForm({ customerData, onSuccess, onCancel }: 
                   disabled={isSubmitting}
                   className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 active:from-red-800 active:to-red-900 text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed font-bold text-sm shadow-sm hover:shadow-md"
                 >
-                  <FaTrash className="inline mr-1.5 text-sm" /> 
-                  {isSubmitting ? 'กำลังลบ...' : 'ยืนยันการลบ'}
+                  {isSubmitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white inline mr-1.5"></div>
+                      กำลังลบ...
+                    </>
+                  ) : (
+                    <>
+                      <FaTrash className="inline mr-1.5 text-sm" /> 
+                      ยืนยันการลบ
+                    </>
+                  )}
                 </button>
               </div>
             </div>
