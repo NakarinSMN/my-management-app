@@ -41,14 +41,25 @@ export default function TestMongoDBPage() {
 
   const runTest = async (test: typeof tests[0]) => {
     try {
-      const response = await fetch(test.endpoint);
+      const startTime = Date.now();
+      const response = await fetch(test.endpoint, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // เพิ่ม timeout
+        signal: AbortSignal.timeout(10000) // 10 วินาที timeout
+      });
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+      
       const data = await response.json();
       
       if (response.ok && data.success) {
         return {
           name: test.name,
           status: 'success' as const,
-          message: `✅ เชื่อมต่อสำเร็จ!`,
+          message: `✅ เชื่อมต่อสำเร็จ! (${duration}ms)`,
           data: data.data,
           count: data.count || data.data?.length || 0
         };

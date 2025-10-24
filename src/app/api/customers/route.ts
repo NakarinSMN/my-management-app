@@ -2,13 +2,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
 
-// GET: ดึงข้อมูลลูกค้าทั้งหมด
+// GET: ดึงข้อมูลลูกค้าทั้งหมด (เร็วขึ้น)
 export async function GET() {
   try {
+    console.log('Attempting to connect to MongoDB...');
     const db = await getDatabase();
-    const customers = db.collection('customers');
+    console.log('MongoDB connected successfully');
     
-    const data = await customers.find({}).toArray();
+    const customers = db.collection('customers');
+    console.log('Fetching customers from collection...');
+    
+    // ใช้ projection เพื่อลดข้อมูลที่ส่ง
+    const data = await customers.find({}, {
+      projection: {
+        _id: 0, // ไม่ส่ง _id
+        licensePlate: 1,
+        customerName: 1,
+        phone: 1,
+        registerDate: 1,
+        status: 1,
+        note: 1,
+        userId: 1,
+        day: 1
+      }
+    }).toArray();
+    
+    console.log(`Successfully fetched ${data.length} customers`);
     
     return NextResponse.json({ 
       success: true, 
@@ -17,8 +36,19 @@ export async function GET() {
     });
   } catch (error) {
     console.error('Error fetching customers:', error);
+    
+    // Return more detailed error information
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const isConnectionError = errorMessage.includes('connection') || errorMessage.includes('SSL') || errorMessage.includes('TLS');
+    
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch customers' },
+      { 
+        success: false, 
+        error: isConnectionError 
+          ? 'MongoDB connection failed. Please check your connection string and network access.'
+          : 'Failed to fetch customers',
+        details: errorMessage
+      },
       { status: 500 }
     );
   }

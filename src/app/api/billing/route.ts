@@ -2,13 +2,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
 
-// GET: ดึงข้อมูลบิลทั้งหมด
+// GET: ดึงข้อมูลบิลทั้งหมด (เร็วขึ้น)
 export async function GET() {
   try {
     const db = await getDatabase();
     const billing = db.collection('billing');
     
-    const data = await billing.find({}).toArray();
+    // ใช้ projection เพื่อลดข้อมูลที่ส่ง
+    const data = await billing.find({}, {
+      projection: {
+        _id: 0, // ไม่ส่ง _id
+        billNumber: 1,
+        customerName: 1,
+        service: 1,
+        category: 1,
+        price: 1,
+        date: 1,
+        phone: 1,
+        status: 1,
+        items: 1
+      }
+    }).toArray();
     
     return NextResponse.json({ 
       success: true, 
