@@ -216,6 +216,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               text="ออกบิล"
               isSidebarOpen={isMobile || isSidebarOpen}
             />
+             <SidebarMenuItem
+              href="/test-mongodb"
+              icon={faFileAlt}
+              text="เทส mongodb"
+              isSidebarOpen={isMobile || isSidebarOpen}
+            />
+            
             <SidebarMenuItem
               href="/billing"
               icon={faCalendarAlt}
