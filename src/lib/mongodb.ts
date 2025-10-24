@@ -14,28 +14,25 @@ const getMongoConfig = () => {
   return { uri, dbName };
 };
 
-// MongoDB connection options (แก้ไข SSL/TLS issues)
+// MongoDB connection options (เหมาะกับ Netlify Functions)
 const options = {
   retryWrites: true,
   w: 'majority' as const,
-  maxPoolSize: 10, // เพิ่ม connection pool
-  serverSelectionTimeoutMS: 30000, // เพิ่ม timeout
-  socketTimeoutMS: 45000, // เพิ่ม socket timeout
-  connectTimeoutMS: 30000, // เพิ่ม connect timeout
+  maxPoolSize: 10, // connection pool สำหรับ production
+  minPoolSize: 2, // เพิ่ม minPoolSize สำหรับ serverless
+  serverSelectionTimeoutMS: 10000, // ลด timeout สำหรับ serverless
+  socketTimeoutMS: 30000, // ลด socket timeout
+  connectTimeoutMS: 10000, // ลด connect timeout
   family: 4, // Use IPv4, skip trying IPv6
-  // เพิ่ม SSL options เพื่อแก้ไข SSL/TLS issues
+  // SSL options สำหรับ production
   ssl: true,
-  sslValidate: false,
   // เพิ่ม authSource
   authSource: 'admin',
-  // เพิ่ม options สำหรับแก้ไข connection issues
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
   // เพิ่ม retry options
   retryReads: true,
-  // เพิ่ม buffer options
-  bufferMaxEntries: 0,
-  bufferCommands: false,
+  // เพิ่ม options สำหรับ serverless
+  maxIdleTimeMS: 30000, // ปิด connection หลัง idle
+  heartbeatFrequencyMS: 10000, // ลด heartbeat frequency
 };
 
 let client: MongoClient;

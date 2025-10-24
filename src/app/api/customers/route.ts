@@ -4,13 +4,35 @@ import { getDatabase } from '@/lib/mongodb';
 
 // GET: ดึงข้อมูลลูกค้าทั้งหมด (เร็วขึ้น)
 export async function GET() {
+  const startTime = Date.now();
+  
   try {
-    console.log('Attempting to connect to MongoDB...');
+    console.log('🔍 [Customers API] Starting MongoDB connection...');
+    console.log('🔍 [Customers API] Environment check:', {
+      hasMongoUri: !!process.env.MONGODB_URI,
+      hasMongoDb: !!process.env.MONGODB_DATABASE,
+      nodeEnv: process.env.NODE_ENV
+    });
+    
     const db = await getDatabase();
-    console.log('MongoDB connected successfully');
+    console.log('✅ [Customers API] MongoDB connected successfully');
     
     const customers = db.collection('customers');
-    console.log('Fetching customers from collection...');
+    console.log('🔍 [Customers API] Fetching customers from collection...');
+    
+    // ตรวจสอบว่า collection มีอยู่หรือไม่
+    const collections = await db.listCollections({ name: 'customers' }).toArray();
+    console.log('🔍 [Customers API] Collections found:', collections.length);
+    
+    if (collections.length === 0) {
+      console.warn('⚠️ [Customers API] Collection "customers" not found, creating empty result');
+      return NextResponse.json({ 
+        success: true, 
+        data: [],
+        count: 0,
+        message: 'Collection "customers" not found. Please create the collection in MongoDB Atlas.'
+      });
+    }
     
     // ใช้ projection เพื่อลดข้อมูลที่ส่ง
     const data = await customers.find({}, {
@@ -27,19 +49,30 @@ export async function GET() {
       }
     }).toArray();
     
-    console.log(`Successfully fetched ${data.length} customers`);
+    const duration = Date.now() - startTime;
+    console.log(`✅ [Customers API] Successfully fetched ${data.length} customers in ${duration}ms`);
     
     return NextResponse.json({ 
       success: true, 
       data: data,
-      count: data.length 
+      count: data.length,
+      duration: duration
     });
   } catch (error) {
-    console.error('Error fetching customers:', error);
+    const duration = Date.now() - startTime;
+    console.error('❌ [Customers API] Error fetching customers:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      duration: duration
+    });
     
     // Return more detailed error information
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    const isConnectionError = errorMessage.includes('connection') || errorMessage.includes('SSL') || errorMessage.includes('TLS');
+    const isConnectionError = errorMessage.includes('connection') || 
+                             errorMessage.includes('SSL') || 
+                             errorMessage.includes('TLS') ||
+                             errorMessage.includes('timeout') ||
+                             errorMessage.includes('ECONNREFUSED');
     
     return NextResponse.json(
       { 
@@ -47,7 +80,8 @@ export async function GET() {
         error: isConnectionError 
           ? 'MongoDB connection failed. Please check your connection string and network access.'
           : 'Failed to fetch customers',
-        details: errorMessage
+        details: errorMessage,
+        duration: duration
       },
       { status: 500 }
     );

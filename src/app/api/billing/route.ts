@@ -4,9 +4,35 @@ import { getDatabase } from '@/lib/mongodb';
 
 // GET: ดึงข้อมูลบิลทั้งหมด (เร็วขึ้น)
 export async function GET() {
+  const startTime = Date.now();
+  
   try {
+    console.log('🔍 [Billing API] Starting MongoDB connection...');
+    console.log('🔍 [Billing API] Environment check:', {
+      hasMongoUri: !!process.env.MONGODB_URI,
+      hasMongoDb: !!process.env.MONGODB_DATABASE,
+      nodeEnv: process.env.NODE_ENV
+    });
+    
     const db = await getDatabase();
+    console.log('✅ [Billing API] MongoDB connected successfully');
+    
     const billing = db.collection('billing');
+    console.log('🔍 [Billing API] Fetching billing from collection...');
+    
+    // ตรวจสอบว่า collection มีอยู่หรือไม่
+    const collections = await db.listCollections({ name: 'billing' }).toArray();
+    console.log('🔍 [Billing API] Collections found:', collections.length);
+    
+    if (collections.length === 0) {
+      console.warn('⚠️ [Billing API] Collection "billing" not found, creating empty result');
+      return NextResponse.json({ 
+        success: true, 
+        data: [],
+        count: 0,
+        message: 'Collection "billing" not found. Please create the collection in MongoDB Atlas.'
+      });
+    }
     
     // ใช้ projection เพื่อลดข้อมูลที่ส่ง
     const data = await billing.find({}, {
@@ -24,15 +50,40 @@ export async function GET() {
       }
     }).toArray();
     
+    const duration = Date.now() - startTime;
+    console.log(`✅ [Billing API] Successfully fetched ${data.length} billing records in ${duration}ms`);
+    
     return NextResponse.json({ 
       success: true, 
       data: data,
-      count: data.length 
+      count: data.length,
+      duration: duration
     });
   } catch (error) {
-    console.error('Error fetching billing:', error);
+    const duration = Date.now() - startTime;
+    console.error('❌ [Billing API] Error fetching billing:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      duration: duration
+    });
+    
+    // Return more detailed error information
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const isConnectionError = errorMessage.includes('connection') || 
+                             errorMessage.includes('SSL') || 
+                             errorMessage.includes('TLS') ||
+                             errorMessage.includes('timeout') ||
+                             errorMessage.includes('ECONNREFUSED');
+    
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch billing data' },
+      { 
+        success: false, 
+        error: isConnectionError 
+          ? 'MongoDB connection failed. Please check your connection string and network access.'
+          : 'Failed to fetch billing data',
+        details: errorMessage,
+        duration: duration
+      },
       { status: 500 }
     );
   }
