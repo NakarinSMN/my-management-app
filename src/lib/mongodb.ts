@@ -19,11 +19,23 @@ const options = {
   retryWrites: true,
   w: 'majority' as const,
   maxPoolSize: 10, // เพิ่ม connection pool
-  serverSelectionTimeoutMS: 10000, // เพิ่ม timeout
-  socketTimeoutMS: 30000, // เพิ่ม socket timeout
-  connectTimeoutMS: 15000, // เพิ่ม connect timeout
+  serverSelectionTimeoutMS: 30000, // เพิ่ม timeout
+  socketTimeoutMS: 45000, // เพิ่ม socket timeout
+  connectTimeoutMS: 30000, // เพิ่ม connect timeout
   family: 4, // Use IPv4, skip trying IPv6
-  // ลบ ssl: true เพื่อให้ MongoDB driver จัดการเอง
+  // เพิ่ม SSL options เพื่อแก้ไข SSL/TLS issues
+  ssl: true,
+  sslValidate: false,
+  // เพิ่ม authSource
+  authSource: 'admin',
+  // เพิ่ม options สำหรับแก้ไข connection issues
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  // เพิ่ม retry options
+  retryReads: true,
+  // เพิ่ม buffer options
+  bufferMaxEntries: 0,
+  bufferCommands: false,
 };
 
 let client: MongoClient;
