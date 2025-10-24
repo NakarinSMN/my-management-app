@@ -29,8 +29,8 @@ export default function DashboardPage() {
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [paidRevenue, setPaidRevenue] = useState(0);
   const [pendingRevenue, setPendingRevenue] = useState(0);
-  const [recentBills, setRecentBills] = useState([]);
-  const [nextYearTax, setNextYearTax] = useState([]);
+  const [recentBills, setRecentBills] = useState<Record<string, unknown>[]>([]);
+  const [nextYearTax, setNextYearTax] = useState<Record<string, unknown>[]>([]);
   const [monthlyRevenue, setMonthlyRevenue] = useState(0);
   const [todayRevenue, setTodayRevenue] = useState(0);
 
@@ -128,9 +128,12 @@ export default function DashboardPage() {
       let todayRevenue = 0;
       
       billingData.data.forEach((bill: Record<string, unknown>) => {
-        const billDate = new Date(bill.date || 0);
+        const rawDate = bill.date;
+        const billDate = typeof rawDate === 'string' || typeof rawDate === 'number' || rawDate instanceof Date 
+          ? new Date(rawDate) 
+          : new Date(0);
         const billDateStr = billDate.toISOString().split('T')[0];
-        const price = bill.price || bill.totalAmount || 0;
+        const price = (bill.price as number) || (bill.totalAmount as number) || 0;
         
         if (billDate.getMonth() === currentMonth && billDate.getFullYear() === currentYear) {
           monthlyRevenue += price;
@@ -332,13 +335,13 @@ export default function DashboardPage() {
                         <FontAwesomeIcon icon={faFileAlt} className="text-green-600 dark:text-green-400" />
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900 dark:text-white">{bill.billNumber || 'ไม่มีเลขที่บิล'}</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">{bill.customerName || 'ไม่มีชื่อลูกค้า'}</p>
+                        <p className="font-medium text-gray-900 dark:text-white">{String(bill.billNumber || 'ไม่มีเลขที่บิล')}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{String(bill.customerName || 'ไม่มีชื่อลูกค้า')}</p>
                       </div>
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-green-600 dark:text-green-400">฿{bill.price?.toLocaleString() || '0'}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{bill.date || 'ไม่มีวันที่'}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{String(bill.date || 'ไม่มีวันที่')}</p>
                     </div>
                   </div>
                 ))
@@ -373,13 +376,13 @@ export default function DashboardPage() {
                         <FontAwesomeIcon icon={faCar} className="text-orange-600 dark:text-orange-400" />
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900 dark:text-white">{customer.licensePlate || 'ไม่มีทะเบียน'}</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">{customer.customerName || 'ไม่มีชื่อลูกค้า'}</p>
+                        <p className="font-medium text-gray-900 dark:text-white">{String(customer.licensePlate || 'ไม่มีทะเบียน')}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{String(customer.customerName || 'ไม่มีชื่อลูกค้า')}</p>
                       </div>
                     </div>
                     <div className="text-right">
                       <p className="text-sm text-orange-600 dark:text-orange-400 font-medium">ปีถัดไป</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{customer.registerDate || 'ไม่มีวันที่'}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{String(customer.registerDate || 'ไม่มีวันที่')}</p>
                     </div>
                   </div>
                 ))

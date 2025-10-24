@@ -219,7 +219,7 @@ export default function TaxExpiryNextYearPage() {
       console.log('First item:', customerData[0]);
       
       const formatted: TaxExpiryData[] = customerData
-        .map((item: Record<string, unknown>) => {
+        .map((item) => {
           // ดึงวันครบกำหนดจากข้อมูล MongoDB
           let expiryDate = item.expiryDate || item.nextTaxDate || '';
           

@@ -249,18 +249,18 @@ export default function ApiTesterPage() {
                   <div className="space-y-2">
                     <div className="flex items-center space-x-4 text-sm">
                       <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        test.result.status >= 200 && test.result.status < 300
+                        Number(test.result.status) >= 200 && Number(test.result.status) < 300
                           ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
                           : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300'
                       }`}>
-                        {test.result.status} {test.result.statusText}
+                        {String(test.result.status)} {String(test.result.statusText)}
                       </span>
                       <span className="text-gray-600 dark:text-gray-400">
-                        {test.result.duration}ms
+                        {String(test.result.duration)}ms
                       </span>
                     </div>
                     
-                    {test.result.data && (
+                    {test.result.data != null && (
                       <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded text-xs font-mono text-gray-600 dark:text-gray-400 overflow-x-auto">
                         <pre>{JSON.stringify(test.result.data, null, 2)}</pre>
                       </div>

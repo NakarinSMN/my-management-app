@@ -9,6 +9,7 @@ const MONGODB_BILLING_API_URL = '/api/billing';
 
 // Interface สำหรับข้อมูลบิล
 export interface BillingData {
+  _id?: string; // MongoDB ObjectId
   billNumber: string;
   customerName: string;
   service: string;
@@ -19,6 +20,7 @@ export interface BillingData {
   status: string;
   items?: string; // รายการเพิ่มเติม (JSON string)
   totalAmount?: number; // ยอดเงินรวม
+  notes?: string; // หมายเหตุ
 }
 
 interface RawBillingDataItem {

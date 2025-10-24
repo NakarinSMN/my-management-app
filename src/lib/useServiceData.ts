@@ -60,8 +60,8 @@ export function useServiceData(): UseServiceDataReturn {
           serviceName: item.serviceName || '',
           servicePrice: item.servicePrice || 0,
           serviceDetails: item.serviceDetails || '',
-          createdAt: item.createdAt || new Date().toISOString(),
-          updatedAt: item.updatedAt || new Date().toISOString(),
+          createdAt: typeof item.createdAt === 'string' ? item.createdAt : (item.createdAt instanceof Date ? item.createdAt.toISOString() : new Date().toISOString()),
+          updatedAt: typeof item.updatedAt === 'string' ? item.updatedAt : (item.updatedAt instanceof Date ? item.updatedAt.toISOString() : new Date().toISOString()),
           rowIndex: item.rowIndex as number | undefined
         }));
         

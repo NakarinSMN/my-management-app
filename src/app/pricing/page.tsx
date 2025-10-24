@@ -124,14 +124,14 @@ export default function PricingPage() {
 
 
   // จัดการหมวดหมู่
-  const handleCategorySuccess = async (categoryData: Record<string, unknown>) => {
+  const handleCategorySuccess = async (categoryData: { _id?: string; categoryName: string; categoryDescription: string }) => {
     setIsCategoryModalOpen(false);
     setEditingCategory(null);
     
     try {
       if (editingCategory) {
         // แก้ไขข้อมูล
-        const success = await updateCategory(editingCategory._id, categoryData);
+        const success = await updateCategory(editingCategory._id as string, categoryData);
         if (success) {
           console.log('✅ Category updated successfully');
           showSuccess('แก้ไขหมวดหมู่สำเร็จ', `หมวดหมู่ "${categoryData.categoryName}" ถูกแก้ไขเรียบร้อยแล้ว`);
@@ -307,7 +307,13 @@ export default function PricingPage() {
       if (!groups[item.categoryName]) {
         groups[item.categoryName] = [];
       }
-      groups[item.categoryName].push(item);
+      // แปลงข้อมูลให้ตรงกับ ServiceData interface
+      const serviceData: ServiceData = {
+        ...item,
+        createdAt: typeof item.createdAt === 'string' ? item.createdAt : (item.createdAt instanceof Date ? item.createdAt.toISOString() : new Date().toISOString()),
+        updatedAt: typeof item.updatedAt === 'string' ? item.updatedAt : (item.updatedAt instanceof Date ? item.updatedAt.toISOString() : new Date().toISOString())
+      };
+      groups[item.categoryName].push(serviceData);
     });
     
     return groups;
@@ -563,7 +569,7 @@ export default function PricingPage() {
         {isCategoryModalOpen && (
           <Modal isOpen={isCategoryModalOpen}>
             <CategoryForm
-              data={editingCategory}
+              data={editingCategory as { _id?: string; categoryName: string; categoryDescription: string } | null}
               onSuccess={handleCategorySuccess}
               onCancel={handleCloseCategoryModal}
               isEdit={!!editingCategory}

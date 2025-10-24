@@ -30,6 +30,7 @@ interface RawCustomerDataItem {
 }
 
 export interface CustomerData {
+  _id?: string; // MongoDB ObjectId
   licensePlate: string;
   brand?: string;
   customerName: string;
@@ -39,6 +40,9 @@ export interface CustomerData {
   note?: string;
   userId?: string;
   day?: number;
+  expiryDate?: string; // วันสิ้นอายุภาษี
+  nextTaxDate?: string; // วันชำระภาษีครั้งถัดไป
+  lastTaxDate?: string; // วันชำระภาษีล่าสุด
 }
 
 // ฟังก์ชัน fetcher แบบง่ายๆ ไม่มี cache
