@@ -4,7 +4,8 @@
 import useSWR from 'swr';
 import { useEffect, useState } from 'react';
 
-const GOOGLE_SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbxN9rG3NhDyhlXVKgNndNcJ6kHopPaf5GRma_dRYjtP64svMYUFCSALwTEX4mYCHoDd6g/exec';
+// เปลี่ยนจาก Google Sheets API เป็น MongoDB API
+const MONGODB_BILLING_API_URL = '/api/billing';
 const CACHE_KEY = 'billing_data_cache';
 const CACHE_TIMESTAMP_KEY = 'billing_data_cache_timestamp';
 const CACHE_DURATION = 5 * 60 * 1000; // 5 นาที
@@ -115,7 +116,7 @@ export function useBillingData() {
   const [formattedData, setFormattedData] = useState<BillingData[]>([]);
   
   const { data: swrData, error: swrError, mutate, isLoading } = useSWR(
-    GOOGLE_SHEET_API_URL,
+    MONGODB_BILLING_API_URL,
     fetcherWithCache,
     {
       revalidateOnFocus: false,
@@ -167,6 +168,6 @@ export function useBillingData() {
 }
 
 // Export API URL สำหรับใช้ใน forms
-export { GOOGLE_SHEET_API_URL };
+export { MONGODB_BILLING_API_URL };
 
 
