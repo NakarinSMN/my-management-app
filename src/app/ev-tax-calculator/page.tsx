@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { FaCar } from 'react-icons/fa';
+import { FaCar, FaCalculator } from 'react-icons/fa';
 import AnimatedPage, { itemVariants } from '../components/AnimatedPage';
 
 interface TaxRate {
