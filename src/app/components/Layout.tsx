@@ -327,7 +327,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </nav>
 
         <motion.footer
-          className={`p-4 text-center text-[xs] text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700`}
+          className={`p-4 text-center text-[10px] text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700`}
           initial={{ opacity: 0, y: 20 }}
           animate={{
             opacity: (isMobile || isSidebarOpen) ? 1 : 0,
