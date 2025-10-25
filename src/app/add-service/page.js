@@ -1,22 +1,22 @@
-// PricingPage.js (Updated)
+// AddServicePage.tsx
 "use client";
 
-import React, { useState, useEffect, useMemo, memo } from 'react'; // เพิ่ม useCallback
+import React, { useState, useEffect, useMemo, memo } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { FaPlus } from 'react-icons/fa'; // Import ไอคอน
+import { FaPlus } from 'react-icons/fa';
 
 import AnimatedPage, { itemVariants } from '../components/AnimatedPage';
 import { Card } from '../components/ui/Card';
-import Modal from '../components/Modal'; // Import Modal
-import AddServiceForm from '../components/AddServiceForm'; // Import Form
+import Modal from '../components/Modal';
+import AddServiceForm from '../components/AddServiceForm';
 import useSWR from 'swr';
 
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz3WJmHNJ2h8Yj1rm2tc_mXj6JNCYz8T-yOmg9kC6aKgpAAuXmH5Z3DNZQF8ecGZUGw/exec';
 
 const fetcher = (url) => fetch(url).then(res => res.json());
 
-export default function PricingPage() {
+export default function AddServicePage() {
   const [serviceCategories, setServiceCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
