@@ -239,6 +239,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             />
 
 
+            {/* Divider */}
+            <div className="my-4 mx-3 border-t border-gray-200 dark:border-gray-700"></div>
+            
             <motion.h3
               className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-6 mb-2 px-3"
               initial={{ opacity: 0, x: -20 }}
@@ -271,6 +274,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             /> */}
 
 
+            {/* Divider */}
+            <div className="my-4 mx-3 border-t border-gray-200 dark:border-gray-700"></div>
+            
             <motion.h3
               className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-6 mb-2 px-3"
               initial={{ opacity: 0, x: -20 }}
@@ -289,12 +295,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             />
 
             <SidebarMenuItem
-              href="https://billingv2.netlify.app/adjust-carpet"
+              href="/ev-tax-calculator"
               icon={faClock}
               text="คำนวณภาษีรถไฟฟ้า"
               isSidebarOpen={isMobile || isSidebarOpen}
             />
 
+            {/* Divider */}
+            <div className="my-4 mx-3 border-t border-gray-200 dark:border-gray-700"></div>
+            
             <motion.h3
               className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-6 mb-2 px-3"
               initial={{ opacity: 0, x: -20 }}
