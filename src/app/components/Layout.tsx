@@ -237,12 +237,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               text="ราคางานบริการ"
               isSidebarOpen={isMobile || isSidebarOpen}
             />
-            <SidebarMenuItem
-              href="/customer-info"
-              icon={faUserCircle}
-              text="ข้อมูลต่อภาษี"
-              isSidebarOpen={isMobile || isSidebarOpen}
-            />
+
 
             <motion.h3
               className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-6 mb-2 px-3"
@@ -253,22 +248,27 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               }}
               transition={{ duration: 0.3, delay: 0.1 }}
             >
-              {(isMobile || isSidebarOpen) ? "ออกบิลเงินสด" : ""}
+              {(isMobile || isSidebarOpen) ? "ข้อมูลลูกค้า" : ""}
             </motion.h3>
-            <SidebarMenuItem
+            {/* <SidebarMenuItem
               href="/billing-main"
               icon={faFileAlt}
               text="ออกบิล"
               isSidebarOpen={isMobile || isSidebarOpen}
+            /> */}
+            <SidebarMenuItem
+              href="/customer-info"
+              icon={faUserCircle}
+              text="ข้อมูลต่อภาษี"
+              isSidebarOpen={isMobile || isSidebarOpen}
             />
 
-
-            <SidebarMenuItem
+            {/* <SidebarMenuItem
               href="/billing"
               icon={faCalendarAlt}
               text="ประวัติ"
               isSidebarOpen={isMobile || isSidebarOpen}
-            />
+            /> */}
 
 
             <motion.h3
