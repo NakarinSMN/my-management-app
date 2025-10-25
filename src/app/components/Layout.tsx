@@ -44,7 +44,7 @@ const SidebarMenuItem: React.FC<MenuItemProps> = ({ href, icon, text }) => {
     >
       <motion.div whileHover={{ scale: 1.02 }} className="flex items-center w-full">
         <FontAwesomeIcon icon={icon} className="text-xl mr-3" />
-        <span className="font-medium text-lg">{text}</span>
+        <span className="font-medium text-[14px]">{text}</span>
       </motion.div>
     </Link>
   );
@@ -88,7 +88,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     // ตรวจสอบ localStorage สำหรับ theme preference
     const savedTheme = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
+
     if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
       setIsDarkMode(true);
       document.documentElement.classList.add('dark');
@@ -101,7 +101,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const toggleDarkMode = () => {
     const newDarkMode = !isDarkMode;
     setIsDarkMode(newDarkMode);
-    
+
     if (newDarkMode) {
       document.documentElement.classList.add('dark');
       localStorage.setItem('theme', 'dark');
@@ -118,7 +118,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   // กำหนดความกว้างของ Sidebar สำหรับ Tailwind CSS
   // w-64 = 256px, w-20 = 80px
   const sidebarWidthClass = isMobile ? 'w-full' : 'w-[300px]';
-  
+
   // ใช้ state isMobile แทนการเช็ค window.innerWidth โดยตรง
   const marginLeftMain = isMobile ? '0px' : '300px'; // 256px = w-64, 80px = w-20
 
@@ -143,7 +143,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           x: isMobile && !isSidebarOpen ? -sidebarWidth : 0,
           width: isMobile ? (isSidebarOpen ? '100%' : '0%') : '300px'
         }}
-        transition={{ 
+        transition={{
           duration: 0.4,
           ease: [0.4, 0.0, 0.2, 1], // Custom easing for smoother animation
           type: "spring",
@@ -153,10 +153,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         className={`fixed top-0 left-0 h-full ${sidebarWidthClass} bg-white dark:bg-gray-800 shadow-lg z-40
           flex flex-col
           lg:flex-shrink-0 lg:overflow-y-auto lg:shadow-none lg:transform-none lg:transition-all lg:duration-300 lg:ease-in-out`}
-          // ลบคลาส lg:fixed ออกจาก Sidebar เพราะเราจะใช้ flexbox และ margin-left แทนการ fixed
-          // **คำอธิบาย: จริงๆ แล้ว lg:fixed ใน aside ถูกต้องแล้วครับ เพื่อให้มันตรึงอยู่**
-          // **ปัญหาคือ div main content ไม่ได้ใช้ margin-left/padding-left ที่ถูกต้องและ dynamic**
-          // ผมจะกลับไปใช้ lg:fixed เหมือนเดิมใน aside และแก้ไขที่ main content
+      // ลบคลาส lg:fixed ออกจาก Sidebar เพราะเราจะใช้ flexbox และ margin-left แทนการ fixed
+      // **คำอธิบาย: จริงๆ แล้ว lg:fixed ใน aside ถูกต้องแล้วครับ เพื่อให้มันตรึงอยู่**
+      // **ปัญหาคือ div main content ไม่ได้ใช้ margin-left/padding-left ที่ถูกต้องและ dynamic**
+      // ผมจะกลับไปใช้ lg:fixed เหมือนเดิมใน aside และแก้ไขที่ main content
       >
         <div className="p-6 flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
           <motion.div
@@ -175,7 +175,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </motion.div>
 
           {(isMobile || isSidebarOpen) && (
-            <motion.h2 
+            <motion.h2
               className="text-lg font-semibold text-gray-700 dark:text-gray-300 ml-4 flex-grow"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -184,7 +184,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               ตรอ.บังรีท่าอิฐ
             </motion.h2>
           )}
-          
+
           {/* ปุ่มปิดเมนูสำหรับโหมดมือถือ */}
           {isMobile && (
             <motion.button
@@ -206,12 +206,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none transition-colors duration-200"
             aria-label={isDarkMode ? "เปลี่ยนเป็นโหมดสว่าง" : "เปลี่ยนเป็นโหมดมืด"}
           >
-            <FontAwesomeIcon 
-              icon={isDarkMode ? faSun : faMoon} 
-              className="text-xl" 
+            <FontAwesomeIcon
+              icon={isDarkMode ? faSun : faMoon}
+              className="text-xl"
             />
           </motion.button>
-          
+
           {/* ลบปุ่มย่อ/ขยายสำหรับเดสก์ท็อป */}
           {/* <motion.button
             onClick={toggleDesktopSidebar}
@@ -244,10 +244,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               isSidebarOpen={isMobile || isSidebarOpen}
             />
 
-            <motion.h3 
-              className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-6 mb-2 px-3"
+            <motion.h3
+              className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-6 mb-2 px-3"
               initial={{ opacity: 0, x: -20 }}
-              animate={{ 
+              animate={{
                 opacity: (isMobile || isSidebarOpen) ? 1 : 0,
                 x: (isMobile || isSidebarOpen) ? 0 : -20
               }}
@@ -262,13 +262,25 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               isSidebarOpen={isMobile || isSidebarOpen}
             />
 
-            
+
             <SidebarMenuItem
               href="/billing"
               icon={faCalendarAlt}
               text="ประวัติ"
               isSidebarOpen={isMobile || isSidebarOpen}
             />
+
+
+            <motion.h3
+              className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-6 mb-2 px-3"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{
+                opacity: (isMobile || isSidebarOpen) ? 1 : 0,
+                x: (isMobile || isSidebarOpen) ? 0 : -20
+              }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+            >{(isMobile || isSidebarOpen) ? "คำนวณ" : ""}</motion.h3>
+
             <SidebarMenuItem
               href="https://billingv2.netlify.app/adjust-carpet"
               icon={faClock}
@@ -276,15 +288,23 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               isSidebarOpen={isMobile || isSidebarOpen}
             />
 
-<motion.h3 
-              className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-6 mb-2 px-3"
+            <SidebarMenuItem
+              href="https://billingv2.netlify.app/adjust-carpet"
+              icon={faClock}
+              text="คำนวณภาษีรถไฟฟ้า"
+              isSidebarOpen={isMobile || isSidebarOpen}
+            />
+
+            <motion.h3
+              className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-6 mb-2 px-3"
               initial={{ opacity: 0, x: -20 }}
-              animate={{ 
+              animate={{
                 opacity: (isMobile || isSidebarOpen) ? 1 : 0,
                 x: (isMobile || isSidebarOpen) ? 0 : -20
               }}
               transition={{ duration: 0.3, delay: 0.1 }}
             >
+
               {(isMobile || isSidebarOpen) ? "Admin Menu" : ""}
             </motion.h3>
             <SidebarMenuItem
@@ -294,10 +314,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               isSidebarOpen={isMobile || isSidebarOpen}
             />
 
-            <motion.h3 
+            <motion.h3
               className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-6 mb-2 px-3"
               initial={{ opacity: 0, x: -20 }}
-              animate={{ 
+              animate={{
                 opacity: (isMobile || isSidebarOpen) ? 1 : 0,
                 x: (isMobile || isSidebarOpen) ? 0 : -20
               }}
@@ -306,10 +326,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </ul>
         </nav>
 
-        <motion.footer 
-          className={`p-4 text-center text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700`}
+        <motion.footer
+          className={`p-4 text-center text-[xs] text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700`}
           initial={{ opacity: 0, y: 20 }}
-          animate={{ 
+          animate={{
             opacity: (isMobile || isSidebarOpen) ? 1 : 0,
             y: (isMobile || isSidebarOpen) ? 0 : 20
           }}
@@ -326,7 +346,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         transition={{ duration: 0.4, ease: [0.4, 0.0, 0.2, 1], type: "spring", stiffness: 300, damping: 30 }}
       >
         {/* Mobile Header with Menu Button */}
-        <motion.header 
+        <motion.header
           className="lg:hidden bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 p-4"
           initial={{ y: -100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -342,7 +362,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             >
               <FontAwesomeIcon icon={faBars} className="text-xl" />
             </motion.button>
-            <motion.h1 
+            <motion.h1
               className="text-lg font-semibold text-gray-700 dark:text-gray-300"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -350,7 +370,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             >
               ตรอ.บังรีท่าอิฐ
             </motion.h1>
-            
+
             {/* ปุ่มปรับโหมดสว่าง/มืดสำหรับมือถือ */}
             <motion.button
               onClick={toggleDarkMode}
@@ -359,14 +379,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none transition-colors duration-200"
               aria-label={isDarkMode ? "เปลี่ยนเป็นโหมดสว่าง" : "เปลี่ยนเป็นโหมดมืด"}
             >
-              <FontAwesomeIcon 
-                icon={isDarkMode ? faSun : faMoon} 
-                className="text-xl" 
+              <FontAwesomeIcon
+                icon={isDarkMode ? faSun : faMoon}
+                className="text-xl"
               />
             </motion.button>
           </div>
         </motion.header>
-        
+
         <main className="flex-1 p-5 overflow-y-auto">
           {children} {/* children คือ BillingMainPage ของคุณ */}
         </main>
