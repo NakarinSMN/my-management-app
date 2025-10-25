@@ -14,7 +14,7 @@ import {
   faHandHoldingUsd,
   faUserCircle,
   faFileAlt,
-  faCalendarAlt,
+  // faCalendarAlt,
   faAngleLeft,
   faBars,
   faClock,
