@@ -1,9 +1,9 @@
 // src/app/devtool/page.tsx
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTools, faDatabase, faCode, faCheckCircle, faTimesCircle, faSpinner } from '@fortawesome/free-solid-svg-icons';
+import { faTools, faDatabase, faCode, faCheckCircle, faTimesCircle, faSpinner, faBell, faTrash, faSync } from '@fortawesome/free-solid-svg-icons';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { IconDefinition } from '@fortawesome/fontawesome-svg-core';
@@ -18,6 +18,105 @@ interface DevTool {
 }
 
 export default function DevToolPage() {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshResult, setRefreshResult] = useState<string>('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteResult, setDeleteResult] = useState<string>('');
+  const [isClearingStatus, setIsClearingStatus] = useState(false);
+  const [clearStatusResult, setClearStatusResult] = useState<string>('');
+
+  // ฟังก์ชันล้างสถานะการแจ้งเตือนทั้งหมด (localStorage)
+  const clearNotificationStatus = () => {
+    if (!confirm('ต้องการล้างสถานะการแจ้งเตือนทั้งหมดใช่หรือไม่?\n(จะลบข้อมูลจาก localStorage)')) {
+      return;
+    }
+
+    try {
+      setIsClearingStatus(true);
+      setClearStatusResult('');
+
+      // ลบข้อมูลจาก localStorage
+      localStorage.removeItem('notificationStatus');
+
+      setClearStatusResult('✅ ล้างสถานะการแจ้งเตือนทั้งหมดสำเร็จ');
+      
+      // รีเฟรชหน้าหลัง 1 วินาที
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch (error) {
+      console.error('Error clearing notification status:', error);
+      setClearStatusResult('❌ เกิดข้อผิดพลาดในการล้างสถานะ');
+    } finally {
+      setIsClearingStatus(false);
+    }
+  };
+
+  // ฟังก์ชันโหลดรายการแจ้งเตือนใหม่
+  const refreshDailyNotifications = async () => {
+    setIsRefreshing(true);
+    setRefreshResult('');
+    
+    try {
+      console.log('🔄 Starting refresh...');
+      
+      // ลบรายการเก่า (Force Refresh)
+      const response = await fetch('/api/daily-notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ forceRefresh: true })
+      });
+      
+      console.log('📡 Response status:', response.status);
+      const result = await response.json();
+      console.log('📋 Response data:', result);
+      
+      if (result.success) {
+        setRefreshResult('✅ ลบรายการเก่าสำเร็จ! กรุณารีเฟรชหน้าเพื่อโหลดรายการใหม่ 50 คัน');
+        
+        // รีเฟรชหน้าอัตโนมัติหลัง 2 วินาที
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } else {
+        setRefreshResult(`❌ เกิดข้อผิดพลาด: ${result.error || 'Unknown error'}${result.details ? '\n' + result.details : ''}`);
+      }
+    } catch (error) {
+      console.error('Error refreshing notifications:', error);
+      setRefreshResult(`❌ เกิดข้อผิดพลาดในการโหลดข้อมูล: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // ฟังก์ชันลบรายการทั้งหมด
+  const deleteAllNotifications = async () => {
+    if (!confirm('คุณต้องการลบรายการแจ้งเตือนทั้งหมดใช่หรือไม่?')) {
+      return;
+    }
+
+    setIsDeleting(true);
+    setDeleteResult('');
+    
+    try {
+      const response = await fetch('/api/daily-notifications/delete-all', {
+        method: 'DELETE'
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setDeleteResult(`✅ ลบรายการทั้งหมดสำเร็จ (${result.deletedCount || 0} รายการ)`);
+      } else {
+        setDeleteResult(`❌ เกิดข้อผิดพลาด: ${result.error || 'Unknown error'}${result.details ? '\n' + result.details : ''}`);
+      }
+    } catch (error) {
+      console.error('Error deleting all notifications:', error);
+      setDeleteResult(`❌ เกิดข้อผิดพลาดในการลบข้อมูล: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const devTools: DevTool[] = [
     {
@@ -178,6 +277,128 @@ export default function DevToolPage() {
                 Test API Endpoints
               </motion.button>
             </Link>
+          </div>
+        </motion.div>
+
+        {/* Daily Notifications Management */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className="mt-8 p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+        >
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            🔔 จัดการรายการแจ้งเตือนวันนี้
+          </h3>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* ปุ่มโหลดข้อมูลใหม่ */}
+              <motion.button
+                onClick={refreshDailyNotifications}
+                disabled={isRefreshing}
+                className="w-full p-4 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                whileHover={{ scale: isRefreshing ? 1 : 1.02 }}
+                whileTap={{ scale: isRefreshing ? 1 : 0.98 }}
+              >
+                <FontAwesomeIcon 
+                  icon={isRefreshing ? faSync : faBell} 
+                  className={`mr-2 ${isRefreshing ? 'animate-spin' : ''}`} 
+                />
+                {isRefreshing ? 'กำลังโหลด...' : 'โหลดรายการใหม่ (50 คัน)'}
+              </motion.button>
+
+              {/* ปุ่มลบทั้งหมด */}
+              <motion.button
+                onClick={deleteAllNotifications}
+                disabled={isDeleting}
+                className="w-full p-4 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                whileHover={{ scale: isDeleting ? 1 : 1.02 }}
+                whileTap={{ scale: isDeleting ? 1 : 0.98 }}
+              >
+                <FontAwesomeIcon 
+                  icon={isDeleting ? faSync : faTrash} 
+                  className={`mr-2 ${isDeleting ? 'animate-spin' : ''}`} 
+                />
+                {isDeleting ? 'กำลังลบ...' : 'ลบรายการทั้งหมด'}
+              </motion.button>
+
+              {/* ปุ่มล้างสถานะการแจ้งเตือน */}
+              <motion.button
+                onClick={clearNotificationStatus}
+                disabled={isClearingStatus}
+                className="w-full p-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                whileHover={{ scale: isClearingStatus ? 1 : 1.02 }}
+                whileTap={{ scale: isClearingStatus ? 1 : 0.98 }}
+              >
+                <FontAwesomeIcon 
+                  icon={isClearingStatus ? faSync : faTrash} 
+                  className={`mr-2 ${isClearingStatus ? 'animate-spin' : ''}`} 
+                />
+                {isClearingStatus ? 'กำลังล้าง...' : 'ล้างสถานะการส่งทั้งหมด'}
+              </motion.button>
+            </div>
+
+            {/* แสดงผลลัพธ์ */}
+            {refreshResult && (
+              <div className={`p-4 rounded-lg ${
+                refreshResult.includes('✅') 
+                  ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' 
+                  : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
+              }`}>
+                <p className={`text-sm ${
+                  refreshResult.includes('✅') 
+                    ? 'text-green-800 dark:text-green-200' 
+                    : 'text-red-800 dark:text-red-200'
+                }`}>
+                  {refreshResult}
+                </p>
+              </div>
+            )}
+
+            {deleteResult && (
+              <div className={`p-4 rounded-lg ${
+                deleteResult.includes('✅') 
+                  ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' 
+                  : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
+              }`}>
+                <p className={`text-sm ${
+                  deleteResult.includes('✅') 
+                    ? 'text-green-800 dark:text-green-200' 
+                    : 'text-red-800 dark:text-red-200'
+                }`}>
+                  {deleteResult}
+                </p>
+              </div>
+            )}
+
+            {clearStatusResult && (
+              <div className={`p-4 rounded-lg ${
+                clearStatusResult.includes('✅') 
+                  ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' 
+                  : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
+              }`}>
+                <p className={`text-sm ${
+                  clearStatusResult.includes('✅') 
+                    ? 'text-green-800 dark:text-green-200' 
+                    : 'text-red-800 dark:text-red-200'
+                }`}>
+                  {clearStatusResult}
+                </p>
+              </div>
+            )}
+
+            {/* คำอธิบาย */}
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                💡 <strong>โหลดรายการใหม่:</strong> ลบรายการเก่าและสร้างรายการใหม่ 50 คันสำหรับวันนี้
+              </p>
+              <p className="text-sm text-blue-800 dark:text-blue-200 mt-2">
+                🗑️ <strong>ลบรายการทั้งหมด:</strong> ลบรายการแจ้งเตือนทั้งหมดออกจาก MongoDB
+              </p>
+              <p className="text-sm text-blue-800 dark:text-blue-200 mt-2">
+                🔄 <strong>ล้างสถานะการส่ง:</strong> ลบสถานะ &quot;ส่งแล้ว&quot; ทั้งหมดจาก localStorage (ทำให้ทุกรายการกลับเป็น &quot;ยังไม่ส่ง&quot;)
+              </p>
+            </div>
           </div>
         </motion.div>
 

@@ -16,7 +16,13 @@ import {
   faChevronLeft,
   faChevronRight,
   faWarning,
-  faInfoCircle
+  faInfoCircle,
+  faBell,
+  faCopy,
+  faCheck,
+  faTrash,
+  faSync,
+  faSpinner
 } from '@fortawesome/free-solid-svg-icons';
 
 // ⚡ ใช้ Custom Hook แทน useSWR
@@ -32,6 +38,14 @@ interface TaxExpiryData {
   expiryDate: string;
   daysUntilExpiry: number;
   status: string;
+}
+
+// Interface สำหรับสถานะการส่งข้อความ
+interface NotificationStatus {
+  [licensePlate: string]: {
+    sent: boolean;
+    sentAt: string;
+  };
 }
 
 
@@ -74,18 +88,28 @@ function PageButton({ onClick, disabled, icon }: PageButtonProps) {
   );
 }
 
-// ฟังก์ชันแปลงวันที่เป็นรูปแบบ DD/MM/YYYY
-function formatDate(dateStr: string): string {
+// ฟังก์ชันแปลงวันที่เป็นรูปแบบ DD/MM/YYYY (พ.ศ.)
+function formatDate(dateStr: string, useBuddhistYear: boolean = true): string {
   if (!dateStr) return '-';
   
   try {
     // ถ้าเป็น YYYY-MM-DD
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
       const [yyyy, mm, dd] = dateStr.split('-');
-      return `${dd}/${mm}/${yyyy}`;
+      const year = useBuddhistYear ? parseInt(yyyy) + 543 : parseInt(yyyy);
+      return `${dd}/${mm}/${year}`;
     }
     // ถ้าเป็น DD/MM/YYYY อยู่แล้ว
     else if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+      if (useBuddhistYear) {
+        const [dd, mm, yyyy] = dateStr.split('/');
+        // ตรวจสอบว่าเป็น ค.ศ. หรือ พ.ศ. อยู่แล้ว
+        const year = parseInt(yyyy);
+        if (year < 2500) {
+          // ถ้าเป็น ค.ศ. ให้บวก 543
+          return `${dd}/${mm}/${year + 543}`;
+        }
+      }
       return dateStr;
     }
     // ถ้าเป็น format อื่น
@@ -96,7 +120,7 @@ function formatDate(dateStr: string): string {
       }
       const day = dateObj.getDate().toString().padStart(2, '0');
       const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
-      const year = dateObj.getFullYear();
+      const year = useBuddhistYear ? dateObj.getFullYear() + 543 : dateObj.getFullYear();
       return `${day}/${month}/${year}`;
     }
   } catch {
@@ -171,15 +195,24 @@ function getPageNumbers(currentPage: number, totalPages: number, maxPages = 5) {
   return Array.from({ length: end - start + 1 }, (_, i) => start + i);
 }
 
-const TaxExpiryRow = memo(function TaxExpiryRow({ item }: { item: TaxExpiryData }) {
+const TaxExpiryRow = memo(function TaxExpiryRow({ 
+  item, 
+  notificationStatus 
+}: { 
+  item: TaxExpiryData;
+  notificationStatus: NotificationStatus;
+}) {
+  const isSent = notificationStatus[item.licensePlate]?.sent || false;
+  const sentAt = notificationStatus[item.licensePlate]?.sentAt;
+  
   return (
     <tr className="hover:bg-gray-50 dark:hover:bg-gray-700">
-      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{item.licensePlate}</td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.customerName}</td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.phone}</td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{formatDate(item.lastTaxDate)}</td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{formatDate(item.expiryDate)}</td>
-      <td className="px-6 py-4 whitespace-nowrap font-medium">
+      <td className="px-6 py-5 align-middle text-sm font-medium text-gray-900 dark:text-white">{item.licensePlate}</td>
+      <td className="px-6 py-5 align-middle text-sm text-gray-900 dark:text-white">{item.customerName}</td>
+      <td className="px-6 py-5 align-middle text-sm text-gray-900 dark:text-white">{item.phone}</td>
+      <td className="px-6 py-5 align-middle text-sm text-gray-900 dark:text-white">{formatDate(item.lastTaxDate)}</td>
+      <td className="px-6 py-5 align-middle text-sm text-gray-900 dark:text-white">{formatDate(item.expiryDate)}</td>
+      <td className="px-6 py-5 align-middle font-medium">
         <span className={
           item.daysUntilExpiry < 0 ? 'text-red-600 dark:text-red-400' :
           item.daysUntilExpiry <= 30 ? 'text-orange-600 dark:text-orange-400' :
@@ -191,11 +224,34 @@ const TaxExpiryRow = memo(function TaxExpiryRow({ item }: { item: TaxExpiryData 
             `${item.daysUntilExpiry} วัน`}
         </span>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="px-6 py-5 align-middle">
         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor[item.status]}`}>
           <FontAwesomeIcon icon={statusIcon[item.status]} className="mr-1" />
           {item.status}
         </span>
+      </td>
+      <td className="px-6 py-5 align-middle">
+        {isSent ? (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-100">
+            <FontAwesomeIcon icon={faCheck} className="mr-1" />
+            ส่งแล้ว
+            {sentAt && (
+              <span className="ml-2 text-gray-500 dark:text-gray-400">
+                ({new Date(sentAt).toLocaleDateString('th-TH', { 
+                  day: '2-digit', 
+                  month: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })})
+              </span>
+            )}
+          </span>
+        ) : (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+            <FontAwesomeIcon icon={faClock} className="mr-1" />
+            ยังไม่ส่ง
+          </span>
+        )}
       </td>
     </tr>
   );
@@ -208,9 +264,271 @@ export default function TaxExpiryNextYearPage() {
   const [data, setData] = useState<TaxExpiryData[]>([]);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [showNotificationModal, setShowNotificationModal] = useState<boolean>(false);
+  const [notificationStatus, setNotificationStatus] = useState<NotificationStatus>({});
+  const [copiedIds, setCopiedIds] = useState<Set<string>>(new Set());
+  const [copiedId, setCopiedId] = useState<string>('');
+  const [dailySnapshotList, setDailySnapshotList] = useState<string[]>([]);
+  const [isLoadingDaily, setIsLoadingDaily] = useState<boolean>(false);
+  const [sendingLicensePlates, setSendingLicensePlates] = useState<Set<string>>(new Set());
 
   // ⚡ ใช้ Custom Hook พร้อม Cache
   const { data: customerData, error: swrError, isLoading, refreshData } = useCustomerData();
+
+  // โหลดสถานะการส่งข้อความจาก localStorage
+  useEffect(() => {
+    const savedStatus = localStorage.getItem('notificationStatus');
+    if (savedStatus) {
+      try {
+        setNotificationStatus(JSON.parse(savedStatus));
+      } catch (error) {
+        console.error('Error loading notification status:', error);
+      }
+    }
+  }, []);
+
+  // โหลดรายการแจ้งเตือนของวันนี้จาก MongoDB
+  const loadDailyNotifications = async () => {
+    try {
+      setIsLoadingDaily(true);
+      const response = await fetch('/api/daily-notifications');
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        // ใช้รายการที่มีอยู่แล้วในวันนี้
+        setDailySnapshotList(result.data.licensePlates || []);
+        console.log('Loaded daily notifications:', result.data.licensePlates?.length);
+      } else {
+        // ถ้าไม่มีรายการของวันนี้ ให้สร้างใหม่
+        await createDailyNotifications();
+      }
+    } catch (error) {
+      console.error('Error loading daily notifications:', error);
+    } finally {
+      setIsLoadingDaily(false);
+    }
+  };
+
+  // สร้างรายการแจ้งเตือนใหม่สำหรับวันนี้
+  const createDailyNotifications = async () => {
+    // ป้องกันการสร้างซ้ำ - ถ้ามีรายการอยู่แล้วไม่ต้องสร้างใหม่
+    if (dailySnapshotList.length > 0) {
+      console.log('Daily notifications already exist:', dailySnapshotList.length);
+      return;
+    }
+
+    try {
+      const urgentItems = data
+        .filter(item => item.daysUntilExpiry <= 90 && !notificationStatus[item.licensePlate]?.sent)
+        .slice(0, 50);
+      
+      const licensePlates = urgentItems.map(item => item.licensePlate);
+      
+      // ป้องกันการสร้างรายการว่าง
+      if (licensePlates.length === 0) {
+        console.log('No urgent items to create notifications');
+        setDailySnapshotList([]);
+        return;
+      }
+
+      const response = await fetch('/api/daily-notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ licensePlates })
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        setDailySnapshotList(licensePlates);
+        console.log('✅ Created daily notifications:', licensePlates.length);
+      }
+    } catch (error) {
+      console.error('❌ Error creating daily notifications:', error);
+    }
+  };
+
+  // โหลดรายการแจ้งเตือนเมื่อเปิดหน้าครั้งแรก
+  useEffect(() => {
+    if (data.length > 0 && dailySnapshotList.length === 0) {
+      loadDailyNotifications();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.length]);
+
+  // ฟังก์ชันบันทึกสถานะการส่งข้อความ
+  const saveNotificationStatus = (status: NotificationStatus) => {
+    setNotificationStatus(status);
+    localStorage.setItem('notificationStatus', JSON.stringify(status));
+  };
+
+  // ฟังก์ชันสร้างข้อความแจ้งเตือน
+  const generateNotificationMessage = (item: TaxExpiryData): string => {
+    const messageType = item.daysUntilExpiry < 0 
+      ? '🚨 เกินกำหนด! ภาษีรถหมดอายุแล้ว'
+      : item.daysUntilExpiry === 0
+      ? '🔔 ด่วน! ภาษีรถจะหมดอายุวันนี้'
+      : `🔔 แจ้งเตือน! ภาษีรถจะหมดอายุในอีก ${item.daysUntilExpiry} วัน`;
+
+    return `${messageType}
+
+ทะเบียน: ${item.licensePlate}
+ชื่อเจ้าของ: ${item.customerName}
+
+ครบกำหนดชำระ: ${formatDate(item.expiryDate)}
+กรุณารีบต่อภาษี เพื่อเลี่ยงค่าปรับ
+
+ติดต่อสอบถามโทร 095-841-0423 หรือแอดไลน์ด้วยเบอร์โทรนี้
+ตรอ.บังรีท่าอิฐ`;
+  };
+
+  // ฟังก์ชันคัดลอกข้อความ
+  const copyToClipboard = async (item: TaxExpiryData) => {
+    const message = generateNotificationMessage(item);
+    try {
+      await navigator.clipboard.writeText(message);
+      setCopiedId(item.licensePlate);
+      // เพิ่มเข้าใน Set ของคันที่คัดลอกแล้ว
+      setCopiedIds(prev => new Set([...prev, item.licensePlate]));
+      setTimeout(() => setCopiedId(''), 2000);
+    } catch (error) {
+      console.error('Failed to copy:', error);
+      alert('ไม่สามารถคัดลอกข้อความได้');
+    }
+  };
+
+  // ฟังก์ชันลบรายการออกจากรายการแจ้งเตือน (ไม่บันทึกว่าส่งแล้ว)
+  const deleteNotification = async (licensePlate: string) => {
+    if (!confirm(`ต้องการลบ ${licensePlate} ออกจากรายการแจ้งเตือนใช่หรือไม่?`)) {
+      return;
+    }
+
+    // ป้องกันการลบซ้ำ
+    if (sendingLicensePlates.has(licensePlate)) {
+      return;
+    }
+
+    try {
+      setSendingLicensePlates(prev => new Set([...prev, licensePlate]));
+
+      // ลบออกจาก MongoDB
+      const response = await fetch('/api/daily-notifications', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ licensePlate })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete from MongoDB');
+      }
+      
+      // ลบออกจาก dailySnapshotList
+      setDailySnapshotList(prev => prev.filter(plate => plate !== licensePlate));
+      
+      // ลบออกจาก copiedIds
+      setCopiedIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(licensePlate);
+        return newSet;
+      });
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+      alert('เกิดข้อผิดพลาดในการลบ กรุณาลองใหม่อีกครั้ง');
+    } finally {
+      setSendingLicensePlates(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(licensePlate);
+        return newSet;
+      });
+    }
+  };
+
+  // ฟังก์ชันทำเครื่องหมายว่าส่งแล้ว (จะลบออกจากรายการ)
+  const markAsSent = async (licensePlate: string) => {
+    // ป้องกันการส่งซ้ำ - ถ้ากำลังส่งอยู่ให้ return
+    if (sendingLicensePlates.has(licensePlate)) {
+      console.log('Already sending:', licensePlate);
+      return;
+    }
+
+    // ป้องกันการส่งซ้ำ - ตรวจสอบว่าส่งไปแล้วหรือยัง
+    if (notificationStatus[licensePlate]?.sent) {
+      console.log('Already sent:', licensePlate);
+      return;
+    }
+
+    try {
+      // เพิ่มเข้า Set ของรายการที่กำลังส่ง
+      setSendingLicensePlates(prev => new Set([...prev, licensePlate]));
+
+      // บันทึกสถานะการส่ง
+      const newStatus = {
+        ...notificationStatus,
+        [licensePlate]: {
+          sent: true,
+          sentAt: new Date().toISOString(),
+        },
+      };
+      saveNotificationStatus(newStatus);
+      
+      // ลบออกจาก MongoDB
+      const response = await fetch('/api/daily-notifications', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ licensePlate })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete from MongoDB');
+      }
+      
+      // ลบออกจาก dailySnapshotList
+      setDailySnapshotList(prev => prev.filter(plate => plate !== licensePlate));
+      
+      // ลบออกจาก copiedIds
+      setCopiedIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(licensePlate);
+        return newSet;
+      });
+    } catch (error) {
+      console.error('Error marking as sent:', error);
+      alert('เกิดข้อผิดพลาดในการบันทึก กรุณาลองใหม่อีกครั้ง');
+      
+      // ถ้าเกิดข้อผิดพลาด ให้ลบสถานะการส่งออก
+      const newStatus = { ...notificationStatus };
+      delete newStatus[licensePlate];
+      saveNotificationStatus(newStatus);
+    } finally {
+      // ลบออกจาก Set ของรายการที่กำลังส่ง
+      setSendingLicensePlates(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(licensePlate);
+        return newSet;
+      });
+    }
+  };
+
+  // รายการแจ้งเตือนที่แสดง - ใช้จาก dailySnapshotList (รายการของวันนี้)
+  const notificationList = useMemo(() => {
+    if (dailySnapshotList.length === 0) {
+      return [];
+    }
+    // แสดงเฉพาะรายการที่อยู่ใน dailySnapshotList
+    return data.filter(item => dailySnapshotList.includes(item.licensePlate));
+  }, [data, dailySnapshotList]);
+
+  // นับจำนวนรายการที่ส่งแล้วในเดือนนี้
+  const sentThisMonth = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    return Object.values(notificationStatus).filter(status => {
+      if (!status.sent || !status.sentAt) return false;
+      const sentDate = new Date(status.sentAt);
+      return sentDate.getMonth() === currentMonth && sentDate.getFullYear() === currentYear;
+    }).length;
+  }, [notificationStatus]);
 
   useEffect(() => {
     if (customerData && customerData.length > 0) {
@@ -358,6 +676,17 @@ export default function TaxExpiryNextYearPage() {
               </p>
             </div>
             <div className="flex gap-2">
+              <button
+                onClick={() => setShowNotificationModal(true)}
+                disabled={isLoadingDaily}
+                className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <FontAwesomeIcon icon={faBell} className={isLoadingDaily ? 'animate-pulse' : ''} />
+                รายการแจ้งเตือนวันนี้
+                <span className="bg-white text-orange-600 px-2 py-0.5 rounded-full text-xs font-bold min-w-[24px] text-center">
+                  {isLoadingDaily ? '...' : dailySnapshotList.length}
+                </span>
+              </button>
               <Link
                 href="/customer-info"
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -524,18 +853,25 @@ export default function TaxExpiryNextYearPage() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                         สถานะ
                       </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        แจ้งเตือน
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                     {currentData.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
+                        <td colSpan={8} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
                           ไม่พบข้อมูลภาษีครั้งถัดไป
                         </td>
                       </tr>
                     ) : (
                       currentData.map((item, idx) => (
-                        <TaxExpiryRow key={item.licensePlate + item.customerName + idx} item={item} />
+                        <TaxExpiryRow 
+                          key={item.licensePlate + item.customerName + idx} 
+                          item={item}
+                          notificationStatus={notificationStatus}
+                        />
                       ))
                     )}
                   </tbody>
@@ -602,6 +938,259 @@ export default function TaxExpiryNextYearPage() {
             </>
           )}
         </div>
+
+        {/* Modal รายการแจ้งเตือน */}
+        {showNotificationModal && (
+          <div 
+            className="fixed inset-0 flex items-center justify-center z-50 p-4 animate-fadeIn"
+            style={{
+              background: 'linear-gradient(135deg, rgba(255, 140, 0, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)'
+            }}
+            onClick={() => setShowNotificationModal(false)}
+          >
+            <div 
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col transform transition-all"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+              }}
+            >
+              {/* Header */}
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-orange-50 to-blue-50 dark:from-gray-800 dark:to-gray-800">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center shadow-lg">
+                      <FontAwesomeIcon icon={faBell} className="text-white text-xl animate-pulse" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                        รายการแจ้งเตือนวันนี้
+                      </h2>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        รายการที่เกินกำหนดและกำลังจะครบกำหนดภายใน 90 วัน (สูงสุด 50 คัน)
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {/* ปุ่มรีเฟรช */}
+                    <button
+                      onClick={loadDailyNotifications}
+                      disabled={isLoadingDaily}
+                      className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all disabled:opacity-50"
+                      title="รีเฟรชข้อมูล"
+                    >
+                      <FontAwesomeIcon icon={faSync} className={isLoadingDaily ? 'animate-spin' : ''} />
+                    </button>
+                    {/* ปุ่มปิด */}
+                    <button
+                      onClick={() => setShowNotificationModal(false)}
+                      className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-3xl transition-all hover:rotate-90"
+                      title="ปิด"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-900">
+                {notificationList.length === 0 ? (
+                  <div className="text-center py-16">
+                    <div className="w-24 h-24 mx-auto mb-4 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+                      <FontAwesomeIcon icon={faCheckCircle} className="text-green-600 dark:text-green-400 text-5xl" />
+                    </div>
+                    <p className="text-xl font-semibold text-gray-700 dark:text-gray-300">ไม่มีรายการแจ้งเตือน</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                      รายการที่ส่งแล้วจะถูกลบออกจากรายการนี้
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {notificationList.map((item, idx) => {
+                      const isCopied = copiedId === item.licensePlate;
+                      const hasCopied = copiedIds.has(item.licensePlate);
+                      const isSending = sendingLicensePlates.has(item.licensePlate);
+                      
+                      return (
+                        <div
+                          key={item.licensePlate + idx}
+                          className="border-2 rounded-xl p-5 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-xl hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 transform hover:-translate-y-1"
+                        >
+                          <div className="flex items-start gap-4">
+                            {/* เลขลำดับ */}
+                            <div className="flex-shrink-0">
+                              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center font-bold text-xl shadow-lg">
+                                {idx + 1}
+                              </div>
+                            </div>
+                            
+                            {/* ข้อมูล */}
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-3">
+                                <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm ${
+                                  item.daysUntilExpiry < 0
+                                    ? 'bg-gradient-to-r from-red-500 to-red-600 text-white'
+                                    : item.daysUntilExpiry === 0
+                                    ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white animate-pulse'
+                                    : item.daysUntilExpiry <= 30
+                                    ? 'bg-gradient-to-r from-yellow-400 to-orange-400 text-gray-900'
+                                    : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'
+                                }`}>
+                                  {item.daysUntilExpiry < 0
+                                    ? `⚠️ เกินกำหนด ${Math.abs(item.daysUntilExpiry)} วัน`
+                                    : item.daysUntilExpiry === 0
+                                    ? '🔥 ครบกำหนดวันนี้'
+                                    : item.daysUntilExpiry <= 30
+                                    ? `⏰ เหลือ ${item.daysUntilExpiry} วัน`
+                                    : `📅 เหลือ ${item.daysUntilExpiry} วัน`
+                                  }
+                                </span>
+                              </div>
+                              
+                              <div className="space-y-2 text-sm">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                  <p className="text-gray-900 dark:text-white">
+                                    <span className="font-semibold text-gray-600 dark:text-gray-400">ทะเบียน:</span> 
+                                    <span className="ml-2 font-bold">{item.licensePlate}</span>
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                  <p className="text-gray-900 dark:text-white">
+                                    <span className="font-semibold text-gray-600 dark:text-gray-400">ชื่อ:</span> 
+                                    <span className="ml-2">{item.customerName}</span>
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+                                  <p className="text-gray-900 dark:text-white">
+                                    <span className="font-semibold text-gray-600 dark:text-gray-400">เบอร์:</span> 
+                                    <span className="ml-2">{item.phone}</span>
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                                  <p className="text-gray-900 dark:text-white">
+                                    <span className="font-semibold text-gray-600 dark:text-gray-400">ครบกำหนด:</span> 
+                                    <span className="ml-2 font-bold text-orange-600 dark:text-orange-400">{formatDate(item.expiryDate)}</span>
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* ปุ่มต่างๆ */}
+                            <div className="flex flex-col gap-3 flex-shrink-0">
+                              {/* ปุ่มคัดลอก */}
+                              <button
+                                onClick={() => copyToClipboard(item)}
+                                className={`px-6 py-3 rounded-xl transition-all flex items-center justify-center gap-2 text-sm font-semibold min-w-[140px] transform hover:scale-105 ${
+                                  isCopied
+                                    ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg shadow-green-500/50 animate-pulse'
+                                    : hasCopied
+                                    ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md'
+                                    : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 shadow-md hover:shadow-lg'
+                                }`}
+                              >
+                                <FontAwesomeIcon icon={isCopied || hasCopied ? faCheck : faCopy} className="text-lg" />
+                                {isCopied ? 'คัดลอกแล้ว!' : hasCopied ? 'คัดลอกแล้ว' : 'คัดลอก'}
+                              </button>
+                              
+                              {/* ปุ่มส่งแล้ว */}
+                              <button
+                                onClick={() => markAsSent(item.licensePlate)}
+                                disabled={!hasCopied || isSending}
+                                className={`px-6 py-3 rounded-xl transition-all flex items-center justify-center gap-2 text-sm font-semibold min-w-[140px] transform ${
+                                  isSending
+                                    ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white cursor-wait'
+                                    : hasCopied
+                                    ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 shadow-md hover:shadow-lg hover:scale-105'
+                                    : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-500 cursor-not-allowed opacity-60'
+                                }`}
+                                title={
+                                  isSending 
+                                    ? 'กำลังบันทึก...' 
+                                    : !hasCopied 
+                                    ? 'กรุณาคัดลอกข้อความก่อน' 
+                                    : 'ทำเครื่องหมายว่าส่งแล้ว'
+                                }
+                              >
+                                <FontAwesomeIcon 
+                                  icon={isSending ? faSpinner : faCheck} 
+                                  className={`text-lg ${isSending ? 'animate-spin' : ''}`} 
+                                />
+                                {isSending ? 'กำลังส่ง...' : 'ส่งแล้ว'}
+                              </button>
+
+                              {/* ปุ่มลบ */}
+                              <button
+                                onClick={() => deleteNotification(item.licensePlate)}
+                                disabled={isSending}
+                                className="px-6 py-3 rounded-xl transition-all flex items-center justify-center gap-2 text-sm font-semibold min-w-[140px] transform hover:scale-105 bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="ลบรายการนี้ออกจากรายการแจ้งเตือน"
+                              >
+                                <FontAwesomeIcon icon={faTrash} className="text-lg" />
+                                ลบ
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="p-6 border-t-2 border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-800 dark:to-gray-800">
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div className="flex items-center gap-4 flex-wrap">
+                    {/* รายการคงเหลือ */}
+                    <div className="bg-white dark:bg-gray-700 px-4 py-3 rounded-xl shadow-md border-2 border-orange-200 dark:border-orange-800">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">รายการคงเหลือ</p>
+                      <p className="text-2xl font-bold">
+                        <span className="bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent">
+                          {dailySnapshotList.length}
+                        </span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400 ml-1">คัน</span>
+                      </p>
+                    </div>
+                    
+                    {/* ส่งไปแล้วเดือนนี้ */}
+                    <div className="bg-white dark:bg-gray-700 px-4 py-3 rounded-xl shadow-md border-2 border-green-200 dark:border-green-800">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">ส่งไปแล้วเดือนนี้</p>
+                      <p className="text-2xl font-bold">
+                        <span className="bg-gradient-to-r from-green-500 to-emerald-600 bg-clip-text text-transparent">
+                          {sentThisMonth}
+                        </span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400 ml-1">คัน</span>
+                      </p>
+                    </div>
+                    
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      <p className="flex items-center gap-2">
+                        <span className="text-xl">💡</span>
+                        <span>คัดลอกข้อความก่อน แล้วกดปุ่ม <span className="font-semibold text-green-600 dark:text-green-400">&quot;ส่งแล้ว&quot;</span></span>
+                      </p>
+                      <p className="text-xs mt-1 ml-7 text-gray-500 dark:text-gray-500">
+                        รายการจะถูกลบออกทันทีหลังกดปุ่มส่งแล้ว
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowNotificationModal(false)}
+                    className="px-8 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-xl hover:from-gray-700 hover:to-gray-800 transition-all font-semibold shadow-md hover:shadow-lg transform hover:scale-105"
+                  >
+                    ปิด
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
