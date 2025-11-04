@@ -28,6 +28,7 @@ import {
 // ⚡ ใช้ Custom Hook แทน useSWR
 import { useCustomerData } from '@/lib/useCustomerData';
 import FilterDropdown from '../components/FilterDropdown';
+import { useDialog } from '../contexts/DialogContext';
 
 // กำหนด Interface สำหรับข้อมูลลูกค้าที่มีวันสิ้นอายุภาษีปีถัดไป
 interface TaxExpiryData {
@@ -60,8 +61,9 @@ interface PageButtonProps {
 // Maps สำหรับสถานะและสี/ไอคอน
 const statusColor: { [key: string]: string } = {
   'ต่อภาษีแล้ว': 'bg-green-200 dark:bg-green-700 text-green-800 dark:text-white',
-  'กำลังจะครบกำหนด': 'bg-yellow-200 dark:bg-yellow-600 text-yellow-800 dark:text-black',
-  'ใกล้ครบกำหนด': 'bg-yellow-200 dark:bg-yellow-600 text-yellow-800 dark:text-black',
+  'กำลังจะครบกำหนด': 'bg-yellow-200 dark:bg-yellow-600 text-yellow-800 dark:text-white',
+  'ใกล้ครบกำหนด': 'bg-yellow-200 dark:bg-yellow-600 text-yellow-800 dark:text-white',
+  'ครบกำหนดวันนี้': 'bg-orange-200 dark:bg-orange-700 text-orange-800 dark:text-white',
   'เกินกำหนด': 'bg-red-200 dark:bg-red-700 text-red-800 dark:text-white',
   'รอดำเนินการ': 'bg-blue-200 dark:bg-blue-700 text-blue-800 dark:text-white',
 };
@@ -70,6 +72,7 @@ const statusIcon: { [key: string]: IconDefinition } = {
   'ต่อภาษีแล้ว': faCheckCircle,
   'กำลังจะครบกำหนด': faExclamationTriangle,
   'ใกล้ครบกำหนด': faExclamationTriangle,
+  'ครบกำหนดวันนี้': faWarning,
   'เกินกำหนด': faTimesCircle,
   'รอดำเนินการ': faClock,
 };
@@ -271,21 +274,81 @@ export default function TaxExpiryNextYearPage() {
   const [dailySnapshotList, setDailySnapshotList] = useState<string[]>([]);
   const [isLoadingDaily, setIsLoadingDaily] = useState<boolean>(false);
   const [sendingLicensePlates, setSendingLicensePlates] = useState<Set<string>>(new Set());
+  const [showSentHistoryModal, setShowSentHistoryModal] = useState<boolean>(false);
+  const [isClearingBoard, setIsClearingBoard] = useState<boolean>(false);
+  const [isCreatingNew, setIsCreatingNew] = useState<boolean>(false);
 
   // ⚡ ใช้ Custom Hook พร้อม Cache
   const { data: customerData, error: swrError, isLoading, refreshData } = useCustomerData();
 
-  // โหลดสถานะการส่งข้อความจาก localStorage
-  useEffect(() => {
-    const savedStatus = localStorage.getItem('notificationStatus');
-    if (savedStatus) {
-      try {
-        setNotificationStatus(JSON.parse(savedStatus));
-      } catch (error) {
-        console.error('Error loading notification status:', error);
+  // ⚡ ใช้ Dialog Hook
+  const { showSuccess, showError, showConfirm } = useDialog();
+
+  // โหลดสถานะการส่งข้อความจาก MongoDB
+  const loadNotificationStatus = async () => {
+    try {
+      const response = await fetch('/api/notification-status');
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        setNotificationStatus(result.data);
+        console.log('✅ Loaded notification status from MongoDB');
       }
+    } catch (error) {
+      console.error('❌ Error loading notification status:', error);
     }
+  };
+
+  useEffect(() => {
+    loadNotificationStatus();
   }, []);
+
+  // ฟังก์ชันล้างกระดานแจ้งเตือนวันนี้
+  const clearDailyBoard = () => {
+    showConfirm(
+      'ล้างกระดานแจ้งเตือน',
+      'ต้องการล้างกระดานแจ้งเตือนวันนี้ใช่หรือไม่?\n\nรายการทั้งหมดจะถูกลบออก (ไม่สร้างรายการใหม่)',
+      async () => {
+        try {
+          setIsClearingBoard(true);
+
+          // ลบรายการของวันนี้
+          const deleteResponse = await fetch('/api/daily-notifications/delete-all', {
+            method: 'DELETE'
+          });
+
+          const deleteResult = await deleteResponse.json();
+
+          if (deleteResult.success) {
+            // ล้าง dailySnapshotList
+            setDailySnapshotList([]);
+            
+            // ล้าง copiedIds
+            setCopiedIds(new Set());
+
+            showSuccess(
+              'ล้างกระดานสำเร็จ!',
+              `ลบรายการทั้งหมดแล้ว (${deleteResult.deletedCount || 0} รายการ)\n\nกระดานว่างเปล่าแล้ว รายการใหม่จะถูกสร้างในวันถัดไป`,
+              () => setShowNotificationModal(false)
+            );
+          } else {
+            showError(
+              'เกิดข้อผิดพลาด',
+              `ไม่สามารถล้างกระดานได้\n\n${deleteResult.error || 'Unknown error'}`
+            );
+          }
+      } catch (error) {
+          console.error('Error clearing daily board:', error);
+          showError(
+            'เกิดข้อผิดพลาด',
+            'เกิดข้อผิดพลาดในการล้างกระดาน กรุณาลองใหม่อีกครั้ง'
+          );
+        } finally {
+          setIsClearingBoard(false);
+        }
+      }
+    );
+  };
 
   // โหลดรายการแจ้งเตือนของวันนี้จาก MongoDB
   const loadDailyNotifications = async () => {
@@ -299,8 +362,9 @@ export default function TaxExpiryNextYearPage() {
         setDailySnapshotList(result.data.licensePlates || []);
         console.log('Loaded daily notifications:', result.data.licensePlates?.length);
       } else {
-        // ถ้าไม่มีรายการของวันนี้ ให้สร้างใหม่
-        await createDailyNotifications();
+        // ถ้าไม่มีรายการของวันนี้ ให้เซ็ตเป็น array ว่าง (ไม่สร้างใหม่อัตโนมัติ)
+        setDailySnapshotList([]);
+        console.log('No daily notifications found for today');
       }
     } catch (error) {
       console.error('Error loading daily notifications:', error);
@@ -309,18 +373,59 @@ export default function TaxExpiryNextYearPage() {
     }
   };
 
-  // สร้างรายการแจ้งเตือนใหม่สำหรับวันนี้
-  const createDailyNotifications = async () => {
-    // ป้องกันการสร้างซ้ำ - ถ้ามีรายการอยู่แล้วไม่ต้องสร้างใหม่
+  // สร้างรายการแจ้งเตือนใหม่สำหรับวันนี้ (Manual)
+  const createNewDailyNotifications = () => {
+    showConfirm(
+      'สร้างรายการใหม่',
+      'ต้องการสร้างรายการแจ้งเตือนใหม่ 50 คันใช่หรือไม่?\n\n(รายการเก่าจะถูกแทนที่)',
+      async () => {
+        try {
+          setIsCreatingNew(true);
+          
+          // ลบรายการเก่าก่อน (ถ้ามี)
     if (dailySnapshotList.length > 0) {
+            await fetch('/api/daily-notifications/delete-all', {
+              method: 'DELETE'
+            });
+          }
+
+          // สร้างรายการใหม่ (force = true เพื่อบังคับสร้างแม้จะมีรายการอยู่)
+          await createDailyNotifications(true);
+          
+          // โหลดรายการใหม่
+          await loadDailyNotifications();
+          
+          showSuccess(
+            'สร้างรายการสำเร็จ!',
+            'สร้างรายการแจ้งเตือนใหม่ 50 คันสำเร็จ'
+          );
+        } catch (error) {
+          console.error('Error creating new notifications:', error);
+          showError(
+            'เกิดข้อผิดพลาด',
+            'เกิดข้อผิดพลาดในการสร้างรายการใหม่'
+          );
+        } finally {
+          setIsCreatingNew(false);
+        }
+      }
+    );
+  };
+
+  // สร้างรายการแจ้งเตือนใหม่สำหรับวันนี้
+  const createDailyNotifications = async (force = false) => {
+    // ป้องกันการสร้างซ้ำ - ถ้ามีรายการอยู่แล้วไม่ต้องสร้างใหม่ (ยกเว้น force = true)
+    if (!force && dailySnapshotList.length > 0) {
       console.log('Daily notifications already exist:', dailySnapshotList.length);
       return;
     }
 
     try {
+      // เงื่อนไข: เอารถที่เหลือ <= 90 วัน มาทั้งหมด (รวมทั้งรถที่เกินกำหนดแล้วด้วย)
       const urgentItems = data
         .filter(item => item.daysUntilExpiry <= 90 && !notificationStatus[item.licensePlate]?.sent)
-        .slice(0, 50);
+        .sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry) // เรียงจากน้อยไปมาก (รถเกินกำหนดมาก่อน เช่น -120, -90, -30, 0, 30, 60, 90)
+        .slice(0, 50); // จำกัดแค่ 50 คัน
       
       const licensePlates = urgentItems.map(item => item.licensePlate);
       
@@ -330,6 +435,10 @@ export default function TaxExpiryNextYearPage() {
         setDailySnapshotList([]);
         return;
       }
+
+      const overdueCount = urgentItems.filter(item => item.daysUntilExpiry < 0).length;
+      const upcomingCount = urgentItems.filter(item => item.daysUntilExpiry >= 0).length;
+      console.log(`📋 Creating notifications: ${overdueCount} overdue + ${upcomingCount} upcoming = ${licensePlates.length} total`);
 
       const response = await fetch('/api/daily-notifications', {
         method: 'POST',
@@ -355,10 +464,28 @@ export default function TaxExpiryNextYearPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.length]);
 
-  // ฟังก์ชันบันทึกสถานะการส่งข้อความ
-  const saveNotificationStatus = (status: NotificationStatus) => {
-    setNotificationStatus(status);
-    localStorage.setItem('notificationStatus', JSON.stringify(status));
+  // ฟังก์ชันบันทึกสถานะการส่งข้อความลง MongoDB
+  const saveNotificationStatus = async (licensePlate: string, sent: boolean, sentAt: string) => {
+    try {
+      const response = await fetch('/api/notification-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ licensePlate, sent, sentAt })
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        // อัปเดต local state
+        setNotificationStatus(prev => ({
+          ...prev,
+          [licensePlate]: { sent, sentAt }
+        }));
+        console.log('✅ Notification status saved to MongoDB');
+      }
+    } catch (error) {
+      console.error('❌ Error saving notification status:', error);
+      throw error;
+    }
   };
 
   // ฟังก์ชันสร้างข้อความแจ้งเตือน
@@ -392,54 +519,106 @@ export default function TaxExpiryNextYearPage() {
       setTimeout(() => setCopiedId(''), 2000);
     } catch (error) {
       console.error('Failed to copy:', error);
-      alert('ไม่สามารถคัดลอกข้อความได้');
+      showError(
+        'คัดลอกไม่สำเร็จ',
+        'ไม่สามารถคัดลอกข้อความได้ กรุณาลองใหม่อีกครั้ง'
+      );
     }
   };
 
   // ฟังก์ชันลบรายการออกจากรายการแจ้งเตือน (ไม่บันทึกว่าส่งแล้ว)
-  const deleteNotification = async (licensePlate: string) => {
-    if (!confirm(`ต้องการลบ ${licensePlate} ออกจากรายการแจ้งเตือนใช่หรือไม่?`)) {
-      return;
-    }
-
+  const deleteNotification = (licensePlate: string) => {
     // ป้องกันการลบซ้ำ
     if (sendingLicensePlates.has(licensePlate)) {
       return;
     }
 
-    try {
-      setSendingLicensePlates(prev => new Set([...prev, licensePlate]));
+    showConfirm(
+      'ลบรายการแจ้งเตือน',
+      `ต้องการลบ ${licensePlate} ออกจากรายการแจ้งเตือนใช่หรือไม่?`,
+      async () => {
+        try {
+          setSendingLicensePlates(prev => new Set([...prev, licensePlate]));
 
-      // ลบออกจาก MongoDB
-      const response = await fetch('/api/daily-notifications', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ licensePlate })
-      });
+          // ลบออกจาก MongoDB
+          const response = await fetch('/api/daily-notifications', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ licensePlate })
+          });
 
-      if (!response.ok) {
-        throw new Error('Failed to delete from MongoDB');
+          if (!response.ok) {
+            throw new Error('Failed to delete from MongoDB');
+          }
+          
+          // ลบออกจาก dailySnapshotList
+          setDailySnapshotList(prev => prev.filter(plate => plate !== licensePlate));
+          
+          // ลบออกจาก copiedIds
+          setCopiedIds(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(licensePlate);
+            return newSet;
+          });
+        } catch (error) {
+          console.error('Error deleting notification:', error);
+          showError(
+            'เกิดข้อผิดพลาด',
+            'เกิดข้อผิดพลาดในการลบ กรุณาลองใหม่อีกครั้ง'
+          );
+        } finally {
+          setSendingLicensePlates(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(licensePlate);
+            return newSet;
+          });
+        }
       }
-      
-      // ลบออกจาก dailySnapshotList
-      setDailySnapshotList(prev => prev.filter(plate => plate !== licensePlate));
-      
-      // ลบออกจาก copiedIds
-      setCopiedIds(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(licensePlate);
-        return newSet;
-      });
-    } catch (error) {
-      console.error('Error deleting notification:', error);
-      alert('เกิดข้อผิดพลาดในการลบ กรุณาลองใหม่อีกครั้ง');
-    } finally {
-      setSendingLicensePlates(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(licensePlate);
-        return newSet;
-      });
-    }
+    );
+  };
+
+  // ฟังก์ชันรีเซ็ตสถานะการส่ง (เพื่อให้กลับมาแจ้งเตือนได้อีก)
+  const resetNotificationStatus = (licensePlate: string) => {
+    showConfirm(
+      'รีเซ็ตสถานะการส่ง',
+      `ต้องการรีเซ็ตสถานะการส่งของ ${licensePlate} ใช่หรือไม่?\n\nรถคันนี้จะกลับมาแสดงในรายการแจ้งเตือนอีกครั้ง`,
+      async () => {
+        try {
+          // ลบสถานะการส่งออกจาก MongoDB
+          const response = await fetch('/api/notification-status', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ licensePlate })
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to reset notification status');
+          }
+
+          // อัปเดต local state
+          setNotificationStatus(prev => {
+            const newStatus = { ...prev };
+            delete newStatus[licensePlate];
+            return newStatus;
+          });
+
+          showSuccess(
+            'รีเซ็ตสำเร็จ!',
+            `รีเซ็ตสถานะของ ${licensePlate} เรียบร้อยแล้ว\n\nรถคันนี้จะกลับมาแสดงในรายการแจ้งเตือนอีกครั้ง`,
+            async () => {
+              // โหลดข้อมูลใหม่
+              await loadNotificationStatus();
+            }
+          );
+        } catch (error) {
+          console.error('Error resetting notification status:', error);
+          showError(
+            'เกิดข้อผิดพลาด',
+            'เกิดข้อผิดพลาดในการรีเซ็ตสถานะ กรุณาลองใหม่อีกครั้ง'
+          );
+        }
+      }
+    );
   };
 
   // ฟังก์ชันทำเครื่องหมายว่าส่งแล้ว (จะลบออกจากรายการ)
@@ -460,17 +639,12 @@ export default function TaxExpiryNextYearPage() {
       // เพิ่มเข้า Set ของรายการที่กำลังส่ง
       setSendingLicensePlates(prev => new Set([...prev, licensePlate]));
 
-      // บันทึกสถานะการส่ง
-      const newStatus = {
-        ...notificationStatus,
-        [licensePlate]: {
-          sent: true,
-          sentAt: new Date().toISOString(),
-        },
-      };
-      saveNotificationStatus(newStatus);
+      const sentAt = new Date().toISOString();
+
+      // บันทึกสถานะการส่งลง MongoDB
+      await saveNotificationStatus(licensePlate, true, sentAt);
       
-      // ลบออกจาก MongoDB
+      // ลบออกจาก daily notifications
       const response = await fetch('/api/daily-notifications', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
@@ -492,12 +666,28 @@ export default function TaxExpiryNextYearPage() {
       });
     } catch (error) {
       console.error('Error marking as sent:', error);
-      alert('เกิดข้อผิดพลาดในการบันทึก กรุณาลองใหม่อีกครั้ง');
+      showError(
+        'เกิดข้อผิดพลาด',
+        'เกิดข้อผิดพลาดในการบันทึก กรุณาลองใหม่อีกครั้ง'
+      );
       
-      // ถ้าเกิดข้อผิดพลาด ให้ลบสถานะการส่งออก
-      const newStatus = { ...notificationStatus };
-      delete newStatus[licensePlate];
-      saveNotificationStatus(newStatus);
+      // ถ้าเกิดข้อผิดพลาด ให้ลบสถานะการส่งออกจาก local state
+      setNotificationStatus(prev => {
+        const newStatus = { ...prev };
+        delete newStatus[licensePlate];
+        return newStatus;
+      });
+
+      // ลบออกจาก MongoDB ด้วย
+      try {
+        await fetch('/api/notification-status', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ licensePlate })
+        });
+      } catch (deleteError) {
+        console.error('Error deleting notification status:', deleteError);
+      }
     } finally {
       // ลบออกจาก Set ของรายการที่กำลังส่ง
       setSendingLicensePlates(prev => {
@@ -685,6 +875,16 @@ export default function TaxExpiryNextYearPage() {
                 รายการแจ้งเตือนวันนี้
                 <span className="bg-white text-orange-600 px-2 py-0.5 rounded-full text-xs font-bold min-w-[24px] text-center">
                   {isLoadingDaily ? '...' : dailySnapshotList.length}
+                </span>
+              </button>
+              <button
+                onClick={() => setShowSentHistoryModal(true)}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+              >
+                <FontAwesomeIcon icon={faCheck} />
+                ดูรายการที่ส่งแล้ว
+                <span className="bg-white text-green-600 px-2 py-0.5 rounded-full text-xs font-bold min-w-[24px] text-center">
+                  {Object.keys(notificationStatus).length}
                 </span>
               </button>
               <Link
@@ -974,10 +1174,28 @@ export default function TaxExpiryNextYearPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    {/* ปุ่มสร้างรายการใหม่ */}
+                    <button
+                      onClick={createNewDailyNotifications}
+                      disabled={isCreatingNew || isLoadingDaily || isClearingBoard}
+                      className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-green-100 dark:hover:bg-green-900/30 text-green-500 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 transition-all disabled:opacity-50"
+                      title="สร้างรายการใหม่ 50 คัน"
+                    >
+                      <FontAwesomeIcon icon={faBell} className={isCreatingNew ? 'animate-pulse' : ''} />
+                    </button>
+                    {/* ปุ่มล้างกระดาน */}
+                    <button
+                      onClick={clearDailyBoard}
+                      disabled={isClearingBoard || isLoadingDaily || isCreatingNew}
+                      className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-all disabled:opacity-50"
+                      title="ล้างกระดานแจ้งเตือนวันนี้"
+                    >
+                      <FontAwesomeIcon icon={faTrash} className={isClearingBoard ? 'animate-pulse' : ''} />
+                    </button>
                     {/* ปุ่มรีเฟรช */}
                     <button
                       onClick={loadDailyNotifications}
-                      disabled={isLoadingDaily}
+                      disabled={isLoadingDaily || isClearingBoard || isCreatingNew}
                       className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-all disabled:opacity-50"
                       title="รีเฟรชข้อมูล"
                     >
@@ -1182,6 +1400,196 @@ export default function TaxExpiryNextYearPage() {
                   </div>
                   <button
                     onClick={() => setShowNotificationModal(false)}
+                    className="px-8 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-xl hover:from-gray-700 hover:to-gray-800 transition-all font-semibold shadow-md hover:shadow-lg transform hover:scale-105"
+                  >
+                    ปิด
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal รายการที่ส่งแล้ว */}
+        {showSentHistoryModal && (
+          <div 
+            className="fixed inset-0 flex items-center justify-center z-50 p-4 animate-fadeIn"
+            style={{
+              background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)'
+            }}
+            onClick={() => setShowSentHistoryModal(false)}
+          >
+            <div 
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col transform transition-all"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+              }}
+            >
+              {/* Header */}
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-green-50 to-blue-50 dark:from-gray-800 dark:to-gray-800">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
+                      <FontAwesomeIcon icon={faCheck} className="text-white text-xl" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                        รายการที่ส่งแล้ว
+                      </h2>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        รายการที่ส่งข้อความแจ้งเตือนไปแล้ว (สามารถรีเซ็ตเพื่อแจ้งเตือนใหม่ได้)
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {/* ปุ่มปิด */}
+                    <button
+                      onClick={() => setShowSentHistoryModal(false)}
+                      className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-3xl transition-all hover:rotate-90"
+                      title="ปิด"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-900">
+                {Object.keys(notificationStatus).length === 0 ? (
+                  <div className="text-center py-16">
+                    <div className="w-24 h-24 mx-auto mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                      <FontAwesomeIcon icon={faInfoCircle} className="text-gray-400 dark:text-gray-600 text-5xl" />
+                    </div>
+                    <p className="text-xl font-semibold text-gray-700 dark:text-gray-300">ยังไม่มีรายการที่ส่งแล้ว</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                      เมื่อคุณส่งข้อความแจ้งเตือนไปแล้ว รายการจะปรากฏที่นี่
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {Object.entries(notificationStatus)
+                      .sort((a, b) => new Date(b[1].sentAt).getTime() - new Date(a[1].sentAt).getTime())
+                      .map(([licensePlate, status], idx) => {
+                        // หาข้อมูลรถจาก data
+                        const carData = data.find(item => item.licensePlate === licensePlate);
+                        
+                        return (
+                          <div
+                            key={licensePlate + idx}
+                            className="border-2 rounded-xl p-5 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-xl hover:border-green-400 dark:hover:border-green-500 transition-all duration-300"
+                          >
+                            <div className="flex items-start gap-4">
+                              {/* เลขลำดับ */}
+                              <div className="flex-shrink-0">
+                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-green-600 text-white flex items-center justify-center font-bold text-xl shadow-lg">
+                                  {idx + 1}
+                                </div>
+                              </div>
+                              
+                              {/* ข้อมูล */}
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm bg-gradient-to-r from-green-500 to-green-600 text-white">
+                                    ✅ ส่งแล้ว
+                                  </span>
+                                </div>
+                                
+                                <div className="space-y-2 text-sm">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                    <p className="text-gray-900 dark:text-white">
+                                      <span className="font-semibold text-gray-600 dark:text-gray-400">ทะเบียน:</span> 
+                                      <span className="ml-2 font-bold">{licensePlate}</span>
+                                    </p>
+                                  </div>
+                                  {carData && (
+                                    <>
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                        <p className="text-gray-900 dark:text-white">
+                                          <span className="font-semibold text-gray-600 dark:text-gray-400">ชื่อ:</span> 
+                                          <span className="ml-2">{carData.customerName}</span>
+                                        </p>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+                                        <p className="text-gray-900 dark:text-white">
+                                          <span className="font-semibold text-gray-600 dark:text-gray-400">เบอร์:</span> 
+                                          <span className="ml-2">{carData.phone}</span>
+                                        </p>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                                        <p className="text-gray-900 dark:text-white">
+                                          <span className="font-semibold text-gray-600 dark:text-gray-400">ครบกำหนด:</span> 
+                                          <span className="ml-2 font-bold text-orange-600 dark:text-orange-400">{formatDate(carData.expiryDate)}</span>
+                                        </p>
+                                      </div>
+                                    </>
+                                  )}
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-gray-500"></div>
+                                    <p className="text-gray-900 dark:text-white">
+                                      <span className="font-semibold text-gray-600 dark:text-gray-400">ส่งเมื่อ:</span> 
+                                      <span className="ml-2">{new Date(status.sentAt).toLocaleString('th-TH', { 
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                      })}</span>
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* ปุ่มรีเซ็ต */}
+                              <div className="flex flex-col gap-3 flex-shrink-0">
+                                <button
+                                  onClick={() => resetNotificationStatus(licensePlate)}
+                                  className="px-6 py-3 rounded-xl transition-all flex items-center justify-center gap-2 text-sm font-semibold min-w-[140px] transform hover:scale-105 bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 shadow-md hover:shadow-lg"
+                                  title="รีเซ็ตเพื่อแจ้งเตือนใหม่"
+                                >
+                                  <FontAwesomeIcon icon={faSync} className="text-lg" />
+                                  รีเซ็ต
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="p-6 border-t-2 border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-green-50 dark:from-gray-800 dark:to-gray-800">
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div className="flex items-center gap-4 flex-wrap">
+                    {/* จำนวนรายการที่ส่งแล้ว */}
+                    <div className="bg-white dark:bg-gray-700 px-4 py-3 rounded-xl shadow-md border-2 border-green-200 dark:border-green-800">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">รายการทั้งหมด</p>
+                      <p className="text-2xl font-bold">
+                        <span className="bg-gradient-to-r from-green-500 to-emerald-600 bg-clip-text text-transparent">
+                          {Object.keys(notificationStatus).length}
+                        </span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400 ml-1">คัน</span>
+                      </p>
+                    </div>
+                    
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      <p className="flex items-center gap-2">
+                        <span className="text-xl">💡</span>
+                        <span>กดปุ่ม <span className="font-semibold text-blue-600 dark:text-blue-400">&quot;รีเซ็ต&quot;</span> เพื่อให้รถคันนั้นกลับมาแจ้งเตือนได้อีกครั้ง</span>
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowSentHistoryModal(false)}
                     className="px-8 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-xl hover:from-gray-700 hover:to-gray-800 transition-all font-semibold shadow-md hover:shadow-lg transform hover:scale-105"
                   >
                     ปิด

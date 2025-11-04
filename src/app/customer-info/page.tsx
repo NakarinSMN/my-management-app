@@ -40,8 +40,9 @@ interface PageButtonProps {
 // Maps สำหรับสถานะและสี/ไอคอน
 const statusColor: { [key: string]: string } = {
   'ต่อภาษีแล้ว': 'bg-green-200 dark:bg-green-700 text-green-800 dark:text-white',
-  'กำลังจะครบกำหนด': 'bg-yellow-200 dark:bg-yellow-600 text-yellow-800 dark:text-black',
-  'ใกล้ครบกำหนด': 'bg-yellow-200 dark:bg-yellow-600 text-yellow-800 dark:text-black',
+  'กำลังจะครบกำหนด': 'bg-yellow-200 dark:bg-yellow-600 text-yellow-800 dark:text-white',
+  'ใกล้ครบกำหนด': 'bg-yellow-200 dark:bg-yellow-600 text-yellow-800 dark:text-white',
+  'ครบกำหนดวันนี้': 'bg-orange-200 dark:bg-orange-700 text-orange-800 dark:text-white',
   'เกินกำหนด': 'bg-red-200 dark:bg-red-700 text-red-800 dark:text-white',
   'รอดำเนินการ': 'bg-blue-200 dark:bg-blue-700 text-blue-800 dark:text-white',
 };
@@ -50,6 +51,7 @@ const statusIcon: { [key: string]: IconDefinition } = {
   'ต่อภาษีแล้ว': faCheckCircle,
   'กำลังจะครบกำหนด': faExclamationTriangle,
   'ใกล้ครบกำหนด': faExclamationTriangle,
+  'ครบกำหนดวันนี้': faExclamationTriangle,
   'เกินกำหนด': faTimesCircle,
   'รอดำเนินการ': faClock,
 };

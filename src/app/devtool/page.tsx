@@ -7,6 +7,7 @@ import { faTools, faDatabase, faCode, faCheckCircle, faTimesCircle, faSpinner, f
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { IconDefinition } from '@fortawesome/fontawesome-svg-core';
+import { useDialog } from '../contexts/DialogContext';
 
 interface DevTool {
   id: string;
@@ -24,32 +25,108 @@ export default function DevToolPage() {
   const [deleteResult, setDeleteResult] = useState<string>('');
   const [isClearingStatus, setIsClearingStatus] = useState(false);
   const [clearStatusResult, setClearStatusResult] = useState<string>('');
+  const [importText, setImportText] = useState<string>('');
+  const [isImporting, setIsImporting] = useState(false);
+  const [importResult, setImportResult] = useState<string>('');
 
-  // ฟังก์ชันล้างสถานะการแจ้งเตือนทั้งหมด (localStorage)
-  const clearNotificationStatus = () => {
-    if (!confirm('ต้องการล้างสถานะการแจ้งเตือนทั้งหมดใช่หรือไม่?\n(จะลบข้อมูลจาก localStorage)')) {
+  // ⚡ ใช้ Dialog Hook
+  const { showConfirm, showSuccess, showError } = useDialog();
+
+  // ฟังก์ชัน Import รายการที่ส่งแล้ว
+  const importSentNotifications = () => {
+    if (!importText.trim()) {
+      showError('ข้อมูลไม่ครบ', 'กรุณาวางข้อความที่ต้องการ import');
       return;
     }
 
-    try {
-      setIsClearingStatus(true);
-      setClearStatusResult('');
+    showConfirm(
+      'Import รายการที่ส่งแล้ว',
+      'ต้องการ import รายการที่ส่งแล้วใช่หรือไม่?\n\nระบบจะบันทึกข้อมูลลง MongoDB เพื่อป้องกันการส่งซ้ำ',
+      async () => {
+        setIsImporting(true);
+        setImportResult('');
+        
+        try {
+          const response = await fetch('/api/notification-status/import', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ textData: importText })
+          });
+          
+          const result = await response.json();
+          
+          if (result.success) {
+            setImportResult(`✅ Import สำเร็จ! นำเข้า ${result.imported} รายการ${result.errors > 0 ? ` (มีข้อผิดพลาด ${result.errors} รายการ)` : ''}`);
+            setImportText(''); // ล้างข้อความหลัง import สำเร็จ
+            
+            showSuccess(
+              'Import สำเร็จ!',
+              `นำเข้าข้อมูลเรียบร้อยแล้ว ${result.imported} รายการ`,
+              () => {
+                // รีเฟรชหน้าหลัง 1 วินาที
+                setTimeout(() => {
+                  window.location.reload();
+                }, 1000);
+              }
+            );
+          } else {
+            setImportResult(`❌ เกิดข้อผิดพลาด: ${result.error || 'Unknown error'}${result.details ? '\n' + result.details : ''}`);
+            showError(
+              'Import ไม่สำเร็จ',
+              `${result.error || 'Unknown error'}`
+            );
+          }
+        } catch (error) {
+          console.error('Error importing notifications:', error);
+          setImportResult(`❌ เกิดข้อผิดพลาดในการ import: ${error instanceof Error ? error.message : String(error)}`);
+          showError(
+            'เกิดข้อผิดพลาด',
+            `เกิดข้อผิดพลาดในการ import: ${error instanceof Error ? error.message : String(error)}`
+          );
+        } finally {
+          setIsImporting(false);
+        }
+      }
+    );
+  };
 
-      // ลบข้อมูลจาก localStorage
-      localStorage.removeItem('notificationStatus');
+  // ฟังก์ชันล้างสถานะการแจ้งเตือนทั้งหมด (localStorage)
+  const clearNotificationStatus = () => {
+    showConfirm(
+      'ล้างสถานะการแจ้งเตือน',
+      'ต้องการล้างสถานะการแจ้งเตือนทั้งหมดใช่หรือไม่?\n\n(จะลบข้อมูลจาก localStorage)',
+      async () => {
+        try {
+          setIsClearingStatus(true);
+          setClearStatusResult('');
 
-      setClearStatusResult('✅ ล้างสถานะการแจ้งเตือนทั้งหมดสำเร็จ');
-      
-      // รีเฟรชหน้าหลัง 1 วินาที
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
-    } catch (error) {
-      console.error('Error clearing notification status:', error);
-      setClearStatusResult('❌ เกิดข้อผิดพลาดในการล้างสถานะ');
-    } finally {
-      setIsClearingStatus(false);
-    }
+          // ลบข้อมูลจาก localStorage
+          localStorage.removeItem('notificationStatus');
+
+          setClearStatusResult('✅ ล้างสถานะการแจ้งเตือนทั้งหมดสำเร็จ');
+          
+          showSuccess(
+            'ล้างสถานะสำเร็จ!',
+            'ล้างสถานะการแจ้งเตือนทั้งหมดเรียบร้อยแล้ว',
+            () => {
+              // รีเฟรชหน้าหลัง 1 วินาที
+              setTimeout(() => {
+                window.location.reload();
+              }, 1000);
+            }
+          );
+        } catch (error) {
+          console.error('Error clearing notification status:', error);
+          setClearStatusResult('❌ เกิดข้อผิดพลาดในการล้างสถานะ');
+          showError(
+            'เกิดข้อผิดพลาด',
+            'เกิดข้อผิดพลาดในการล้างสถานะ กรุณาลองใหม่อีกครั้ง'
+          );
+        } finally {
+          setIsClearingStatus(false);
+        }
+      }
+    );
   };
 
   // ฟังก์ชันโหลดรายการแจ้งเตือนใหม่
@@ -90,32 +167,46 @@ export default function DevToolPage() {
   };
 
   // ฟังก์ชันลบรายการทั้งหมด
-  const deleteAllNotifications = async () => {
-    if (!confirm('คุณต้องการลบรายการแจ้งเตือนทั้งหมดใช่หรือไม่?')) {
-      return;
-    }
-
-    setIsDeleting(true);
-    setDeleteResult('');
-    
-    try {
-      const response = await fetch('/api/daily-notifications/delete-all', {
-        method: 'DELETE'
-      });
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        setDeleteResult(`✅ ลบรายการทั้งหมดสำเร็จ (${result.deletedCount || 0} รายการ)`);
-      } else {
-        setDeleteResult(`❌ เกิดข้อผิดพลาด: ${result.error || 'Unknown error'}${result.details ? '\n' + result.details : ''}`);
+  const deleteAllNotifications = () => {
+    showConfirm(
+      'ลบรายการทั้งหมด',
+      'คุณต้องการลบรายการแจ้งเตือนทั้งหมดใช่หรือไม่?',
+      async () => {
+        setIsDeleting(true);
+        setDeleteResult('');
+        
+        try {
+          const response = await fetch('/api/daily-notifications/delete-all', {
+            method: 'DELETE'
+          });
+          
+          const result = await response.json();
+          
+          if (result.success) {
+            setDeleteResult(`✅ ลบรายการทั้งหมดสำเร็จ (${result.deletedCount || 0} รายการ)`);
+            showSuccess(
+              'ลบรายการสำเร็จ!',
+              `ลบรายการแจ้งเตือนทั้งหมดแล้ว (${result.deletedCount || 0} รายการ)`
+            );
+          } else {
+            setDeleteResult(`❌ เกิดข้อผิดพลาด: ${result.error || 'Unknown error'}${result.details ? '\n' + result.details : ''}`);
+            showError(
+              'เกิดข้อผิดพลาด',
+              `${result.error || 'Unknown error'}`
+            );
+          }
+        } catch (error) {
+          console.error('Error deleting all notifications:', error);
+          setDeleteResult(`❌ เกิดข้อผิดพลาดในการลบข้อมูล: ${error instanceof Error ? error.message : String(error)}`);
+          showError(
+            'เกิดข้อผิดพลาด',
+            `เกิดข้อผิดพลาดในการลบข้อมูล: ${error instanceof Error ? error.message : String(error)}`
+          );
+        } finally {
+          setIsDeleting(false);
+        }
       }
-    } catch (error) {
-      console.error('Error deleting all notifications:', error);
-      setDeleteResult(`❌ เกิดข้อผิดพลาดในการลบข้อมูล: ${error instanceof Error ? error.message : String(error)}`);
-    } finally {
-      setIsDeleting(false);
-    }
+    );
   };
 
   const devTools: DevTool[] = [
@@ -141,6 +232,14 @@ export default function DevToolPage() {
       description: 'ย้ายข้อมูลระหว่างระบบ',
       icon: faDatabase,
       path: '/devtool/data-migration',
+      status: 'active'
+    },
+    {
+      id: 'filter-sent',
+      name: 'กรองรายการที่ยังไม่ส่ง',
+      description: 'แยกรายการที่ยังไม่ส่งออกจากข้อมูลทั้งหมด',
+      icon: faBell,
+      path: '/devtool/filter-sent',
       status: 'active'
     },
     {
@@ -402,11 +501,84 @@ export default function DevToolPage() {
           </div>
         </motion.div>
 
+        {/* Import Sent Notifications */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7 }}
+          className="mt-8 p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+        >
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            📥 Import รายการที่ส่งแล้ว
+          </h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                วางข้อความรายการที่ส่งแล้วที่นี่:
+              </label>
+              <textarea
+                value={importText}
+                onChange={(e) => setImportText(e.target.value)}
+                placeholder={`ตัวอย่าง:\n9กก3222กท\tปรีชา ผาดาสิทธิ์\t0890069676\t07/12/2567\t07/12/2568\t33 วัน\tกำลังจะครบกำหนด\tส่งแล้ว\n(03/11 10:34)\n\nวางข้อความที่คัดลอกมาจากไฟล์ข้อความที่นี่...`}
+                rows={10}
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <motion.button
+              onClick={importSentNotifications}
+              disabled={isImporting || !importText.trim()}
+              className="w-full p-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              whileHover={{ scale: isImporting || !importText.trim() ? 1 : 1.02 }}
+              whileTap={{ scale: isImporting || !importText.trim() ? 1 : 0.98 }}
+            >
+              <FontAwesomeIcon 
+                icon={isImporting ? faSync : faDatabase} 
+                className={`mr-2 ${isImporting ? 'animate-spin' : ''}`} 
+              />
+              {isImporting ? 'กำลัง Import...' : 'Import ข้อมูลลง MongoDB'}
+            </motion.button>
+
+            {importResult && (
+              <div className={`p-4 rounded-lg ${
+                importResult.includes('✅') 
+                  ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' 
+                  : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
+              }`}>
+                <p className={`text-sm whitespace-pre-wrap ${
+                  importResult.includes('✅') 
+                    ? 'text-green-800 dark:text-green-200' 
+                    : 'text-red-800 dark:text-red-200'
+                }`}>
+                  {importResult}
+                </p>
+              </div>
+            )}
+
+            {/* คำอธิบาย */}
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+              <p className="text-sm text-blue-800 dark:text-blue-200 font-semibold mb-2">
+                💡 วิธีใช้งาน:
+              </p>
+              <ol className="text-sm text-blue-800 dark:text-blue-200 space-y-1 list-decimal list-inside">
+                <li>คัดลอกข้อความรายการที่ส่งแล้วจากไฟล์ของคุณ</li>
+                <li>วางข้อความลงในช่องด้านบน</li>
+                <li>กดปุ่ม &quot;Import ข้อมูลลง MongoDB&quot;</li>
+                <li>ระบบจะบันทึกรายการที่ส่งแล้วลง MongoDB</li>
+                <li>รถที่ส่งแล้วจะไม่แสดงในรายการแจ้งเตือนอีก</li>
+              </ol>
+              <p className="text-sm text-blue-800 dark:text-blue-200 mt-3">
+                📋 <strong>รูปแบบข้อมูล:</strong> ต้องมีคอลัมน์ที่ 8 เป็น &quot;ส่งแล้ว&quot; และบรรทัดถัดไปเป็นวันเวลา (DD/MM HH:MM)
+              </p>
+            </div>
+          </div>
+        </motion.div>
+
         {/* System Status */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
+          transition={{ delay: 0.8 }}
           className="mt-8 p-6 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800"
         >
           <h3 className="text-lg font-semibold text-yellow-900 dark:text-yellow-100 mb-2">

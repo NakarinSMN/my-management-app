@@ -8,6 +8,7 @@ import Layout from "./components/Layout"; // Import the main Layout component
 import PageTransition from "./components/PageTransition";
 import { ThemeProvider } from 'next-themes';
 import { NotificationProvider } from './contexts/NotificationContext';
+import { DialogProvider } from './contexts/DialogContext';
 import NotificationManager from './components/NotificationManager';
 
 // กำหนดฟอนต์ Inter และให้เป็น CSS variable
@@ -38,14 +39,16 @@ export default function RootLayout({
     <html lang="th" suppressHydrationWarning>
       <body className={`${inter.variable} ${kanit.variable}`} suppressHydrationWarning={true}>
         <ThemeProvider attribute="class">
-          <NotificationProvider>
-            <Layout>
-              <PageTransition>
-                {children}
-              </PageTransition>
-            </Layout>
-            <NotificationManager />
-          </NotificationProvider>
+          <DialogProvider>
+            <NotificationProvider>
+              <Layout>
+                <PageTransition>
+                  {children}
+                </PageTransition>
+              </Layout>
+              <NotificationManager />
+            </NotificationProvider>
+          </DialogProvider>
         </ThemeProvider>
       </body>
     </html>
