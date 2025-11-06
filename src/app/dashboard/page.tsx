@@ -76,7 +76,7 @@ export default function DashboardPage() {
         
         // นับสถานะ
         const status = String(item['สถานะ'] || item['สถานะการเตือน'] || '');
-        if (status === 'กำลังจะครบกำหนด' || status === 'ใกล้ครบกำหนด') {
+        if (status === 'กำลังจะครบกำหนด') {
           upcomingCount++;
         } else if (status === 'เกินกำหนด') {
           overdueCount++;

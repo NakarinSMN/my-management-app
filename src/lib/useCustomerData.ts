@@ -43,6 +43,8 @@ export interface CustomerData {
   expiryDate?: string; // วันสิ้นอายุภาษี
   nextTaxDate?: string; // วันชำระภาษีครั้งถัดไป
   lastTaxDate?: string; // วันชำระภาษีล่าสุด
+  createdAt?: string; // วันที่บันทึกข้อมูล
+  updatedAt?: string; // วันที่อัปเดตล่าสุด
 }
 
 // ฟังก์ชัน fetcher แบบง่ายๆ ไม่มี cache

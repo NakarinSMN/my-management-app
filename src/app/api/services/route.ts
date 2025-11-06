@@ -109,13 +109,23 @@ export async function PUT(request: NextRequest) {
       ...(categoryName && { categoryName }),
       ...(categoryDescription !== undefined && { categoryDescription }),
       ...(serviceName && { serviceName }),
-      ...(servicePrice && { servicePrice: parseFloat(servicePrice) }),
+      ...(servicePrice !== undefined && servicePrice !== null && { servicePrice: parseFloat(servicePrice) }),
       ...(serviceDetails !== undefined && { serviceDetails }),
       updatedAt: new Date()
     };
     
+    // ตรวจสอบว่า _id เป็น ObjectId หรือ string ธรรมดา
+    let query;
+    if (ObjectId.isValid(_id) && _id.length === 24) {
+      // ถ้าเป็น ObjectId ที่ถูกต้อง
+      query = { _id: new ObjectId(_id) };
+    } else {
+      // ถ้าเป็น string ID แบบอื่น (เช่น จาก Google Sheets)
+      query = { _id: _id };
+    }
+    
     const result = await services.updateOne(
-      { _id: new ObjectId(_id) },
+      query,
       { $set: updateData }
     );
     
@@ -159,7 +169,17 @@ export async function DELETE(request: NextRequest) {
     const db = await getDatabase();
     const services = db.collection('pricing');
     
-    const result = await services.deleteOne({ _id: new ObjectId(_id) });
+    // ตรวจสอบว่า _id เป็น ObjectId หรือ string ธรรมดา
+    let query;
+    if (ObjectId.isValid(_id) && _id.length === 24) {
+      // ถ้าเป็น ObjectId ที่ถูกต้อง
+      query = { _id: new ObjectId(_id) };
+    } else {
+      // ถ้าเป็น string ID แบบอื่น (เช่น จาก Google Sheets)
+      query = { _id: _id };
+    }
+    
+    const result = await services.deleteOne(query);
     
     if (result.deletedCount === 0) {
       return NextResponse.json(

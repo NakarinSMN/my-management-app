@@ -62,7 +62,6 @@ interface PageButtonProps {
 const statusColor: { [key: string]: string } = {
   'ต่อภาษีแล้ว': 'bg-green-200 dark:bg-green-700 text-green-800 dark:text-white',
   'กำลังจะครบกำหนด': 'bg-yellow-200 dark:bg-yellow-600 text-yellow-800 dark:text-white',
-  'ใกล้ครบกำหนด': 'bg-yellow-200 dark:bg-yellow-600 text-yellow-800 dark:text-white',
   'ครบกำหนดวันนี้': 'bg-orange-200 dark:bg-orange-700 text-orange-800 dark:text-white',
   'เกินกำหนด': 'bg-red-200 dark:bg-red-700 text-red-800 dark:text-white',
   'รอดำเนินการ': 'bg-blue-200 dark:bg-blue-700 text-blue-800 dark:text-white',
@@ -71,7 +70,6 @@ const statusColor: { [key: string]: string } = {
 const statusIcon: { [key: string]: IconDefinition } = {
   'ต่อภาษีแล้ว': faCheckCircle,
   'กำลังจะครบกำหนด': faExclamationTriangle,
-  'ใกล้ครบกำหนด': faExclamationTriangle,
   'ครบกำหนดวันนี้': faWarning,
   'เกินกำหนด': faTimesCircle,
   'รอดำเนินการ': faClock,
@@ -911,9 +909,9 @@ export default function TaxExpiryNextYearPage() {
               <div className="flex items-center">
                 <FontAwesomeIcon icon={faWarning} className="text-yellow-500 mr-2" />
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">ใกล้ครบกำหนด</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">กำลังจะครบกำหนด</p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {filteredData.filter(item => item.status === 'ใกล้ครบกำหนด').length}
+                    {filteredData.filter(item => item.status === 'กำลังจะครบกำหนด').length}
                   </p>
                 </div>
               </div>

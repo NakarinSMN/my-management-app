@@ -41,7 +41,6 @@ interface PageButtonProps {
 const statusColor: { [key: string]: string } = {
   'ต่อภาษีแล้ว': 'bg-green-200 dark:bg-green-700 text-green-800 dark:text-white',
   'กำลังจะครบกำหนด': 'bg-yellow-200 dark:bg-yellow-600 text-yellow-800 dark:text-white',
-  'ใกล้ครบกำหนด': 'bg-yellow-200 dark:bg-yellow-600 text-yellow-800 dark:text-white',
   'ครบกำหนดวันนี้': 'bg-orange-200 dark:bg-orange-700 text-orange-800 dark:text-white',
   'เกินกำหนด': 'bg-red-200 dark:bg-red-700 text-red-800 dark:text-white',
   'รอดำเนินการ': 'bg-blue-200 dark:bg-blue-700 text-blue-800 dark:text-white',
@@ -50,7 +49,6 @@ const statusColor: { [key: string]: string } = {
 const statusIcon: { [key: string]: IconDefinition } = {
   'ต่อภาษีแล้ว': faCheckCircle,
   'กำลังจะครบกำหนด': faExclamationTriangle,
-  'ใกล้ครบกำหนด': faExclamationTriangle,
   'ครบกำหนดวันนี้': faExclamationTriangle,
   'เกินกำหนด': faTimesCircle,
   'รอดำเนินการ': faClock,
@@ -124,6 +122,7 @@ export default function CustomerInfoPage() {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerData | null>(null);
 
   // ⚡ ใช้ Custom Hook แทน useSWR โดยตรง
@@ -238,9 +237,9 @@ export default function CustomerInfoPage() {
                 <div className="flex items-center">
                   <FontAwesomeIcon icon={faExclamationTriangle} className="text-orange-500 mr-2" />
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">ใกล้ครบกำหนด</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">กำลังจะครบกำหนด</p>
                     <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {filteredData.filter(item => item.status === 'ใกล้ครบกำหนด').length}
+                      {filteredData.filter(item => item.status === 'กำลังจะครบกำหนด').length}
                     </p>
                   </div>
                 </div>
@@ -346,6 +345,7 @@ export default function CustomerInfoPage() {
                     <thead className="bg-gray-50 dark:bg-gray-700">
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ทะเบียนรถ</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ยี่ห้อ</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ชื่อลูกค้า</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">เบอร์โทร</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">วันที่ชำระล่าสุด</th>
@@ -356,7 +356,7 @@ export default function CustomerInfoPage() {
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                       {paginatedData.length === 0 ? (
                         <tr>
-                          <td colSpan={6} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
+                          <td colSpan={7} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
                             ไม่พบข้อมูลที่ตรงกับตัวกรอง
                           </td>
                         </tr>
@@ -365,9 +365,9 @@ export default function CustomerInfoPage() {
                           <CustomerRow 
                             key={item.licensePlate + item.customerName + idx} 
                             item={item} 
-                            onEdit={(customer) => {
+                            onView={(customer) => {
                               setSelectedCustomer(customer);
-                              setIsEditModalOpen(true);
+                              setIsViewModalOpen(true);
                             }}
                           />
                         ))
@@ -461,15 +461,117 @@ export default function CustomerInfoPage() {
           onCancel={() => { setIsEditModalOpen(false); setSelectedCustomer(null); }}
         />
       </Modal>
+
+      {/* Modal สำหรับดูข้อมูลเต็ม */}
+      <Modal isOpen={isViewModalOpen}>
+        {selectedCustomer && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full mx-auto border border-gray-200 dark:border-gray-700 p-6 md:p-8">
+            {/* Header */}
+            <div className="mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                ข้อมูลลูกค้า
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">ทะเบียนรถ: {selectedCustomer.licensePlate}</p>
+            </div>
+
+            {/* ข้อมูลทั้งหมด */}
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2 md:col-span-1">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">ทะเบียนรถ</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{selectedCustomer.licensePlate}</p>
+                </div>
+                <div className="col-span-2 md:col-span-1">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">ยี่ห้อ / รุ่น</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{selectedCustomer.brand || '-'}</p>
+                </div>
+                <div className="col-span-2 md:col-span-1">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">ชื่อลูกค้า</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{selectedCustomer.customerName}</p>
+                </div>
+                <div className="col-span-2 md:col-span-1">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">เบอร์ติดต่อ</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{selectedCustomer.phone}</p>
+                </div>
+                <div className="col-span-2 md:col-span-1">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">วันที่ชำระภาษีล่าสุด</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{formatDateFlexible(selectedCustomer.registerDate)}</p>
+                </div>
+                <div className="col-span-2 md:col-span-1">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">สถานะ</p>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor[selectedCustomer.status]}`}>
+                    <FontAwesomeIcon icon={statusIcon[selectedCustomer.status]} className="mr-1" />
+                    {selectedCustomer.status}
+                  </span>
+                </div>
+                {selectedCustomer.createdAt && (
+                  <div className="col-span-2 md:col-span-1">
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">วันที่บันทึก</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                      {new Date(selectedCustomer.createdAt).toLocaleString('th-TH')}
+                    </p>
+                  </div>
+                )}
+                {selectedCustomer.updatedAt && (
+                  <div className="col-span-2 md:col-span-1">
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">อัปเดตล่าสุด</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                      {new Date(selectedCustomer.updatedAt).toLocaleString('th-TH')}
+                    </p>
+                  </div>
+                )}
+                {selectedCustomer.note && (
+                  <div className="col-span-2">
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">หมายเหตุ</p>
+                    <p className="text-sm text-gray-900 dark:text-white p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      {selectedCustomer.note}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* ปุ่มจัดการ */}
+            <div className="flex justify-between gap-3 pt-6 mt-6 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => {
+                  setIsViewModalOpen(false);
+                  setSelectedCustomer(null);
+                }}
+                className="px-6 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200 font-semibold text-sm"
+              >
+                ปิด
+              </button>
+              <button
+                onClick={() => {
+                  setIsViewModalOpen(false);
+                  setIsEditModalOpen(true);
+                }}
+                className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all duration-200 text-sm shadow-lg"
+              >
+                <FontAwesomeIcon icon={faEdit} />
+                แก้ไขข้อมูล
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </AnimatedPage>
   );
 }
 
 // Table Row Memoized
-const CustomerRow = memo(function CustomerRow({ item, onEdit }: { item: CustomerData; onEdit: (customer: CustomerData) => void }) {
+const CustomerRow = memo(function CustomerRow({ 
+  item, 
+  onView 
+}: { 
+  item: CustomerData; 
+  onView: (customer: CustomerData) => void;
+}) {
   return (
-    <tr key={item.licensePlate + item.customerName} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+    <tr className="hover:bg-gray-50 dark:hover:bg-gray-700">
       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{item.licensePlate}</td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.brand || '-'}</td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.customerName}</td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.phone}</td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{formatDateFlexible(item.registerDate)}</td>
@@ -479,13 +581,13 @@ const CustomerRow = memo(function CustomerRow({ item, onEdit }: { item: Customer
           {item.status}
         </span>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+      <td className="px-6 py-4 whitespace-nowrap text-sm">
         <button
-          onClick={() => onEdit(item)}
-          className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-colors"
+          onClick={() => onView(item)}
+          className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
         >
-          <FontAwesomeIcon icon={faEdit} className="mr-1" />
-          แก้ไข
+          <FontAwesomeIcon icon={faInfoCircle} className="mr-1" />
+          ดูข้อมูล
         </button>
       </td>
     </tr>

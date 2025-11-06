@@ -4,14 +4,12 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faExclamationTriangle, faCar, faPlus, faSearch, faFilter, faTh, faList, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faExclamationTriangle, faCar, faPlus, faSearch, faFilter, faTrash, faEdit } from '@fortawesome/free-solid-svg-icons';
 import AnimatedPage from '../components/AnimatedPage';
 import Modal from '../components/Modal';
 import CategoryForm from '../components/CategoryForm';
 import ServiceForm from '../components/ServiceForm';
 import FilterDropdown from '../components/FilterDropdown';
-import PricingCard from '../components/PricingCard';
-import PricingListItem from '../components/PricingListItem';
 import ConfirmModal from '../components/ConfirmModal';
 import { useServiceData, ServiceData } from '@/lib/useServiceData';
 import { useCategoryData } from '@/lib/useCategoryData';
@@ -28,7 +26,6 @@ export default function PricingPage() {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [priceRange, setPriceRange] = useState<{ min: number; max: number }>({ min: 0, max: 0 });
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   
   // Confirmation modal states
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
@@ -270,7 +267,6 @@ export default function PricingPage() {
     setSearchTerm('');
     setSelectedCategory('');
     setPriceRange({ min: 0, max: 0 });
-    setViewMode('grid');
   };
 
 
@@ -321,93 +317,94 @@ export default function PricingPage() {
 
   return (
     <AnimatedPage>
-      <main className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4">
-        <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+      <main className="w-full max-w-screen-2xl mx-auto bg-gray-50 dark:bg-gray-900 py-0 min-h-screen">
+        {/* Header */}
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 shadow-sm">
+          <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-white mb-2">
+              <h1 className="text-lg font-bold text-gray-900 dark:text-white tracking-tight">
                 ราคางานบริการ
               </h1>
-              <p className="text-gray-600 dark:text-gray-300 text-lg">
-                จัดการข้อมูลราคาบริการทั้งหมด
-              </p>
             </div>
-            <div className="flex gap-3">
-              <button
-                onClick={handleAddCategoryClick}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-              >
-                <FontAwesomeIcon icon={faPlus} />
-                เพิ่มหมวดหมู่
-              </button>
-            </div>
+            <button
+              onClick={handleAddCategoryClick}
+              className="px-4 py-2 bg-purple-500 text-white rounded-lg font-semibold hover:bg-purple-600 transition-colors duration-200 flex items-center gap-2 text-sm"
+            >
+              <FontAwesomeIcon icon={faPlus} className="text-xs" />
+              เพิ่มหมวดหมู่
+            </button>
           </div>
+        </div>
 
+        {/* Content */}
+        <div className="px-4 py-4">
           {/* ฟิลเตอร์ */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-              <div className="relative">
-                <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-3 mb-4 shadow-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-2">
+              {/* Search - เต็มแถวในมือถือ */}
+              <div className="relative sm:col-span-2 lg:col-span-5">
+                <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
                 <input
                   type="text"
-                  placeholder="ค้นหาบริการ, รายละเอียด, หมวดหมู่..."
+                  placeholder="ค้นหาบริการ..."
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder:text-gray-400 text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all"
                 />
               </div>
-            <FilterDropdown
-              value={selectedCategory}
-              onChange={val => setSelectedCategory(val)}
-              icon={faCar}
-              placeholder="กรองตามหมวดหมู่"
-              options={[
-                { value: '', label: 'ทุกหมวดหมู่', color: '#6B7280' },
-                ...(displayCategories || []).map(category => ({
-                  value: category.categoryName,
-                  label: category.categoryName,
-                  color: '#3B82F6'
-                }))
-              ]}
-            />
-              <FilterDropdown
-                value={priceRange.min === 0 && priceRange.max === 0 ? '' : `${priceRange.min}-${priceRange.max}`}
-                onChange={val => {
-                  if (val === '') {
-                    setPriceRange({ min: 0, max: 0 });
-                  } else {
-                    const [min, max] = val.split('-').map(Number);
-                    setPriceRange({ min, max });
-                  }
-                }}
-                icon={faFilter}
-                placeholder="กรองตามราคา"
-                options={[
-                  { value: '', label: 'ทุกราคา', color: '#6B7280' },
-                  { value: '0-500', label: '0-500 บาท', color: '#10B981' },
-                  { value: '500-1000', label: '500-1,000 บาท', color: '#3B82F6' },
-                  { value: '1000-2000', label: '1,000-2,000 บาท', color: '#F59E0B' },
-                  { value: '2000-5000', label: '2,000-5,000 บาท', color: '#EF4444' },
-                  { value: '5000-999999', label: '5,000+ บาท', color: '#8B5CF6' },
-                ]}
-              />
-              <FilterDropdown
-                value={viewMode}
-                onChange={val => setViewMode(val as 'grid' | 'list')}
-                icon={viewMode === 'grid' ? faTh : faList}
-                placeholder="โหมดแสดงผล"
-                options={[
-                  { value: 'grid', label: 'กริด', color: '#3B82F6' },
-                  { value: 'list', label: 'รายการ', color: '#10B981' },
-                ]}
-              />
-              <button
-                onClick={handleFilterReset}
-                className="px-3 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors w-full font-medium text-sm"
-              >
-                รีเซ็ต
-              </button>
+              
+              {/* Category Filter */}
+              <div className="lg:col-span-3">
+                <FilterDropdown
+                  value={selectedCategory}
+                  onChange={val => setSelectedCategory(val)}
+                  icon={faCar}
+                  placeholder="หมวดหมู่"
+                  options={[
+                    { value: '', label: 'ทุกหมวดหมู่', color: '#6B7280' },
+                    ...(displayCategories || []).map(category => ({
+                      value: category.categoryName,
+                      label: category.categoryName,
+                      color: '#3B82F6'
+                    }))
+                  ]}
+                />
+              </div>
+              
+              {/* Price Filter */}
+              <div className="lg:col-span-2">
+                <FilterDropdown
+                  value={priceRange.min === 0 && priceRange.max === 0 ? '' : `${priceRange.min}-${priceRange.max}`}
+                  onChange={val => {
+                    if (val === '') {
+                      setPriceRange({ min: 0, max: 0 });
+                    } else {
+                      const [min, max] = val.split('-').map(Number);
+                      setPriceRange({ min, max });
+                    }
+                  }}
+                  icon={faFilter}
+                  placeholder="ช่วงราคา"
+                  options={[
+                    { value: '', label: 'ทุกราคา', color: '#6B7280' },
+                    { value: '0-500', label: '฿0-500', color: '#10B981' },
+                    { value: '500-1000', label: '฿500-1K', color: '#3B82F6' },
+                    { value: '1000-2000', label: '฿1K-2K', color: '#F59E0B' },
+                    { value: '2000-5000', label: '฿2K-5K', color: '#EF4444' },
+                    { value: '5000-999999', label: '฿5K+', color: '#8B5CF6' },
+                  ]}
+                />
+              </div>
+              
+              {/* Reset Button */}
+              <div className="sm:col-span-2 lg:col-span-2">
+                <button
+                  onClick={handleFilterReset}
+                  className="w-full px-3 py-1.5 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 text-purple-600 dark:text-purple-400 rounded-xl hover:from-purple-200 hover:to-pink-200 dark:hover:from-purple-900/50 dark:hover:to-pink-900/50 transition-all duration-200 font-semibold text-xs shadow-sm hover:shadow-md"
+                >
+                  รีเซ็ต
+                </button>
+              </div>
             </div>
           </div>
 
@@ -439,53 +436,51 @@ export default function PricingPage() {
 
           {/* Data Display */}
           {!isLoading && !error && (
-            <div className="space-y-8">
+            <div className="space-y-16">
               {Object.keys(groupedData).length === 0 ? (
-                <div className="text-center py-12">
-                  <FontAwesomeIcon icon={faCar} className="text-gray-400 text-6xl mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                <div className="text-center py-24">
+                  <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full mb-6">
+                    <FontAwesomeIcon icon={faCar} className="text-gray-400 text-3xl" />
+                  </div>
+                  <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-3">
                     {searchTerm || selectedCategory || priceRange.min > 0 || priceRange.max > 0
                       ? 'ไม่พบข้อมูลที่ตรงกับเงื่อนไขการค้นหา'
                       : 'ยังไม่มีข้อมูลราคาบริการ'
                     }
                   </h3>
-                  <p className="text-gray-500 dark:text-gray-500 mb-6">
+                  <p className="text-gray-500 dark:text-gray-400 mb-8">
                     {searchTerm || selectedCategory || priceRange.min > 0 || priceRange.max > 0
                       ? 'ลองเปลี่ยนเงื่อนไขการค้นหาหรือรีเซ็ตตัวกรอง'
                       : 'เริ่มต้นด้วยการเพิ่มข้อมูลราคาบริการใหม่'
                     }
                   </p>
                   {!searchTerm && !selectedCategory && priceRange.min === 0 && priceRange.max === 0 && (
-                    <div className="flex gap-3 justify-center">
-                      <button
-                        onClick={handleAddCategoryClick}
-                        className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-                      >
-                        <FontAwesomeIcon icon={faPlus} />
-                        เพิ่มหมวดหมู่แรก
-                      </button>
-                      <Link
-                        href="/categories"
-                        className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
-                      >
-                        <FontAwesomeIcon icon={faCar} />
-                        จัดการหมวดหมู่
-                      </Link>
-                    </div>
+                    <button
+                      onClick={handleAddCategoryClick}
+                      className="px-6 py-2.5 bg-purple-400 text-white rounded-2xl font-semibold hover:bg-purple-500 transition-colors duration-200 inline-flex items-center gap-2 text-sm shadow-md"
+                    >
+                      <FontAwesomeIcon icon={faPlus} />
+                      เพิ่มหมวดหมู่แรก
+                    </button>
                   )}
                 </div>
               ) : (
-                Object.entries(groupedData).map(([categoryName, services]) => (
-                  <div key={categoryName} className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-                    <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
+                Object.entries(groupedData)
+                  .filter(([, services]) => services.length > 0) // ซ่อนหมวดหมู่ที่ไม่มีรายการหลังกรอง
+                  .map(([categoryName, services]) => (
+                  <div key={categoryName} className="space-y-3">
+                    {/* Category Header */}
+                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-3">
                       <div className="flex items-center justify-between">
-                        <h2 className="text-xl font-bold text-white flex items-center gap-3">
-                          <FontAwesomeIcon icon={faCar} />
-                          {categoryName}
-                          <span className="text-sm font-normal bg-white/20 px-2 py-1 rounded-full">
-                            {services.length} บริการ
+                        <div className="flex items-center gap-2">
+                          <h2 className="text-base font-bold text-gray-900 dark:text-white">
+                            {categoryName}
+                          </h2>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            ({services.length})
                           </span>
-                        </h2>
+                        </div>
+                        
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => {
@@ -493,59 +488,77 @@ export default function PricingPage() {
                               setIsServiceModalOpen(true);
                               setSelectedCategoryForService(categoryName);
                             }}
-                            className="p-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors flex items-center gap-1"
-                            title="เพิ่มรายการบริการ"
+                            className="px-3 py-1.5 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-lg font-medium hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors flex items-center gap-1.5 text-xs"
                           >
-                            <FontAwesomeIcon icon={faPlus} className="text-sm" />
-                            <span className="text-sm">เพิ่ม</span>
+                            <FontAwesomeIcon icon={faPlus} className="text-xs" />
+                            เพิ่มบริการ
                           </button>
                           <button
                             onClick={() => handleDeleteCategoryClick(categoryName)}
-                            className="p-2 bg-red-500/80 hover:bg-red-600/80 text-white rounded-lg transition-colors flex items-center gap-1"
+                            className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors rounded-lg"
                             title="ลบหมวดหมู่"
                           >
-                            <FontAwesomeIcon icon={faTrash} className="text-sm" />
+                            <FontAwesomeIcon icon={faTrash} className="text-xs" />
                           </button>
                         </div>
                       </div>
                     </div>
                     
-                    <div className={`${viewMode === 'grid' ? 'p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'p-4 space-y-2'}`}>
-                      {services.map((service) => (
-                        viewMode === 'grid' ? (
-            <PricingCard
-              key={service._id}
-              data={service}
-              onEdit={handleEditServiceClick}
-              onDelete={handleDeleteServiceClick}
-              onDeleteConfirm={(id, name) => {
-                showConfirmModal(
-                  'ยืนยันการลบบริการ',
-                  `คุณแน่ใจหรือไม่ที่จะลบบริการ "${name}"?`,
-                  () => handleDeleteServiceClick(id),
-                  false,
-                  ''
-                );
-              }}
-            />
-                        ) : (
-                          <PricingListItem
-                            key={service._id}
-                            data={service}
-                            onEdit={handleEditServiceClick}
-                            onDelete={handleDeleteServiceClick}
-                            onDeleteConfirm={(id, name) => {
-                              showConfirmModal(
-                                'ยืนยันการลบบริการ',
-                                `คุณแน่ใจหรือไม่ที่จะลบบริการ "${name}"?`,
-                                () => handleDeleteServiceClick(id),
-                                false,
-                                ''
-                              );
-                            }}
-                          />
-                        )
-                      ))}
+                    {/* Services Table */}
+                    <div className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                      <table className="w-full">
+                        <thead className="bg-gray-50 dark:bg-gray-700">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">ชื่อบริการ</th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">รายละเอียด</th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">ราคา</th>
+                            <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-300">จัดการ</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                          {services.map((service) => (
+                            <tr key={service._id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                              <td className="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white text-left">
+                                {service.serviceName}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 text-left">
+                                {service.serviceDetails || '-'}
+                              </td>
+                              <td className="px-4 py-3 text-left">
+                                <span className="text-lg font-bold text-purple-500 dark:text-purple-400">
+                                  ฿{service.servicePrice.toLocaleString('th-TH')}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="flex justify-center gap-2">
+                                  <button
+                                    onClick={() => handleEditServiceClick(service)}
+                                    className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-all"
+                                    title="แก้ไข"
+                                  >
+                                    <FontAwesomeIcon icon={faEdit} className="text-xs" />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      showConfirmModal(
+                                        'ยืนยันการลบบริการ',
+                                        `คุณแน่ใจหรือไม่ที่จะลบบริการ "${service.serviceName}"?`,
+                                        () => handleDeleteServiceClick(service._id),
+                                        false,
+                                        ''
+                                      );
+                                    }}
+                                    className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
+                                    title="ลบ"
+                                  >
+                                    <FontAwesomeIcon icon={faTrash} className="text-xs" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
                 ))
@@ -557,10 +570,9 @@ export default function PricingPage() {
           <div className="mt-12 text-center">
             <Link 
               href="/" 
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gray-200 text-gray-800 rounded-lg shadow hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 font-semibold transition-colors"
+              className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-orange-500 dark:hover:text-orange-400 font-medium transition-colors"
             >
-              <FontAwesomeIcon icon={faCar} />
-              กลับหน้าหลัก
+              ← กลับหน้าหลัก
             </Link>
           </div>
         </div>

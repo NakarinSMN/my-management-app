@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEdit, faTrash, faCar } from '@fortawesome/free-solid-svg-icons';
+import { faEdit, faTrash } from '@fortawesome/free-solid-svg-icons';
 
 interface PricingData {
   _id: string;
@@ -39,68 +39,42 @@ export default function PricingCard({ data, onEdit, onDelete, onDeleteConfirm }:
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 border border-gray-200 dark:border-gray-700">
-      <div className="p-4">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-blue-100 dark:bg-blue-900 rounded">
-              <FontAwesomeIcon icon={faCar} className="text-blue-600 dark:text-blue-400 text-sm" />
-            </div>
-            <div>
-              <h3 className="text-base font-semibold text-gray-900 dark:text-white">
-                {data.serviceName}
-              </h3>
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                {data.categoryName}
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-1">
-            <button
-              onClick={() => onEdit(data)}
-              className="p-1.5 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900 rounded transition-colors"
-              title="แก้ไข"
-            >
-              <FontAwesomeIcon icon={faEdit} className="text-sm" />
-            </button>
-            <button
-              onClick={handleDelete}
-              className="p-1.5 text-red-600 hover:bg-red-100 dark:hover:bg-red-900 rounded transition-colors"
-              title="ลบ"
-            >
-              <FontAwesomeIcon icon={faTrash} className="text-sm" />
-            </button>
-          </div>
-        </div>
+    <div className="group relative bg-white dark:bg-gray-800 p-5 transition-all duration-300 hover:shadow-lg rounded-2xl border border-gray-200 dark:border-gray-700">
+      {/* Actions - Top Right */}
+      <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <button
+          onClick={() => onEdit(data)}
+          className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-all duration-200"
+          title="แก้ไข"
+        >
+          <FontAwesomeIcon icon={faEdit} className="text-xs" />
+        </button>
+        <button
+          onClick={handleDelete}
+          className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200"
+          title="ลบ"
+        >
+          <FontAwesomeIcon icon={faTrash} className="text-xs" />
+        </button>
+      </div>
 
-        {/* Price */}
-        <div className="mb-3">
-          <div className="text-xl font-bold text-green-600 dark:text-green-400">
-            ฿{formatPrice(data.servicePrice)}
-          </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">
-            ราคาต่อบริการ
-          </div>
-        </div>
-
-        {/* Details */}
+      {/* Service Name */}
+      <div className="mb-3">
+        <h3 className="text-base font-bold text-gray-900 dark:text-white line-clamp-2 leading-tight mb-1">
+          {data.serviceName}
+        </h3>
+        {/* Description */}
         {data.serviceDetails && (
-          <div className="mb-3">
-            <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-1">
-              {data.serviceDetails}
-            </p>
-          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
+            {data.serviceDetails}
+          </p>
         )}
+      </div>
 
-        {/* Footer */}
-        <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-            <span>อัปเดต: {new Date(data.updatedAt).toLocaleDateString('th-TH')}</span>
-            <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">
-              {data.categoryName}
-            </span>
-          </div>
+      {/* Price */}
+      <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+        <div className="text-xl font-bold text-purple-500 dark:text-purple-400">
+          ฿{formatPrice(data.servicePrice)}
         </div>
       </div>
     </div>

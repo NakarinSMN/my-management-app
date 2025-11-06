@@ -39,13 +39,16 @@ export async function GET() {
       projection: {
         _id: 0, // ไม่ส่ง _id
         licensePlate: 1,
+        brand: 1,
         customerName: 1,
         phone: 1,
         registerDate: 1,
         status: 1,
         note: 1,
         userId: 1,
-        day: 1
+        day: 1,
+        createdAt: 1,
+        updatedAt: 1
       }
     }).toArray();
     
@@ -92,6 +95,8 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    console.log('📝 [Customers API] Adding new customer:', body);
+    
     const db = await getDatabase();
     const customers = db.collection('customers');
     
@@ -107,21 +112,37 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    const now = new Date();
     const newCustomer = {
-      ...body,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      licensePlate: body.licensePlate,
+      brand: body.brand || '',
+      customerName: body.customerName,
+      phone: body.phone,
+      registerDate: body.registerDate,
+      status: body.status || 'รอดำเนินการ',
+      note: body.note || '',
+      createdAt: now,
+      updatedAt: now
     };
     
+    console.log('💾 [Customers API] Saving customer with timestamps:', {
+      ...newCustomer,
+      createdAt: newCustomer.createdAt.toISOString(),
+      updatedAt: newCustomer.updatedAt.toISOString()
+    });
+    
     const result = await customers.insertOne(newCustomer);
+    
+    console.log('✅ [Customers API] Customer added successfully with ID:', result.insertedId);
     
     return NextResponse.json({ 
       success: true, 
       message: 'เพิ่มข้อมูลลูกค้าสำเร็จ',
-      id: result.insertedId 
+      id: result.insertedId,
+      data: newCustomer
     });
   } catch (error) {
-    console.error('Error adding customer:', error);
+    console.error('❌ [Customers API] Error adding customer:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to add customer' },
       { status: 500 }
@@ -133,6 +154,8 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
+    console.log('🔄 [Customers API] Updating customer:', body);
+    
     const db = await getDatabase();
     const customers = db.collection('customers');
     
@@ -152,11 +175,21 @@ export async function PUT(request: NextRequest) {
       }
     }
     
+    // หาข้อมูลเดิมเพื่อเก็บ createdAt
+    const existingData = await customers.findOne({ licensePlate: originalLicensePlate });
+    
     const result = await customers.updateOne(
       { licensePlate: originalLicensePlate },
       { 
         $set: {
-          ...updateData,
+          licensePlate: updateData.licensePlate,
+          brand: updateData.brand || '',
+          customerName: updateData.customerName,
+          phone: updateData.phone,
+          registerDate: updateData.registerDate,
+          status: updateData.status,
+          note: updateData.note || '',
+          createdAt: existingData?.createdAt || new Date(),
           updatedAt: new Date()
         }
       }
@@ -169,12 +202,14 @@ export async function PUT(request: NextRequest) {
       );
     }
     
+    console.log('✅ [Customers API] Customer updated successfully');
+    
     return NextResponse.json({ 
       success: true, 
       message: 'แก้ไขข้อมูลลูกค้าสำเร็จ' 
     });
   } catch (error) {
-    console.error('Error updating customer:', error);
+    console.error('❌ [Customers API] Error updating customer:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to update customer' },
       { status: 500 }

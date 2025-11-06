@@ -9,10 +9,11 @@ interface AddCustomerFormProps {
 export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerFormProps) {
   const [formData, setFormData] = useState({
     licensePlate: '',
-    brand: '', // เปลี่ยนจาก brandModel เป็น brand
-    customerName: '',
+    brand: '',
+    firstName: '',
+    lastName: '',
     phone: '',
-    registerDate: '', // เปลี่ยนจาก lastTaxDate เป็น registerDate
+    registerDate: '',
     note: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,7 +42,7 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
         body: JSON.stringify({
           licensePlate: formData.licensePlate,
           brand: formData.brand,
-          customerName: formData.customerName,
+          customerName: `${formData.firstName} ${formData.lastName}`.trim(),
           phone: formData.phone,
           registerDate: formData.registerDate,
           status: 'รอดำเนินการ', // ตั้งค่าเริ่มต้น
@@ -71,41 +72,154 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl max-w-lg w-full mx-auto border border-gray-100 dark:border-gray-800 p-6 md:p-8 flex flex-col gap-6">
-      <h2 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white text-center">เพิ่มข้อมูลลูกค้า</h2>
+    <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full mx-auto border border-gray-200 dark:border-gray-700 p-6 md:p-8">
+      {/* Header with gradient */}
+      <div className="mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+          เพิ่มข้อมูลลูกค้า
+        </h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">กรอกข้อมูลลูกค้าให้ครบถ้วน</p>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* ทะเบียน */}
         <div>
-          <label className="block text-gray-700 dark:text-gray-200 font-semibold mb-1">ทะเบียนรถ <span className="text-red-500">*</span></label>
-          <input type="text" name="licensePlate" value={formData.licensePlate} onChange={handleChange} required className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-400 focus:outline-none transition" placeholder="ทะเบียนรถ" />
+          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            ทะเบียนรถ <span className="text-red-500">*</span>
+          </label>
+          <input 
+            type="text" 
+            name="licensePlate" 
+            value={formData.licensePlate} 
+            onChange={handleChange} 
+            required 
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all" 
+            placeholder="เช่น กก 1234"
+          />
         </div>
+
+        {/* ยี่ห้อ */}
         <div>
-          <label className="block text-gray-700 dark:text-gray-200 font-semibold mb-1">ยี่ห้อ / รุ่น <span className="text-red-500">*</span></label>
-          <input type="text" name="brand" placeholder="ยี่ห้อ / รุ่น (จำเป็น)" value={formData.brand} onChange={handleChange} required className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-400 focus:outline-none transition" />
+          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            ยี่ห้อ / รุ่น <span className="text-red-500">*</span>
+          </label>
+          <input 
+            type="text" 
+            name="brand" 
+            value={formData.brand} 
+            onChange={handleChange} 
+            required 
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all" 
+            placeholder="เช่น Toyota Camry"
+          />
         </div>
+
+        {/* ชื่อ */}
         <div>
-          <label className="block text-gray-700 dark:text-gray-200 font-semibold mb-1">ชื่อลูกค้า <span className="text-red-500">*</span></label>
-          <input type="text" name="customerName" value={formData.customerName} onChange={handleChange} required className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-400 focus:outline-none transition" placeholder="ชื่อลูกค้า" />
+          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            ชื่อ <span className="text-red-500">*</span>
+          </label>
+          <input 
+            type="text" 
+            name="firstName" 
+            value={formData.firstName || ''} 
+            onChange={handleChange} 
+            required 
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all" 
+            placeholder="ชื่อจริง"
+          />
         </div>
+
+        {/* นามสกุล */}
         <div>
-          <label className="block text-gray-700 dark:text-gray-200 font-semibold mb-1">เบอร์ติดต่อ <span className="text-red-500">*</span></label>
-          <input type="text" name="phone" value={formData.phone} onChange={handleChange} required className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-400 focus:outline-none transition" placeholder="เบอร์ติดต่อ" />
+          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            นามสกุล <span className="text-red-500">*</span>
+          </label>
+          <input 
+            type="text" 
+            name="lastName" 
+            value={formData.lastName || ''} 
+            onChange={handleChange} 
+            required 
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all" 
+            placeholder="นามสกุล"
+          />
         </div>
+
+        {/* เบอร์ */}
         <div className="md:col-span-2">
-          <label className="block text-gray-700 dark:text-gray-200 font-semibold mb-1">วันที่ชำระภาษีล่าสุด</label>
-          <input type="date" name="registerDate" placeholder="วันที่ชำระภาษีล่าสุด" value={formData.registerDate} onChange={handleChange} className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-400 focus:outline-none transition" />
+          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            เบอร์ติดต่อ <span className="text-red-500">*</span>
+          </label>
+          <input 
+            type="tel" 
+            name="phone" 
+            value={formData.phone} 
+            onChange={handleChange} 
+            required 
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all" 
+            placeholder="0812345678"
+          />
         </div>
+
+        {/* วันที่ชำระภาษี */}
         <div className="md:col-span-2">
-          <label className="block text-gray-700 dark:text-gray-200 font-semibold mb-1">หมายเหตุ</label>
-          <textarea name="note" value={formData.note} onChange={handleChange} rows={2} className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-400 focus:outline-none transition" placeholder="หมายเหตุเพิ่มเติม (ถ้ามี)"></textarea>
+          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            วันที่ชำระภาษีล่าสุด
+          </label>
+          <input 
+            type="date" 
+            name="registerDate" 
+            value={formData.registerDate} 
+            onChange={handleChange} 
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all"
+          />
+        </div>
+
+        {/* หมายเหตุ */}
+        <div className="md:col-span-2">
+          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            หมายเหตุ
+          </label>
+          <textarea 
+            name="note" 
+            value={formData.note} 
+            onChange={handleChange} 
+            rows={3} 
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all resize-none" 
+            placeholder="หมายเหตุเพิ่มเติม (ถ้ามี)"
+          />
         </div>
       </div>
-      {message && <p className="text-green-500 font-medium flex items-center gap-2 justify-center"><FaCheckCircle /> {message}</p>}
-      {error && <p className="text-red-500 font-medium flex items-center gap-2 justify-center"><FaExclamationCircle /> {error}</p>}
-      <div className="flex justify-end gap-4 mt-2">
-        <button type="button" onClick={onCancel} className="flex items-center gap-2 px-5 py-2 bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors font-semibold text-base">
+
+      {/* Message & Error */}
+      {message && (
+        <div className="flex items-center gap-2 justify-center p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
+          <FaCheckCircle className="text-green-500" />
+          <p className="text-green-700 dark:text-green-400 font-medium text-sm">{message}</p>
+        </div>
+      )}
+      {error && (
+        <div className="flex items-center gap-2 justify-center p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+          <FaExclamationCircle className="text-red-500" />
+          <p className="text-red-700 dark:text-red-400 font-medium text-sm">{error}</p>
+        </div>
+      )}
+
+      {/* Action Buttons */}
+      <div className="flex gap-3 pt-4">
+        <button 
+          type="button" 
+          onClick={onCancel} 
+          className="flex-1 flex items-center justify-center gap-2 px-5 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200 font-semibold text-sm"
+        >
           <FaTimes /> ยกเลิก
         </button>
-        <button type="submit" disabled={isSubmitting} className="flex items-center gap-2 px-7 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 text-base">
+        <button 
+          type="submit" 
+          disabled={isSubmitting} 
+          className="flex-1 flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-lg"
+        >
           {isSubmitting ? (
             <>
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>

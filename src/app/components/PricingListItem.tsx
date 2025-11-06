@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEdit, faTrash, faCar } from '@fortawesome/free-solid-svg-icons';
+import { faEdit, faTrash, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
 
 interface PricingData {
   _id: string;
@@ -39,24 +39,22 @@ export default function PricingListItem({ data, onEdit, onDelete, onDeleteConfir
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 border border-gray-200 dark:border-gray-700 p-3">
-      <div className="flex items-center justify-between">
-        {/* Left side - Service info */}
-        <div className="flex items-center gap-3 flex-1">
-          <div className="p-1.5 bg-blue-100 dark:bg-blue-900 rounded">
-            <FontAwesomeIcon icon={faCar} className="text-blue-600 dark:text-blue-400 text-sm" />
+    <div className="group bg-white dark:bg-gray-800 p-4 transition-all duration-200 hover:shadow-md rounded-2xl border border-gray-200 dark:border-gray-700">
+      <div className="flex items-center justify-between gap-4">
+        {/* Left side - Icon & Service info */}
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          {/* Icon */}
+          <div className="flex-shrink-0 w-9 h-9 flex items-center justify-center bg-purple-50 dark:bg-purple-900/20 rounded-xl">
+            <FontAwesomeIcon icon={faCheckCircle} className="text-purple-400 dark:text-purple-300 text-sm" />
           </div>
+
+          {/* Info */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                {data.serviceName}
-              </h3>
-              <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs text-gray-600 dark:text-gray-400">
-                {data.categoryName}
-              </span>
-            </div>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5 truncate">
+              {data.serviceName}
+            </h3>
             {data.serviceDetails && (
-              <p className="text-xs text-gray-600 dark:text-gray-300 truncate">
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                 {data.serviceDetails}
               </p>
             )}
@@ -64,29 +62,29 @@ export default function PricingListItem({ data, onEdit, onDelete, onDeleteConfir
         </div>
 
         {/* Right side - Price and actions */}
-        <div className="flex items-center gap-3">
-          <div className="text-right">
-            <div className="text-lg font-bold text-green-600 dark:text-green-400">
+        <div className="flex items-center gap-6 flex-shrink-0">
+          {/* Price */}
+          <div className="text-right min-w-[100px]">
+            <div className="text-lg font-bold text-purple-400 dark:text-purple-300">
               ฿{formatPrice(data.servicePrice)}
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">
-              ราคาต่อบริการ
-            </div>
           </div>
-          <div className="flex gap-1">
+
+          {/* Action buttons */}
+          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
             <button
               onClick={() => onEdit(data)}
-              className="p-1.5 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900 rounded transition-colors"
+              className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-purple-500 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-all duration-200"
               title="แก้ไข"
             >
-              <FontAwesomeIcon icon={faEdit} className="text-sm" />
+              <FontAwesomeIcon icon={faEdit} className="text-xs" />
             </button>
             <button
               onClick={handleDelete}
-              className="p-1.5 text-red-600 hover:bg-red-100 dark:hover:bg-red-900 rounded transition-colors"
+              className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200"
               title="ลบ"
             >
-              <FontAwesomeIcon icon={faTrash} className="text-sm" />
+              <FontAwesomeIcon icon={faTrash} className="text-xs" />
             </button>
           </div>
         </div>
