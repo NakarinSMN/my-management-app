@@ -99,6 +99,16 @@ body {
   font-family: "Kanit", sans-serif;
 }
 
+/* ซ่อน scrollbar แต่ยังสามารถ scroll ได้ */
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
 
 html {
   scroll-behavior: smooth;

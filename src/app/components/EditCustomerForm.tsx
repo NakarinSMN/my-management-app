@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import { FaSave, FaTimes, FaCheckCircle, FaExclamationCircle, FaTrash, FaExclamationTriangle } from 'react-icons/fa';
+import { faCar, faMoneyBillWave, faShield, faFileAlt, faTag } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import FilterDropdown from './FilterDropdown';
 
 interface CustomerData {
   licensePlate: string;
@@ -7,8 +10,10 @@ interface CustomerData {
   customerName: string;
   phone: string;
   registerDate: string;
+  vehicleType?: string;
   status: string;
   note?: string;
+  tags?: string[];
 }
 
 interface EditCustomerFormProps {
@@ -42,8 +47,10 @@ export default function EditCustomerForm({ customerData, onSuccess, onCancel }: 
     lastName: initialLastName,
     phone: customerData.phone,
     registerDate: customerData.registerDate,
+    vehicleType: customerData.vehicleType || '',
     status: customerData.status,
     note: customerData.note || '',
+    tags: customerData.tags || [],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
@@ -77,6 +84,28 @@ export default function EditCustomerForm({ customerData, onSuccess, onCancel }: 
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleTagToggle = (tag: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      tags: prev.tags.includes(tag)
+        ? prev.tags.filter(t => t !== tag)
+        : [...prev.tags, tag]
+    }));
+  };
+
+  const availableTags = [
+    { value: 'ภาษี', label: 'ภาษี', color: 'bg-blue-500', icon: faMoneyBillWave },
+    { value: 'ตรอ.', label: 'ตรอ.', color: 'bg-green-500', icon: faFileAlt },
+    { value: 'พรบ.', label: 'พรบ.', color: 'bg-orange-500', icon: faShield }
+  ];
+
+  const vehicleTypeOptions = [
+    { value: 'รย.1', label: 'รย.1 - รถยนต์นั่งส่วนบุคคลไม่เกิน 7 คน' },
+    { value: 'รย.2', label: 'รย.2 - รถยนต์นั่งส่วนบุคคลเกิน 7 คน' },
+    { value: 'รย.3', label: 'รย.3 - รถยนต์บรรทุกส่วนบุคคล' },
+    { value: 'รย.12', label: 'รย.12 - รถจักรยานยนต์' }
+  ];
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -100,9 +129,11 @@ export default function EditCustomerForm({ customerData, onSuccess, onCancel }: 
           customerName: `${formData.firstName} ${formData.lastName}`.trim(),
           phone: formData.phone,
           registerDate: formData.registerDate,
+          vehicleType: formData.vehicleType,
           status: formData.status,
           brand: formData.brand,
           note: formData.note,
+          tags: formData.tags,
         }),
       });
 
@@ -193,16 +224,17 @@ export default function EditCustomerForm({ customerData, onSuccess, onCancel }: 
           {/* ทะเบียน */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-              ทะเบียนรถ
+              ทะเบียนรถ <span className="text-red-500">*</span>
             </label>
             <input 
               type="text" 
               name="licensePlate" 
               value={formData.licensePlate} 
-              disabled
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed text-sm" 
+              onChange={handleChange}
+              required
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all" 
+              placeholder="เช่น กก 1234"
             />
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">ไม่สามารถแก้ไขได้</p>
           </div>
 
           {/* ยี่ห้อ */}
@@ -268,6 +300,20 @@ export default function EditCustomerForm({ customerData, onSuccess, onCancel }: 
             />
           </div>
 
+          {/* ประเภทรถ */}
+          <div className="md:col-span-2">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              ประเภทรถ
+            </label>
+            <FilterDropdown
+              value={formData.vehicleType}
+              onChange={(value) => setFormData(prev => ({ ...prev, vehicleType: value }))}
+              icon={faCar}
+              placeholder="เลือกประเภทรถ"
+              options={vehicleTypeOptions}
+            />
+          </div>
+
           {/* วันที่ชำระภาษี */}
           <div className="md:col-span-2">
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
@@ -278,8 +324,37 @@ export default function EditCustomerForm({ customerData, onSuccess, onCancel }: 
               name="registerDate" 
               value={formData.registerDate || ''} 
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all" 
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all"
             />
+          </div>
+
+          {/* แท็ก */}
+          <div className="md:col-span-2">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              ประเภทบริการที่ต้องดูแล
+            </label>
+            <div className="flex flex-wrap gap-3">
+              {availableTags.map((tag) => (
+                <button
+                  key={tag.value}
+                  type="button"
+                  onClick={() => handleTagToggle(tag.value)}
+                  className={`
+                    px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 flex items-center gap-2
+                    ${formData.tags.includes(tag.value)
+                      ? `${tag.color} text-white shadow-md`
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }
+                  `}
+                >
+                  <FontAwesomeIcon icon={faTag} className="text-xs" />
+                  {tag.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+              เลือกประเภทบริการที่ต้องดูแล (เลือกได้มากกว่า 1 อัน)
+            </p>
           </div>
 
           {/* หมายเหตุ */}
@@ -300,20 +375,20 @@ export default function EditCustomerForm({ customerData, onSuccess, onCancel }: 
 
         {/* Message & Error */}
         {message && (
-          <div className="mt-4 flex items-center gap-2 justify-center p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
+          <div className="flex items-center gap-2 justify-center p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
             <FaCheckCircle className="text-green-500" />
             <p className="text-green-700 dark:text-green-400 font-medium text-sm">{message}</p>
           </div>
         )}
         {error && (
-          <div className="mt-4 flex items-center gap-2 justify-center p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+          <div className="flex items-center gap-2 justify-center p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
             <FaExclamationCircle className="text-red-500" />
             <p className="text-red-700 dark:text-red-400 font-medium text-sm">{error}</p>
           </div>
         )}
 
         {/* Action Buttons */}
-        <div className="flex justify-between gap-3 pt-6 mt-6 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex justify-between gap-3 pt-4">
           <button 
             type="button" 
             onClick={handleDeleteClick} 

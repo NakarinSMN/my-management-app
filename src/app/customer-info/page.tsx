@@ -27,6 +27,7 @@ import {
   faChevronRight,
   faInfoCircle,
   faEdit,
+  faTag,
 } from '@fortawesome/free-solid-svg-icons';
 // Interfaces สำหรับ Component ลูก
 
@@ -126,7 +127,7 @@ export default function CustomerInfoPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerData | null>(null);
 
   // ⚡ ใช้ Custom Hook แทน useSWR โดยตรง
-  const { data, error, isLoading, mutate, refreshData } = useCustomerData();
+  const { data, error, isLoading, refreshData } = useCustomerData();
 
   const resetFilters = () => {
     setSearch('');
@@ -345,10 +346,12 @@ export default function CustomerInfoPage() {
                     <thead className="bg-gray-50 dark:bg-gray-700">
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ทะเบียนรถ</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ประเภท</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ยี่ห้อ</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ชื่อลูกค้า</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">เบอร์โทร</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">วันที่ชำระล่าสุด</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">แท็ก</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">สถานะ</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">จัดการ</th>
                       </tr>
@@ -356,7 +359,7 @@ export default function CustomerInfoPage() {
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                       {paginatedData.length === 0 ? (
                         <tr>
-                          <td colSpan={7} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
+                          <td colSpan={9} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
                             ไม่พบข้อมูลที่ตรงกับตัวกรอง
                           </td>
                         </tr>
@@ -440,7 +443,10 @@ export default function CustomerInfoPage() {
       {/* Modal สำหรับเพิ่มข้อมูลลูกค้า */}
       <Modal isOpen={isAddModalOpen}>
         <AddCustomerForm
-          onSuccess={() => { setIsAddModalOpen(false); mutate(); }}
+          onSuccess={() => { 
+            setIsAddModalOpen(false); 
+            refreshData(); // บังคับ refresh ข้อมูล
+          }}
           onCancel={() => setIsAddModalOpen(false)}
         />
       </Modal>
@@ -457,7 +463,11 @@ export default function CustomerInfoPage() {
             status: '',
             note: '' 
           }}
-          onSuccess={() => { setIsEditModalOpen(false); setSelectedCustomer(null); mutate(); }}
+          onSuccess={() => { 
+            setIsEditModalOpen(false); 
+            setSelectedCustomer(null); 
+            refreshData(); // บังคับ refresh ข้อมูล
+          }}
           onCancel={() => { setIsEditModalOpen(false); setSelectedCustomer(null); }}
         />
       </Modal>
@@ -482,6 +492,16 @@ export default function CustomerInfoPage() {
                   <p className="text-sm font-semibold text-gray-900 dark:text-white">{selectedCustomer.licensePlate}</p>
                 </div>
                 <div className="col-span-2 md:col-span-1">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">ประเภทรถ</p>
+                  {selectedCustomer.vehicleType ? (
+                    <span className="inline-flex px-2.5 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg text-sm font-medium">
+                      {selectedCustomer.vehicleType}
+                    </span>
+                  ) : (
+                    <p className="text-sm text-gray-400">-</p>
+                  )}
+                </div>
+                <div className="col-span-2 md:col-span-1">
                   <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">ยี่ห้อ / รุ่น</p>
                   <p className="text-sm font-semibold text-gray-900 dark:text-white">{selectedCustomer.brand || '-'}</p>
                 </div>
@@ -496,6 +516,29 @@ export default function CustomerInfoPage() {
                 <div className="col-span-2 md:col-span-1">
                   <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">วันที่ชำระภาษีล่าสุด</p>
                   <p className="text-sm font-semibold text-gray-900 dark:text-white">{formatDateFlexible(selectedCustomer.registerDate)}</p>
+                </div>
+                <div className="col-span-2 md:col-span-1">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">แท็ก</p>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedCustomer.tags && selectedCustomer.tags.length > 0 ? (
+                      selectedCustomer.tags.map((tag, index) => (
+                        <span 
+                          key={index}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium ${
+                            tag === 'ภาษี' ? 'bg-blue-500 text-white' :
+                            tag === 'ตรอ.' ? 'bg-green-500 text-white' :
+                            tag === 'พรบ.' ? 'bg-orange-500 text-white' :
+                            'bg-gray-500 text-white'
+                          }`}
+                        >
+                          <FontAwesomeIcon icon={faTag} className="text-[10px]" />
+                          {tag}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-sm text-gray-400">ไม่มีแท็ก</span>
+                    )}
+                  </div>
                 </div>
                 <div className="col-span-2 md:col-span-1">
                   <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">สถานะ</p>
@@ -571,10 +614,41 @@ const CustomerRow = memo(function CustomerRow({
   return (
     <tr className="hover:bg-gray-50 dark:hover:bg-gray-700">
       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{item.licensePlate}</td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+        {item.vehicleType ? (
+          <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-md text-xs font-medium">
+            {item.vehicleType}
+          </span>
+        ) : (
+          <span className="text-gray-400">-</span>
+        )}
+      </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.brand || '-'}</td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.customerName}</td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.phone}</td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{formatDateFlexible(item.registerDate)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{formatDateFlexible(item.registerDate)}</td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="flex flex-wrap gap-1">
+          {item.tags && item.tags.length > 0 ? (
+            item.tags.map((tag, index) => (
+              <span 
+                key={index}
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${
+                  tag === 'ภาษี' ? 'bg-blue-500 text-white' :
+                  tag === 'ตรอ.' ? 'bg-green-500 text-white' :
+                  tag === 'พรบ.' ? 'bg-orange-500 text-white' :
+                  'bg-gray-500 text-white'
+                }`}
+              >
+                <FontAwesomeIcon icon={faTag} className="text-[9px]" />
+                {tag}
+              </span>
+            ))
+          ) : (
+            <span className="text-xs text-gray-400">-</span>
+          )}
+        </div>
+      </td>
       <td className="px-6 py-4 whitespace-nowrap">
         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor[item.status]}`}>
           <FontAwesomeIcon icon={statusIcon[item.status]} className="mr-1" />

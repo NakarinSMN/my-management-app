@@ -14,10 +14,14 @@ interface RawCustomerDataItem {
   customerName?: string;
   phone?: string;
   registerDate?: string;
+  vehicleType?: string;
   status?: string;
   note?: string;
+  tags?: string[];
   userId?: string;
   day?: number;
+  createdAt?: string;
+  updatedAt?: string;
   // Google Sheets fields (เดิม)
   'ทะเบียนรถ'?: string;
   'ยี่ห้อ / รุ่น'?: string;
@@ -36,8 +40,10 @@ export interface CustomerData {
   customerName: string;
   phone: string;
   registerDate: string;
+  vehicleType?: string; // ประเภทรถ: รย.1, รย.2, รย.3, รย.12
   status: string;
   note?: string;
+  tags?: string[]; // แท็ก: ภาษี, ตรอ., พรบ.
   userId?: string;
   day?: number;
   expiryDate?: string; // วันสิ้นอายุภาษี
@@ -144,10 +150,14 @@ export function formatCustomerData(item: RawCustomerDataItem): CustomerData {
       customerName: item.customerName || '',
       phone,
       registerDate,
+      vehicleType: item.vehicleType || '',
       status: calculateStatus(registerDate), // คำนวณสถานะอัตโนมัติ
       note: item.note || '',
+      tags: item.tags || [],
       userId: item.userId || '',
       day: item.day || 365,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
     };
   } else {
     // ข้อมูลจาก Google Sheets (เดิม)
@@ -183,8 +193,10 @@ export function formatCustomerData(item: RawCustomerDataItem): CustomerData {
       customerName: item['ชื่อลูกค้า'] || '',
       phone,
       registerDate,
+      vehicleType: '',
       status: calculateStatus(registerDate), // คำนวณสถานะอัตโนมัติ
       note: item['หมายเหตุ'] || '',
+      tags: [],
     };
   }
 }

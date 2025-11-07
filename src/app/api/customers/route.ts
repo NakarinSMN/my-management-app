@@ -43,8 +43,10 @@ export async function GET() {
         customerName: 1,
         phone: 1,
         registerDate: 1,
+        vehicleType: 1,
         status: 1,
         note: 1,
+        tags: 1,
         userId: 1,
         day: 1,
         createdAt: 1,
@@ -119,8 +121,10 @@ export async function POST(request: NextRequest) {
       customerName: body.customerName,
       phone: body.phone,
       registerDate: body.registerDate,
+      vehicleType: body.vehicleType || '',
       status: body.status || 'รอดำเนินการ',
       note: body.note || '',
+      tags: body.tags || [],
       createdAt: now,
       updatedAt: now
     };
@@ -187,8 +191,10 @@ export async function PUT(request: NextRequest) {
           customerName: updateData.customerName,
           phone: updateData.phone,
           registerDate: updateData.registerDate,
+          vehicleType: updateData.vehicleType || '',
           status: updateData.status,
           note: updateData.note || '',
+          tags: updateData.tags || [],
           createdAt: existingData?.createdAt || new Date(),
           updatedAt: new Date()
         }

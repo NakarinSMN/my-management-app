@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { FaSave, FaTimes, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
+import { faCar, faMoneyBillWave, faShield, faFileAlt, faTag } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import FilterDropdown from './FilterDropdown';
 
 interface AddCustomerFormProps {
   onSuccess: () => void;
@@ -14,7 +17,9 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
     lastName: '',
     phone: '',
     registerDate: '',
+    vehicleType: '', // ประเภทรถ: รย.1, รย.2, รย.3, รย.12
     note: '',
+    tags: [] as string[], // แท็ก: ภาษี, ตรอ., พรบ.
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
@@ -24,6 +29,28 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
+
+  const handleTagToggle = (tag: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      tags: prev.tags.includes(tag)
+        ? prev.tags.filter(t => t !== tag)
+        : [...prev.tags, tag]
+    }));
+  };
+
+  const availableTags = [
+    { value: 'ภาษี', label: 'ภาษี', color: 'bg-blue-500', icon: faMoneyBillWave },
+    { value: 'ตรอ.', label: 'ตรอ.', color: 'bg-green-500', icon: faFileAlt },
+    { value: 'พรบ.', label: 'พรบ.', color: 'bg-orange-500', icon: faShield }
+  ];
+
+  const vehicleTypeOptions = [
+    { value: 'รย.1', label: 'รย.1 - รถยนต์นั่งส่วนบุคคลไม่เกิน 7 คน' },
+    { value: 'รย.2', label: 'รย.2 - รถยนต์นั่งส่วนบุคคลเกิน 7 คน' },
+    { value: 'รย.3', label: 'รย.3 - รถยนต์บรรทุกส่วนบุคคล' },
+    { value: 'รย.12', label: 'รย.12 - รถจักรยานยนต์' }
+  ];
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -45,8 +72,10 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
           customerName: `${formData.firstName} ${formData.lastName}`.trim(),
           phone: formData.phone,
           registerDate: formData.registerDate,
+          vehicleType: formData.vehicleType,
           status: 'รอดำเนินการ', // ตั้งค่าเริ่มต้น
           note: formData.note,
+          tags: formData.tags,
         }),
       });
 
@@ -162,6 +191,20 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
           />
         </div>
 
+        {/* ประเภทรถ */}
+        <div className="md:col-span-2">
+          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            ประเภทรถ
+          </label>
+          <FilterDropdown
+            value={formData.vehicleType}
+            onChange={(value) => setFormData(prev => ({ ...prev, vehicleType: value }))}
+            icon={faCar}
+            placeholder="เลือกประเภทรถ"
+            options={vehicleTypeOptions}
+          />
+        </div>
+
         {/* วันที่ชำระภาษี */}
         <div className="md:col-span-2">
           <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
@@ -174,6 +217,35 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
             onChange={handleChange} 
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all"
           />
+        </div>
+
+        {/* แท็ก */}
+        <div className="md:col-span-2">
+          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            ประเภทบริการที่ต้องดูแล
+          </label>
+          <div className="flex flex-wrap gap-3">
+            {availableTags.map((tag) => (
+              <button
+                key={tag.value}
+                type="button"
+                onClick={() => handleTagToggle(tag.value)}
+                className={`
+                  px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 flex items-center gap-2
+                  ${formData.tags.includes(tag.value)
+                    ? `${tag.color} text-white shadow-md`
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }
+                `}
+              >
+                <FontAwesomeIcon icon={faTag} className="text-xs" />
+                {tag.label}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+            เลือกประเภทบริการที่ต้องดูแล (เลือกได้มากกว่า 1 อัน)
+          </p>
         </div>
 
         {/* หมายเหตุ */}
