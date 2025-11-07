@@ -475,107 +475,160 @@ export default function CustomerInfoPage() {
       {/* Modal สำหรับดูข้อมูลเต็ม */}
       <Modal isOpen={isViewModalOpen}>
         {selectedCustomer && (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full mx-auto border border-gray-200 dark:border-gray-700 p-6 md:p-8">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-3xl w-full mx-auto border border-gray-200 dark:border-gray-700 max-h-[85vh] flex flex-col">
             {/* Header */}
-            <div className="mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+            <div className="p-6 md:p-8 pb-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
                 ข้อมูลลูกค้า
               </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">ทะเบียนรถ: {selectedCustomer.licensePlate}</p>
             </div>
 
-            {/* ข้อมูลทั้งหมด */}
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2 md:col-span-1">
-                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">ทะเบียนรถ</p>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{selectedCustomer.licensePlate}</p>
-                </div>
-                <div className="col-span-2 md:col-span-1">
-                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">ประเภทรถ</p>
-                  {selectedCustomer.vehicleType ? (
-                    <span className="inline-flex px-2.5 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg text-sm font-medium">
-                      {selectedCustomer.vehicleType}
-                    </span>
-                  ) : (
-                    <p className="text-sm text-gray-400">-</p>
-                  )}
-                </div>
-                <div className="col-span-2 md:col-span-1">
-                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">ยี่ห้อ / รุ่น</p>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{selectedCustomer.brand || '-'}</p>
-                </div>
-                <div className="col-span-2 md:col-span-1">
-                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">ชื่อลูกค้า</p>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{selectedCustomer.customerName}</p>
-                </div>
-                <div className="col-span-2 md:col-span-1">
-                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">เบอร์ติดต่อ</p>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{selectedCustomer.phone}</p>
-                </div>
-                <div className="col-span-2 md:col-span-1">
-                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">วันที่ชำระภาษีล่าสุด</p>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{formatDateFlexible(selectedCustomer.registerDate)}</p>
-                </div>
-                <div className="col-span-2 md:col-span-1">
-                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">แท็ก</p>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedCustomer.tags && selectedCustomer.tags.length > 0 ? (
-                      selectedCustomer.tags.map((tag, index) => (
-                        <span 
-                          key={index}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium ${
-                            tag === 'ภาษี' ? 'bg-blue-500 text-white' :
-                            tag === 'ตรอ.' ? 'bg-green-500 text-white' :
-                            tag === 'พรบ.' ? 'bg-orange-500 text-white' :
-                            'bg-gray-500 text-white'
-                          }`}
-                        >
-                          <FontAwesomeIcon icon={faTag} className="text-[10px]" />
-                          {tag}
-                        </span>
-                      ))
+            {/* ข้อมูลทั้งหมด - Scrollable */}
+            <div className="overflow-y-auto px-6 md:px-8 py-4 flex-1">
+              <div className="space-y-6">
+              {/* ส่วนข้อมูลรถ */}
+              <div>
+                <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                  <div className="w-1 h-4 bg-gradient-to-b from-emerald-500 to-teal-500 rounded-full"></div>
+                  ข้อมูลรถยนต์
+                </h3>
+                <div className="grid grid-cols-3 gap-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">ทะเบียนรถ</p>
+                    <p className="text-base font-bold text-gray-900 dark:text-white">{selectedCustomer.licensePlate}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">ยี่ห้อ / รุ่น</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{selectedCustomer.brand || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">ประเภทรถ</p>
+                    {selectedCustomer.vehicleType ? (
+                      <span className="inline-flex px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-lg text-sm font-bold">
+                        {selectedCustomer.vehicleType}
+                      </span>
                     ) : (
-                      <span className="text-sm text-gray-400">ไม่มีแท็ก</span>
+                      <p className="text-sm text-gray-400">-</p>
                     )}
                   </div>
                 </div>
-                <div className="col-span-2 md:col-span-1">
-                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">สถานะ</p>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor[selectedCustomer.status]}`}>
-                    <FontAwesomeIcon icon={statusIcon[selectedCustomer.status]} className="mr-1" />
-                    {selectedCustomer.status}
-                  </span>
+              </div>
+
+              {/* ส่วนข้อมูลลูกค้า */}
+              <div>
+                <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                  <div className="w-1 h-4 bg-gradient-to-b from-blue-500 to-cyan-500 rounded-full"></div>
+                  ข้อมูลลูกค้า
+                </h3>
+                <div className="grid grid-cols-2 gap-4 bg-blue-50 dark:bg-blue-900/10 rounded-xl p-4">
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">ชื่อ-นามสกุล</p>
+                    <p className="text-base font-bold text-gray-900 dark:text-white">{selectedCustomer.customerName}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">เบอร์ติดต่อ</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{selectedCustomer.phone}</p>
+                  </div>
                 </div>
-                {selectedCustomer.createdAt && (
-                  <div className="col-span-2 md:col-span-1">
-                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">วันที่บันทึก</p>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                      {new Date(selectedCustomer.createdAt).toLocaleString('th-TH')}
+              </div>
+
+              {/* ส่วนข้อมูลการบริการ */}
+              <div>
+                <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                  <div className="w-1 h-4 bg-gradient-to-b from-green-500 to-emerald-500 rounded-full"></div>
+                  ข้อมูลการบริการ
+                </h3>
+                <div className="grid grid-cols-4 gap-4 bg-green-50 dark:bg-green-900/10 rounded-xl p-4">
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">วันที่ชำระภาษีล่าสุด</p>
+                    <p className="text-sm font-bold text-gray-900 dark:text-white">{formatDateFlexible(selectedCustomer.registerDate)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">วันที่ตรวจ</p>
+                    <p className="text-sm font-bold text-gray-900 dark:text-white">
+                      {selectedCustomer.inspectionDate ? formatDateFlexible(selectedCustomer.inspectionDate) : '-'}
                     </p>
                   </div>
-                )}
-                {selectedCustomer.updatedAt && (
-                  <div className="col-span-2 md:col-span-1">
-                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">อัปเดตล่าสุด</p>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                      {new Date(selectedCustomer.updatedAt).toLocaleString('th-TH')}
-                    </p>
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">แท็กบริการ</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedCustomer.tags && selectedCustomer.tags.length > 0 ? (
+                        selectedCustomer.tags.map((tag, index) => (
+                          <span 
+                            key={index}
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium ${
+                              tag === 'ภาษี' ? 'bg-blue-500 text-white' :
+                              tag === 'ตรอ.' ? 'bg-green-500 text-white' :
+                              tag === 'พรบ.' ? 'bg-orange-500 text-white' :
+                              'bg-gray-500 text-white'
+                            }`}
+                          >
+                            <FontAwesomeIcon icon={faTag} className="text-[8px]" />
+                            {tag}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-sm text-gray-400">ไม่มีแท็ก</span>
+                      )}
+                    </div>
                   </div>
-                )}
-                {selectedCustomer.note && (
-                  <div className="col-span-2">
-                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">หมายเหตุ</p>
-                    <p className="text-sm text-gray-900 dark:text-white p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">สถานะ</p>
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${statusColor[selectedCustomer.status]}`}>
+                      <FontAwesomeIcon icon={statusIcon[selectedCustomer.status]} className="mr-1" />
+                      {selectedCustomer.status}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* ส่วนข้อมูลระบบ */}
+              {(selectedCustomer.createdAt || selectedCustomer.updatedAt) && (
+                <div>
+                  <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                    <div className="w-1 h-4 bg-gradient-to-b from-orange-500 to-red-500 rounded-full"></div>
+                    ข้อมูลการบันทึก
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4 bg-orange-50 dark:bg-orange-900/10 rounded-xl p-4">
+                    {selectedCustomer.createdAt && (
+                      <div>
+                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">วันที่บันทึก</p>
+                        <p className="text-xs font-semibold text-gray-900 dark:text-white">
+                          {new Date(selectedCustomer.createdAt).toLocaleString('th-TH')}
+                        </p>
+                      </div>
+                    )}
+                    {selectedCustomer.updatedAt && (
+                      <div>
+                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">อัปเดตล่าสุด</p>
+                        <p className="text-xs font-semibold text-gray-900 dark:text-white">
+                          {new Date(selectedCustomer.updatedAt).toLocaleString('th-TH')}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* หมายเหตุ */}
+              {selectedCustomer.note && (
+                <div>
+                  <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                    <div className="w-1 h-4 bg-gradient-to-b from-gray-500 to-gray-600 rounded-full"></div>
+                    หมายเหตุ
+                  </h3>
+                  <div className="bg-yellow-50 dark:bg-yellow-900/10 border-l-4 border-yellow-400 dark:border-yellow-600 rounded-lg p-4">
+                    <p className="text-sm text-gray-900 dark:text-white leading-relaxed">
                       {selectedCustomer.note}
                     </p>
                   </div>
-                )}
+                </div>
+              )}
               </div>
             </div>
 
             {/* ปุ่มจัดการ */}
-            <div className="flex justify-between gap-3 pt-6 mt-6 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex justify-between gap-3 p-6 md:px-8 md:py-6 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 bg-gray-50 dark:bg-gray-900/50 rounded-b-2xl">
               <button
                 onClick={() => {
                   setIsViewModalOpen(false);
@@ -590,7 +643,7 @@ export default function CustomerInfoPage() {
                   setIsViewModalOpen(false);
                   setIsEditModalOpen(true);
                 }}
-                className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all duration-200 text-sm shadow-lg"
+                className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold rounded-xl hover:from-emerald-600 hover:to-teal-600 transition-all duration-200 text-sm shadow-lg"
               >
                 <FontAwesomeIcon icon={faEdit} />
                 แก้ไขข้อมูล
@@ -616,7 +669,7 @@ const CustomerRow = memo(function CustomerRow({
       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{item.licensePlate}</td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
         {item.vehicleType ? (
-          <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-md text-xs font-medium">
+          <span className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-md text-xs font-medium">
             {item.vehicleType}
           </span>
         ) : (
@@ -658,7 +711,7 @@ const CustomerRow = memo(function CustomerRow({
       <td className="px-6 py-4 whitespace-nowrap text-sm">
         <button
           onClick={() => onView(item)}
-          className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
+          className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors"
         >
           <FontAwesomeIcon icon={faInfoCircle} className="mr-1" />
           ดูข้อมูล

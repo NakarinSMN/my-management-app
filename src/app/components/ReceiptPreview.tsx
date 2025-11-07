@@ -142,7 +142,7 @@ export default function ReceiptPreview({ data, onClose }: ReceiptPreviewProps) {
       <div className="fixed top-4 right-4 flex gap-3 z-10 no-print">
         <button
           onClick={handlePrint}
-          className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold shadow-lg flex items-center gap-2"
+          className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold shadow-lg flex items-center gap-2"
         >
           <FontAwesomeIcon icon={faPrint} /> ปริ้น/บันทึก PDF
         </button>

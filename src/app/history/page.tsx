@@ -32,7 +32,7 @@ const getStatusColor = (status: string) => {
     case 'ยกเลิก':
       return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
     case 'รอดำเนินการ':
-      return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';
+      return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300';
     default:
       return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300';
   }
@@ -179,7 +179,7 @@ export default function HistoryPage() {
             <div className="flex gap-2">
               <button
                 onClick={refreshData}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium flex items-center gap-2"
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium flex items-center gap-2"
                 title="รีเฟรชข้อมูล"
               >
                 <FaClock className={isLoading ? 'animate-spin' : ''} />
@@ -223,11 +223,11 @@ export default function HistoryPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">เสร็จสิ้น</p>
-                  <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                  <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                     {completedServices}
                   </p>
                 </div>
-                <FaClock className="text-purple-500 text-2xl" />
+                <FaClock className="text-emerald-500 text-2xl" />
               </div>
             </div>
           </div>

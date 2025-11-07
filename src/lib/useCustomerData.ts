@@ -14,6 +14,7 @@ interface RawCustomerDataItem {
   customerName?: string;
   phone?: string;
   registerDate?: string;
+  inspectionDate?: string;
   vehicleType?: string;
   status?: string;
   note?: string;
@@ -40,6 +41,7 @@ export interface CustomerData {
   customerName: string;
   phone: string;
   registerDate: string;
+  inspectionDate?: string; // วันที่ตรวจ
   vehicleType?: string; // ประเภทรถ: รย.1, รย.2, รย.3, รย.12
   status: string;
   note?: string;
@@ -150,6 +152,7 @@ export function formatCustomerData(item: RawCustomerDataItem): CustomerData {
       customerName: item.customerName || '',
       phone,
       registerDate,
+      inspectionDate: item.inspectionDate || '',
       vehicleType: item.vehicleType || '',
       status: calculateStatus(registerDate), // คำนวณสถานะอัตโนมัติ
       note: item.note || '',

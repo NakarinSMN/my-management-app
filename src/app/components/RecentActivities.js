@@ -21,8 +21,8 @@ export const RecentActivities = memo(function RecentActivities() {
       case 'new_user': return 'text-green-600 dark:text-green-400';
       case 'order': return 'text-blue-600 dark:text-blue-400';
       case 'product_update': return 'text-yellow-600 dark:text-yellow-400';
-      case 'login': return 'text-indigo-600 dark:text-indigo-400';
-      case 'report': return 'text-purple-600 dark:text-purple-400';
+      case 'login': return 'text-teal-600 dark:text-teal-400';
+      case 'report': return 'text-emerald-600 dark:text-emerald-400';
       case 'user_update': return 'text-orange-600 dark:text-orange-400';
       default: return 'text-gray-600 dark:text-gray-400';
     }

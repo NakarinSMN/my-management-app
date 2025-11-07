@@ -150,7 +150,7 @@ export default function DataMigrationPage() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <FontAwesomeIcon icon={faDatabase} className="mr-3 text-purple-600" />
+            <FontAwesomeIcon icon={faDatabase} className="mr-3 text-emerald-600" />
             Data Migration Tool
           </motion.h1>
           <motion.p 
@@ -191,7 +191,7 @@ export default function DataMigrationPage() {
             className={`px-6 py-3 rounded-lg font-medium transition-colors ${
               isRunningAll
                 ? 'bg-gray-400 text-white cursor-not-allowed'
-                : 'bg-purple-600 text-white hover:bg-purple-700'
+                : 'bg-emerald-600 text-white hover:bg-emerald-700'
             }`}
             whileHover={{ scale: isRunningAll ? 1 : 1.02 }}
             whileTap={{ scale: isRunningAll ? 1 : 0.98 }}
@@ -282,7 +282,7 @@ export default function DataMigrationPage() {
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     task.status === 'running'
                       ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : 'bg-purple-600 text-white hover:bg-purple-700'
+                      : 'bg-emerald-600 text-white hover:bg-emerald-700'
                   }`}
                 >
                   {task.status === 'running' ? 'กำลังย้ายข้อมูล...' : 'รันย้ายข้อมูล'}

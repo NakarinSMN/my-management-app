@@ -23,8 +23,8 @@ export default function DashboardPage() {
   const [overdueCount, setOverdueCount] = useState(0);
   const [nextYearTax, setNextYearTax] = useState<Record<string, unknown>[]>([]);
   const [totalCustomers, setTotalCustomers] = useState(0);
-  const [taxMonthlyData, setTaxMonthlyData] = useState<{month: string, count: number, monthNum: number}[]>([]);
-  const [taxDailyData, setTaxDailyData] = useState<{day: number, count: number}[]>([]);
+  const [taxMonthlyData, setTaxMonthlyData] = useState<{month: string, count: number, monthNum: number, byType: Record<string, number>}[]>([]);
+  const [taxDailyData, setTaxDailyData] = useState<{day: number, count: number, byType: Record<string, number>}[]>([]);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [lastUpdate, setLastUpdate] = useState('');
   const [lastUpdateTime, setLastUpdateTime] = useState('');
@@ -33,6 +33,8 @@ export default function DashboardPage() {
   const [inspectionMonthlyData, setInspectionMonthlyData] = useState<{month: string, count: number, monthNum: number, byType: Record<string, number>}[]>([]);
   const [inspectionDailyData, setInspectionDailyData] = useState<{day: number, count: number, byType: Record<string, number>}[]>([]);
   const [selectedInspectionMonth, setSelectedInspectionMonth] = useState<number | null>(null);
+  const [inspection7DaysData, setInspection7DaysData] = useState<{date: string, count: number, byType: Record<string, number>}[]>([]);
+  const [hoveredBar, setHoveredBar] = useState<{x: number, y: number, data: {label: string, count: number, details: Record<string, number>}} | null>(null);
 
   const { rawData: customerData } = useCustomerData();
 
@@ -124,13 +126,14 @@ export default function DashboardPage() {
       const monthNames = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 
                          'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
       
-      const monthlyData: {[key: number]: number} = {};
+      const monthlyData: {[key: number]: {total: number, byType: Record<string, number>}} = {};
       for (let i = 0; i < 12; i++) {
-        monthlyData[i] = 0;
+        monthlyData[i] = { total: 0, byType: {} };
       }
       
       customerData.data.forEach((item: Record<string, unknown>) => {
         const lastTaxDate = String(item['registerDate'] || item['วันที่ชำระภาษีล่าสุด'] || '');
+        const vehicleType = String(item['vehicleType'] || '');
         
         if (lastTaxDate) {
           let month = -1;
@@ -146,15 +149,19 @@ export default function DashboardPage() {
           }
           
           if (month >= 0 && month < 12) {
-            monthlyData[month]++;
+            monthlyData[month].total++;
+            if (vehicleType) {
+              monthlyData[month].byType[vehicleType] = (monthlyData[month].byType[vehicleType] || 0) + 1;
+            }
           }
         }
       });
       
-      const array = Object.entries(monthlyData).map(([monthNum, count]) => ({
+      const array = Object.entries(monthlyData).map(([monthNum, data]) => ({
         month: monthNames[parseInt(monthNum)],
-        count: count,
-        monthNum: parseInt(monthNum)
+        count: data.total,
+        monthNum: parseInt(monthNum),
+        byType: data.byType
       }));
       
       setTaxMonthlyData(array);
@@ -177,7 +184,7 @@ export default function DashboardPage() {
         const tags = item['tags'] as string[] | undefined;
         if (!tags || !tags.includes('ตรอ.')) return;
         
-        const lastInspectionDate = String(item['registerDate'] || item['วันที่ชำระภาษีล่าสุด'] || '');
+        const lastInspectionDate = String(item['inspectionDate'] || '');
         const vehicleType = String(item['vehicleType'] || '');
         
         if (lastInspectionDate) {
@@ -220,13 +227,14 @@ export default function DashboardPage() {
       const currentYear = new Date().getFullYear();
       const daysInMonth = new Date(currentYear, selectedMonth + 1, 0).getDate();
       
-      const dailyData: {[key: number]: number} = {};
+      const dailyData: {[key: number]: {total: number, byType: Record<string, number>}} = {};
       for (let i = 1; i <= daysInMonth; i++) {
-        dailyData[i] = 0;
+        dailyData[i] = { total: 0, byType: {} };
       }
       
       customerData.data.forEach((item: Record<string, unknown>) => {
         const lastTaxDate = String(item['registerDate'] || item['วันที่ชำระภาษีล่าสุด'] || '');
+        const vehicleType = String(item['vehicleType'] || '');
         
         if (lastTaxDate) {
           let day = -1;
@@ -247,14 +255,18 @@ export default function DashboardPage() {
           }
           
           if (month === selectedMonth && day >= 1 && day <= daysInMonth) {
-            dailyData[day]++;
+            dailyData[day].total++;
+            if (vehicleType) {
+              dailyData[day].byType[vehicleType] = (dailyData[day].byType[vehicleType] || 0) + 1;
+            }
           }
         }
       });
       
-      const array = Object.entries(dailyData).map(([day, count]) => ({
+      const array = Object.entries(dailyData).map(([day, data]) => ({
         day: parseInt(day),
-        count: count
+        count: data.total,
+        byType: data.byType
       }));
       
       setTaxDailyData(array);
@@ -277,7 +289,7 @@ export default function DashboardPage() {
         const tags = item['tags'] as string[] | undefined;
         if (!tags || !tags.includes('ตรอ.')) return;
         
-        const lastInspectionDate = String(item['registerDate'] || item['วันที่ชำระภาษีล่าสุด'] || '');
+        const lastInspectionDate = String(item['inspectionDate'] || '');
         const vehicleType = String(item['vehicleType'] || '');
         
         if (lastInspectionDate) {
@@ -318,6 +330,68 @@ export default function DashboardPage() {
     }
   }, [customerData, selectedInspectionMonth]);
 
+  // คำนวณข้อมูลตรวจรถ 7 วันล่าสุด
+  useEffect(() => {
+    if (customerData && customerData.data) {
+      const today = new Date();
+      const last7Days = Array.from({ length: 7 }, (_, i) => {
+        const date = new Date(today);
+        date.setDate(date.getDate() - (6 - i));
+        return date;
+      });
+      
+      const data7Days: {[key: string]: {total: number, byType: Record<string, number>}} = {};
+      last7Days.forEach(date => {
+        const dateStr = `${date.getDate()}/${date.getMonth() + 1}`;
+        data7Days[dateStr] = { total: 0, byType: {} };
+      });
+      
+      // กรองเฉพาะที่มีแท็ก "ตรอ."
+      customerData.data.forEach((item: Record<string, unknown>) => {
+        const tags = item['tags'] as string[] | undefined;
+        if (!tags || !tags.includes('ตรอ.')) return;
+        
+        const inspectionDate = String(item['inspectionDate'] || '');
+        const vehicleType = String(item['vehicleType'] || '');
+        
+        if (inspectionDate) {
+          let itemDate: Date | null = null;
+          
+          if (/^\d{2}\/\d{2}\/\d{4}$/.test(inspectionDate)) {
+            const [dd, mm, yyyy] = inspectionDate.split('/');
+            itemDate = new Date(parseInt(yyyy), parseInt(mm) - 1, parseInt(dd));
+          } else if (/^\d{4}-\d{2}-\d{2}$/.test(inspectionDate)) {
+            itemDate = new Date(inspectionDate);
+          } else if (inspectionDate.includes('T')) {
+            itemDate = new Date(inspectionDate);
+          }
+          
+          if (itemDate) {
+            const dateStr = `${itemDate.getDate()}/${itemDate.getMonth() + 1}`;
+            if (data7Days[dateStr]) {
+              data7Days[dateStr].total++;
+              if (vehicleType) {
+                data7Days[dateStr].byType[vehicleType] = (data7Days[dateStr].byType[vehicleType] || 0) + 1;
+              }
+            }
+          }
+        }
+      });
+      
+      const array = last7Days.map(date => {
+        const dateStr = `${date.getDate()}/${date.getMonth() + 1}`;
+        return {
+          date: dateStr,
+          count: data7Days[dateStr].total,
+          byType: data7Days[dateStr].byType
+        };
+      });
+      
+      setInspection7DaysData(array);
+      console.log('📊 Inspection 7 Days Data:', array);
+    }
+  }, [customerData]);
+
   // อัปเดตวันที่
   useEffect(() => {
     setLastUpdate(new Date().toLocaleDateString('th-TH', {
@@ -341,12 +415,54 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-purple-100/30 to-white dark:from-gray-900 dark:via-purple-900/10 dark:to-gray-800 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-100/30 to-white dark:from-gray-900 dark:via-emerald-900/10 dark:to-gray-800 p-8">
+      {/* Tooltip */}
+      {hoveredBar && (
+        <div 
+          className="fixed z-50 pointer-events-none"
+          style={{
+            left: `${hoveredBar.x}px`,
+            top: `${hoveredBar.y - 10}px`,
+            transform: 'translateX(-50%) translateY(-100%)'
+          }}
+        >
+          <div className="bg-white rounded-lg shadow-xl overflow-hidden min-w-[140px]">
+            {/* Header with gradient */}
+            <div className="bg-gradient-to-r from-emerald-50 to-teal-50 px-3 py-1.5">
+              <div className="text-xs font-bold text-blue-600">
+                {hoveredBar.data.label}
+              </div>
+            </div>
+            
+            {/* Content */}
+            <div className="px-3 py-2">
+              <div className="text-lg font-bold text-gray-900 mb-2">
+                {hoveredBar.data.count} <span className="text-xs font-normal text-gray-500">คัน</span>
+              </div>
+              
+              {Object.keys(hoveredBar.data.details).length > 0 && (
+                <div className="space-y-1">
+                  {Object.entries(hoveredBar.data.details).map(([type, count]) => (
+                    <div 
+                      key={type} 
+                      className="flex items-center justify-between px-2 py-1 bg-gray-50 rounded text-[10px]"
+                    >
+                      <span className="font-medium text-gray-600">{type}</span>
+                      <span className="font-bold text-gray-900">{count}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
         <div>
-            <h1 className="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-2">
+            <h1 className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">
               แดชบอร์ดภาษีรถยนต์
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -359,21 +475,21 @@ export default function DashboardPage() {
               className="p-3 bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-all border border-gray-100 dark:border-gray-700"
               title="ข้อมูลรถยนต์"
           >
-              <FontAwesomeIcon icon={faCar} className="text-purple-600 dark:text-purple-400 text-xl" />
+              <FontAwesomeIcon icon={faCar} className="text-emerald-600 dark:text-emerald-400 text-xl" />
           </Link>
           <Link
             href="/tax-expiry-next-year"
               className="p-3 bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-all border border-gray-100 dark:border-gray-700"
               title="ภาษีครั้งถัดไป"
           >
-              <FontAwesomeIcon icon={faCalendarAlt} className="text-purple-600 dark:text-purple-400 text-xl" />
+              <FontAwesomeIcon icon={faCalendarAlt} className="text-emerald-600 dark:text-emerald-400 text-xl" />
           </Link>
           </div>
         </div>
 
         {/* Total Summary */}
         <motion.div variants={itemVariants} initial="hidden" animate="show" className="mb-8">
-          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-3xl shadow-2xl p-8 text-white">
+          <div className="bg-gradient-to-br from-emerald-400 to-teal-500 rounded-3xl shadow-2xl p-8 text-white">
             <div className="text-center">
               <p className="text-sm opacity-90 mb-2">จำนวนรถทั้งหมดในระบบ</p>
               <p className="text-6xl font-bold mb-1">{totalCustomers.toLocaleString()}</p>
@@ -407,89 +523,167 @@ export default function DashboardPage() {
             </div>
             
             {/* Chart */}
-            <div className="relative h-96 mb-4 bg-white dark:bg-gray-900/20 rounded-xl p-4 overflow-hidden">
-              {/* Grid Lines Background */}
-              <div className="absolute inset-4 pointer-events-none">
-                {[...Array(5)].map((_, i) => (
-                  <div 
-                    key={i} 
-                    className="absolute w-full border-t border-gray-200 dark:border-gray-700"
-                    style={{ bottom: `${(i + 1) * 20}%` }}
-                  />
-                ))}
-      </div>
+            <div className="relative h-96 mb-4 bg-gradient-to-br from-emerald-50/30 via-teal-50/30 to-cyan-50/30 dark:from-gray-900/20 dark:via-green-900/10 dark:to-gray-900/20 rounded-xl p-4 overflow-hidden">
+              {(() => {
+                const maxCount = selectedMonth === null 
+                  ? Math.max(...taxMonthlyData.map(d => d.count), 1)
+                  : Math.max(...taxDailyData.map(d => d.count), 1);
+                const maxScale = Math.ceil(maxCount / 10) * 10 + 10; // ปัดขึ้นเป็น 10
+                const steps = 6;
+                const stepValue = maxScale / steps;
+                const yAxisLabels = Array.from({ length: steps + 1 }, (_, i) => Math.round(i * stepValue));
+                
+                return (
+                  <>
+                    {/* Y-axis Labels */}
+                    <div className="absolute left-0 top-0 bottom-0 w-12 flex flex-col-reverse justify-between py-4 pr-2 text-xs text-gray-500 dark:text-gray-400 font-medium">
+                      {yAxisLabels.map((label, i) => (
+                        <span key={i}>{label}</span>
+                      ))}
+                    </div>
+                    
+                    {/* Grid Lines Background */}
+                    <div className="absolute inset-4 left-12 pointer-events-none">
+                      {/* Y-axis Line */}
+                      <div className="absolute left-0 top-0 bottom-0 w-px bg-gray-300 dark:bg-gray-600"></div>
+                      {/* X-axis Line */}
+                      <div className="absolute left-0 right-0 bottom-0 h-px bg-gray-300 dark:bg-gray-600"></div>
+                      {/* Grid Lines */}
+                      {[...Array(steps)].map((_, i) => (
+                        <div 
+                          key={i} 
+                          className="absolute w-full border-t border-gray-200 dark:border-gray-700"
+                          style={{ bottom: `${((i + 1) / steps) * 100}%` }}
+                        />
+                      ))}
+                    </div>
+                  </>
+                );
+              })()}
 
               {selectedMonth === null ? (
-                <div className="absolute inset-4 flex items-end justify-between gap-1">
-                  {taxMonthlyData.map((data, index) => {
+                <>
+                  {/* Vertical Grid Lines for Monthly */}
+                  <div className="absolute inset-4 left-12 pointer-events-none">
+                    {taxMonthlyData.map((_, i) => (
+                      <div 
+                        key={`v-${i}`}
+                        className="absolute h-full border-l border-gray-100 dark:border-gray-800"
+                        style={{ left: `${(i / taxMonthlyData.length) * 100}%` }}
+                      />
+                    ))}
+                  </div>
+                  <div className="absolute inset-4 left-12 flex items-end justify-between gap-1">
+                    {taxMonthlyData.map((data, index) => {
                     const maxCount = Math.max(...taxMonthlyData.map(d => d.count), 1);
                     const heightPercentage = data.count > 0 ? Math.max((data.count / maxCount) * 100, 20) : 0;
                     const isCurrentMonth = new Date().getMonth() === data.monthNum;
                     
                     return (
-                      <div key={index} className="flex-1 flex flex-col items-center gap-2 h-full">
+                      <div 
+                        key={index} 
+                        className="flex-1 flex flex-col items-center h-full cursor-crosshair"
+                        onMouseMove={(e) => {
+                          setHoveredBar({
+                            x: e.clientX,
+                            y: e.clientY,
+                            data: {
+                              label: data.month,
+                              count: data.count,
+                              details: data.byType
+                            }
+                          });
+                        }}
+                        onMouseLeave={() => setHoveredBar(null)}
+                      >
                         <div className="flex-1 w-full flex flex-col justify-end items-center">
-                          <span className="text-xs font-bold text-purple-600 dark:text-purple-400 mb-1">
+                          <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mb-1">
                             {data.count}
                           </span>
           <motion.div 
-                            className={`w-full rounded-t-xl shadow-lg ${
+                            className={`w-full rounded-t-xl shadow-lg transition-all ${
                               isCurrentMonth 
-                                ? 'bg-gradient-to-t from-purple-700 to-purple-500' 
-                                : 'bg-gradient-to-t from-purple-500 to-purple-400'
-                            }`}
+                                ? 'bg-gradient-to-t from-emerald-400 to-emerald-300' 
+                                : 'bg-gradient-to-t from-emerald-300 to-emerald-200'
+                            } hover:brightness-110`}
                             initial={{ height: 0 }}
                             animate={{ height: `${heightPercentage}%` }}
                             transition={{ duration: 1, delay: index * 0.06, ease: 'easeOut' }}
                             style={{ minHeight: data.count > 0 ? '40px' : '0', maxHeight: '100%' }}
                           />
       </div>
-                        <span className={`text-xs font-medium mt-2 ${
-                          isCurrentMonth ? 'text-purple-700 dark:text-purple-300 font-bold' : 'text-gray-600 dark:text-gray-400'
-                        }`}>
+                        <div 
+                          className={`px-2 py-1 rounded-md text-xs font-bold text-white mt-2 ${isCurrentMonth ? 'ring-2 ring-emerald-500' : ''}`}
+                          style={{ 
+                            backgroundColor: ['#3B82F6', '#EC4899', '#10B981', '#F97316', '#22C55E', '#0EA5E9',
+                                   '#8B5CF6', '#DB2777', '#84CC16', '#EA580C', '#059669', '#2563EB'][data.monthNum]
+                          }}
+                        >
                           {data.month}
-                        </span>
+                        </div>
                       </div>
                     );
                   })}
-                </div>
+                  </div>
+                </>
               ) : (
-                <div className="absolute inset-4 flex items-end justify-between gap-1">
-                  {taxDailyData.map((data, index) => {
-                    const maxCount = Math.max(...taxDailyData.map(d => d.count), 1);
-                    const heightPercentage = data.count > 0 ? Math.max((data.count / maxCount) * 100, 15) : 0;
-                    const isToday = new Date().getDate() === data.day && new Date().getMonth() === selectedMonth;
-                    
-                    return (
-                      <div key={index} className="flex-1 flex flex-col items-center gap-2 h-full">
-                          <div className="flex-1 w-full flex flex-col justify-end items-center">
-                            {data.count > 0 && (
-                              <span className="text-xs font-bold text-purple-600 dark:text-purple-400 mb-1">
-                                {data.count}
-                              </span>
-                            )}
-                            <motion.div 
-                              className={`w-full rounded-t-lg shadow-md ${
-                                isToday 
-                                  ? 'bg-gradient-to-t from-purple-700 to-purple-500' 
-                                  : data.count > 0
-                                    ? 'bg-gradient-to-t from-purple-500 to-purple-400'
-                                    : 'bg-gray-300 dark:bg-gray-700'
-                              }`}
-                              initial={{ height: 0 }}
-                              animate={{ height: `${heightPercentage}%` }}
-                              transition={{ duration: 0.8, delay: index * 0.02, ease: 'easeOut' }}
-                              style={{ minHeight: data.count > 0 ? '30px' : '8px', maxHeight: '100%' }}
-                            />
-                    </div>
-                          <span className={`text-xs font-medium mt-1 ${
-                            isToday ? 'text-purple-700 dark:text-purple-300 font-bold' : 'text-gray-600 dark:text-gray-400'
-                          }`}>
-                            {data.day}
-                          </span>
-                        </div>
-                      );
-                    })}
+                <div className="overflow-x-auto -mx-4 px-4 pb-4">
+                  <div className="relative flex items-end gap-2 h-80 pl-12" style={{ minWidth: `${taxDailyData.length * 50}px` }}>
+                    {taxDailyData.map((data, index) => {
+                        const maxCount = Math.max(...taxDailyData.map(d => d.count), 1);
+                        const heightPercentage = data.count > 0 ? Math.max((data.count / maxCount) * 100, 15) : 0;
+                        const isToday = new Date().getDate() === data.day && new Date().getMonth() === selectedMonth;
+                        
+                        return (
+                          <div 
+                            key={index} 
+                            className="flex flex-col items-center gap-2 h-full cursor-crosshair" 
+                            style={{ width: '40px' }}
+                            onMouseMove={(e) => {
+                              setHoveredBar({
+                                x: e.clientX,
+                                y: e.clientY,
+                                data: {
+                                  label: `วันที่ ${data.day}`,
+                                  count: data.count,
+                                  details: data.byType
+                                }
+                              });
+                            }}
+                            onMouseLeave={() => setHoveredBar(null)}
+                          >
+                            <div className="flex-1 w-full flex flex-col justify-end items-center">
+                              {data.count > 0 && (
+                                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mb-1">
+                                  {data.count}
+                                </span>
+                              )}
+                              <motion.div 
+                                className={`w-full rounded-t-lg shadow-md transition-all ${
+                                  isToday 
+                                    ? 'bg-gradient-to-t from-emerald-400 to-emerald-300' 
+                                    : data.count > 0
+                                      ? 'bg-gradient-to-t from-emerald-300 to-emerald-200'
+                                      : 'bg-gray-200/50 dark:bg-gray-700'
+                                } hover:brightness-110`}
+                                initial={{ height: 0 }}
+                                animate={{ height: `${heightPercentage}%` }}
+                                transition={{ duration: 0.8, delay: index * 0.02, ease: 'easeOut' }}
+                                style={{ minHeight: data.count > 0 ? '30px' : '8px', maxHeight: '100%' }}
+                              />
+                            </div>
+                            <div 
+                              className={`px-1.5 py-0.5 rounded text-[10px] font-bold text-white mt-2 ${isToday ? 'ring-2 ring-emerald-500' : ''}`}
+                              style={{ 
+                                backgroundColor: `hsl(${(data.day - 1) * 12}, 70%, 60%)`
+                              }}
+                            >
+                              {data.day}
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
                 </div>
               )}
             </div>
@@ -498,30 +692,30 @@ export default function DashboardPage() {
             <div className="grid grid-cols-2 gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
               {selectedMonth === null ? (
                 <>
-                  <div className="text-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
+                  <div className="text-center p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
                     <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">รวม</p>
-                    <p className="text-xl font-bold text-purple-600 dark:text-purple-400">
+                    <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
                       {taxMonthlyData.reduce((sum, d) => sum + d.count, 0)}
                     </p>
                   </div>
-                  <div className="text-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
+                  <div className="text-center p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
                     <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">เฉลี่ย/เดือน</p>
-                    <p className="text-xl font-bold text-purple-600 dark:text-purple-400">
+                    <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
                       {Math.round(taxMonthlyData.reduce((sum, d) => sum + d.count, 0) / 12)}
                     </p>
                   </div>
                 </>
               ) : (
                 <>
-                  <div className="text-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
+                  <div className="text-center p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
                     <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">รวมเดือนนี้</p>
-                    <p className="text-xl font-bold text-purple-600 dark:text-purple-400">
+                    <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
                       {taxDailyData.reduce((sum, d) => sum + d.count, 0)} คัน
                     </p>
                   </div>
-                  <div className="text-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
+                  <div className="text-center p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
                     <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">เฉลี่ย/วัน</p>
-                    <p className="text-xl font-bold text-purple-600 dark:text-purple-400">
+                    <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
                       {taxDailyData.length > 0 ? Math.round(taxDailyData.reduce((sum, d) => sum + d.count, 0) / taxDailyData.length) : 0} คัน
                     </p>
                   </div>
@@ -531,40 +725,224 @@ export default function DashboardPage() {
           </div>
         </motion.div>
 
-        {/* กราฟตรวจรถ - Full Width */}
-        <motion.div
-          variants={itemVariants}
-          className="mb-8"
-        >
+        {/* กราฟเส้น 7 วันล่าสุด - Full Width */}
+        <motion.div variants={itemVariants} className="mb-8">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6">
             {/* Header */}
-            <div className="flex justify-between items-start mb-6">
-              <div className="flex-1">
-                <h2 className="text-2xl font-bold text-green-600 dark:text-green-400 mb-1">
-                  📋 สถิติการตรวจรถ (ตรอ.)
-                </h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                  {selectedInspectionMonth === null 
-                    ? 'ภาพรวมการตรวจรถทั้งปี (แยกตามเดือน)' 
-                    : `รายละเอียดการตรวจรถในเดือน ${inspectionMonthlyData[selectedInspectionMonth]?.month || ''}`}
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-green-600 dark:text-green-400 mb-1">
+                📈 สถิติ 7 วันล่าสุด
+              </h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                แนวโน้มการตรวจรถแบบเส้นโค้ง (กราฟเส้น)
+              </p>
+              
+              {/* Legend */}
+              <div className="flex flex-wrap gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-300"></div>
+                  <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">รย.1</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded-full bg-gradient-to-br from-teal-400 to-teal-300"></div>
+                  <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">รย.2</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-300"></div>
+                  <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">รย.3</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded-full bg-gradient-to-br from-green-400 to-green-300"></div>
+                  <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">รย.12</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Bar Chart */}
+            <div className="relative h-96 bg-gradient-to-br from-emerald-50/30 via-teal-50/30 to-cyan-50/30 dark:from-gray-900/20 dark:via-emerald-900/10 dark:to-gray-900/20 rounded-xl p-4">
+              {(() => {
+                const vehicleTypes = ['รย.1', 'รย.2', 'รย.3', 'รย.12'];
+                const maxCount = Math.max(
+                  ...inspection7DaysData.flatMap(d => 
+                    vehicleTypes.map(type => d.byType[type] || 0)
+                  ),
+                  1
+                );
+                const maxScale = Math.ceil(maxCount / 10) * 10 + 10;
+                const steps = 6;
+                const stepValue = maxScale / steps;
+                const yAxisLabels = Array.from({ length: steps + 1 }, (_, i) => Math.round(i * stepValue));
+                
+                return (
+                  <>
+                    {/* Y-axis Labels */}
+                    <div className="absolute left-0 top-0 bottom-0 w-12 flex flex-col-reverse justify-between py-4 pr-2 text-xs text-gray-500 dark:text-gray-400 font-medium">
+                      {yAxisLabels.map((label, i) => (
+                        <span key={i}>{label}</span>
+                      ))}
+                    </div>
+                    
+                    {/* Grid Lines Background */}
+                    <div className="absolute inset-4 left-12 pointer-events-none">
+                      {/* Y-axis Line */}
+                      <div className="absolute left-0 top-0 bottom-0 w-px bg-gray-300 dark:bg-gray-600"></div>
+                      {/* X-axis Line */}
+                      <div className="absolute left-0 right-0 bottom-0 h-px bg-gray-300 dark:bg-gray-600"></div>
+                      {/* Grid Lines */}
+                      {[...Array(steps)].map((_, i) => (
+                        <div 
+                          key={i} 
+                          className="absolute w-full border-t border-gray-200 dark:border-gray-700"
+                          style={{ bottom: `${((i + 1) / steps) * 100}%` }}
+                        />
+                      ))}
+                    </div>
+                    
+                    {/* Vertical Grid Lines */}
+                    <div className="absolute inset-4 left-12 pointer-events-none">
+                      {inspection7DaysData.map((_, i) => (
+                        <div 
+                          key={`v-${i}`}
+                          className="absolute h-full border-l border-gray-100 dark:border-gray-800"
+                          style={{ left: `${(i / inspection7DaysData.length) * 100}%` }}
+                        />
+                      ))}
+                    </div>
+                    
+                    {/* Bar Chart Area */}
+                    <div className="absolute inset-4 left-12 flex items-end justify-between gap-2">
+                      {inspection7DaysData.map((data, index) => {
+                        const colors = [
+                          'bg-gradient-to-t from-emerald-400 to-emerald-300',
+                          'bg-gradient-to-t from-teal-400 to-teal-300', 
+                          'bg-gradient-to-t from-cyan-400 to-cyan-300',
+                          'bg-gradient-to-t from-green-400 to-green-300'
+                        ];
+                        
+                        return (
+                          <div 
+                            key={index} 
+                            className="flex-1 flex flex-col items-center gap-2 h-full cursor-crosshair"
+                            onMouseMove={(e) => {
+                              setHoveredBar({
+                                x: e.clientX,
+                                y: e.clientY,
+                                data: {
+                                  label: data.date,
+                                  count: data.count,
+                                  details: data.byType
+                                }
+                              });
+                            }}
+                            onMouseLeave={() => setHoveredBar(null)}
+                          >
+                            <div className="flex-1 w-full flex items-end justify-center gap-0.5">
+                              {vehicleTypes.map((type, typeIndex) => {
+                                const count = data.byType[type] || 0;
+                                const heightPercentage = count > 0 ? Math.max((count / maxCount) * 100, 15) : 0;
+                                
+                                return (
+                                  <div key={typeIndex} className="flex-1 flex flex-col items-center justify-end h-full">
+                                    {count > 0 && (
+                                      <span className="text-[9px] font-bold text-gray-700 dark:text-gray-300 mb-0.5">
+                                        {count}
+                                      </span>
+                                    )}
+                                    <motion.div 
+                                      className={`w-full rounded-t-md shadow-md transition-all ${colors[typeIndex]} hover:brightness-110`}
+                                      initial={{ height: 0 }}
+                                      animate={{ height: `${heightPercentage}%` }}
+                                      transition={{ duration: 1, delay: index * 0.1 + typeIndex * 0.02, ease: 'easeOut' }}
+                                      style={{ minHeight: count > 0 ? '25px' : '0', maxHeight: '100%' }}
+                                    />
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <div 
+                              className="px-2 py-1 rounded-md text-xs font-bold text-white mt-2"
+                              style={{ 
+                                backgroundColor: ['#3B82F6', '#8B5CF6', '#EC4899', '#F97316', '#10B981', '#0EA5E9', '#DB2777'][index]
+                              }}
+                            >
+                              {data.date}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
+              <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-xl">
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">รวม 7 วัน</p>
+                <p className="text-xl font-bold text-green-600 dark:text-green-400">
+                  {inspection7DaysData.reduce((sum, d) => sum + d.count, 0)} คัน
                 </p>
+              </div>
+              <div className="text-center p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">รย.1</p>
+                <p className="text-xl font-bold" style={{ color: '#9B87F5' }}>
+                  {inspection7DaysData.reduce((sum, d) => sum + (d.byType['รย.1'] || 0), 0)} คัน
+                </p>
+              </div>
+              <div className="text-center p-3 bg-teal-50 dark:bg-teal-900/20 rounded-xl">
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">รย.2</p>
+                <p className="text-xl font-bold" style={{ color: '#7DD3C0' }}>
+                  {inspection7DaysData.reduce((sum, d) => sum + (d.byType['รย.2'] || 0), 0)} คัน
+                </p>
+              </div>
+              <div className="text-center p-3 bg-red-50 dark:bg-red-900/20 rounded-xl">
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">รย.3</p>
+                <p className="text-xl font-bold" style={{ color: '#F97583' }}>
+                  {inspection7DaysData.reduce((sum, d) => sum + (d.byType['รย.3'] || 0), 0)} คัน
+                </p>
+              </div>
+              <div className="text-center p-3 bg-teal-50 dark:bg-teal-900/20 rounded-xl">
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">รย.12</p>
+                <p className="text-xl font-bold" style={{ color: '#F5A3D0' }}>
+                  {inspection7DaysData.reduce((sum, d) => sum + (d.byType['รย.12'] || 0), 0)} คัน
+                </p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* กราฟแท่งตรวจรถ - Full Width */}
+        <motion.div variants={itemVariants} className="mb-8">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6">
+              {/* Header */}
+              <div className="flex justify-between items-start mb-6">
+                <div className="flex-1">
+                  <h2 className="text-xl font-bold text-green-600 dark:text-green-400 mb-1">
+                    📋 สถิติการตรวจรถ (ตรอ.)
+                  </h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                    {selectedInspectionMonth === null 
+                      ? 'ภาพรวมการตรวจรถทั้งปี (แยกตามเดือน)' 
+                      : `รายละเอียดการตรวจรถในเดือน ${inspectionMonthlyData[selectedInspectionMonth]?.month || ''}`}
+                  </p>
                 
                 {/* Legend */}
                 <div className="flex flex-wrap gap-3">
                   <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded bg-gradient-to-t from-blue-600 to-blue-400"></div>
+                    <div className="w-3 h-3 rounded bg-gradient-to-br from-sky-400 to-sky-300"></div>
                     <span className="text-xs text-gray-600 dark:text-gray-400">รย.1</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded bg-gradient-to-t from-yellow-600 to-yellow-400"></div>
+                    <div className="w-3 h-3 rounded bg-gradient-to-br from-blue-400 to-blue-300"></div>
                     <span className="text-xs text-gray-600 dark:text-gray-400">รย.2</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded bg-gradient-to-t from-orange-600 to-orange-400"></div>
+                    <div className="w-3 h-3 rounded bg-gradient-to-br from-cyan-400 to-cyan-300"></div>
                     <span className="text-xs text-gray-600 dark:text-gray-400">รย.3</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded bg-gradient-to-t from-pink-600 to-pink-400"></div>
+                    <div className="w-3 h-3 rounded bg-gradient-to-br from-green-400 to-green-300"></div>
                     <span className="text-xs text-gray-600 dark:text-gray-400">รย.12</span>
                   </div>
                 </div>
@@ -589,27 +967,75 @@ export default function DashboardPage() {
             </div>
             
             {/* Chart */}
-            <div className="relative h-96 mb-4 bg-white dark:bg-gray-900/20 rounded-xl p-4 overflow-hidden">
-              {/* Grid Lines Background */}
-              <div className="absolute inset-4 pointer-events-none">
-                {[...Array(5)].map((_, i) => (
-                  <div 
-                    key={i} 
-                    className="absolute w-full border-t border-gray-200 dark:border-gray-700"
-                    style={{ bottom: `${(i + 1) * 20}%` }}
-                  />
-        ))}
-      </div>
+            <div className="relative h-96 mb-4 bg-gradient-to-br from-sky-50/30 via-blue-50/30 to-cyan-50/30 dark:from-gray-900/20 dark:via-blue-900/10 dark:to-gray-900/20 rounded-xl p-4">
+              {(() => {
+                const vehicleTypes = ['รย.1', 'รย.2', 'รย.3', 'รย.12'];
+                const maxCount = selectedInspectionMonth === null 
+                  ? Math.max(
+                      ...inspectionMonthlyData.flatMap(d => 
+                        vehicleTypes.map(type => d.byType[type] || 0)
+                      ),
+                      1
+                    )
+                  : Math.max(
+                      ...inspectionDailyData.flatMap(d => 
+                        vehicleTypes.map(type => d.byType[type] || 0)
+                      ),
+                      1
+                    );
+                const maxScale = Math.ceil(maxCount / 10) * 10 + 10; // ปัดขึ้นเป็น 10
+                const steps = 6;
+                const stepValue = maxScale / steps;
+                const yAxisLabels = Array.from({ length: steps + 1 }, (_, i) => Math.round(i * stepValue));
+                
+                return (
+                  <>
+                    {/* Y-axis Labels */}
+                    <div className="absolute left-0 top-0 bottom-0 w-12 flex flex-col-reverse justify-between py-4 pr-2 text-xs text-gray-500 dark:text-gray-400 font-medium">
+                      {yAxisLabels.map((label, i) => (
+                        <span key={i}>{label}</span>
+                      ))}
+                    </div>
+                    
+                      {/* Grid Lines Background */}
+                      <div className="absolute inset-4 left-12 pointer-events-none">
+                        {/* Y-axis Line */}
+                        <div className="absolute left-0 top-0 bottom-0 w-px bg-gray-300 dark:bg-gray-600"></div>
+                        {/* X-axis Line */}
+                        <div className="absolute left-0 right-0 bottom-0 h-px bg-gray-300 dark:bg-gray-600"></div>
+                        {/* Grid Lines */}
+                        {[...Array(steps)].map((_, i) => (
+                          <div 
+                            key={i} 
+                            className="absolute w-full border-t border-gray-200 dark:border-gray-700"
+                            style={{ bottom: `${((i + 1) / steps) * 100}%` }}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  );
+                })()}
 
               {selectedInspectionMonth === null ? (
-                <div className="absolute inset-4 flex items-end justify-between gap-2">
-                  {inspectionMonthlyData.map((data, index) => {
+                <>
+                  {/* Vertical Grid Lines for Monthly */}
+                  <div className="absolute inset-4 left-12 pointer-events-none">
+                    {inspectionMonthlyData.map((_, i) => (
+                      <div 
+                        key={`v-${i}`}
+                        className="absolute h-full border-l border-gray-100 dark:border-gray-800"
+                        style={{ left: `${(i / inspectionMonthlyData.length) * 100}%` }}
+                      />
+                    ))}
+                  </div>
+                  <div className="absolute inset-4 left-12 flex items-end justify-between gap-2">
+                    {inspectionMonthlyData.map((data, index) => {
                     const vehicleTypes = ['รย.1', 'รย.2', 'รย.3', 'รย.12'];
                     const colors = [
-                      'bg-gradient-to-t from-blue-600 to-blue-400',
-                      'bg-gradient-to-t from-yellow-600 to-yellow-400', 
-                      'bg-gradient-to-t from-orange-600 to-orange-400',
-                      'bg-gradient-to-t from-pink-600 to-pink-400'
+                      'bg-gradient-to-t from-sky-400 to-sky-300',
+                      'bg-gradient-to-t from-blue-400 to-blue-300', 
+                      'bg-gradient-to-t from-cyan-400 to-cyan-300',
+                      'bg-gradient-to-t from-green-400 to-green-300'
                     ];
                     const maxCount = Math.max(
                       ...inspectionMonthlyData.flatMap(d => 
@@ -620,7 +1046,22 @@ export default function DashboardPage() {
                     const isCurrentMonth = new Date().getMonth() === data.monthNum;
                     
                     return (
-                      <div key={index} className="flex-1 flex flex-col items-center gap-2 h-full">
+                      <div 
+                        key={index} 
+                        className="flex-1 flex flex-col items-center gap-2 h-full cursor-crosshair"
+                        onMouseMove={(e) => {
+                          setHoveredBar({
+                            x: e.clientX,
+                            y: e.clientY,
+                            data: {
+                              label: data.month,
+                              count: data.count,
+                              details: data.byType
+                            }
+                          });
+                        }}
+                        onMouseLeave={() => setHoveredBar(null)}
+                      >
                         <div className="flex-1 w-full flex items-end justify-center gap-0.5">
                           {vehicleTypes.map((type, typeIndex) => {
                             const count = data.byType[type] || 0;
@@ -634,7 +1075,7 @@ export default function DashboardPage() {
                                   </span>
                                 )}
                                 <motion.div 
-                                  className={`w-full rounded-t-md shadow-md ${colors[typeIndex]}`}
+                                  className={`w-full rounded-t-md shadow-md transition-all ${colors[typeIndex]} hover:brightness-110`}
                                   initial={{ height: 0 }}
                                   animate={{ height: `${heightPercentage}%` }}
                                   transition={{ duration: 1, delay: index * 0.06 + typeIndex * 0.02, ease: 'easeOut' }}
@@ -644,66 +1085,92 @@ export default function DashboardPage() {
                             );
                           })}
                         </div>
-                        <span className={`text-xs font-medium mt-1 ${
-                          isCurrentMonth ? 'text-green-700 dark:text-green-300 font-bold' : 'text-gray-600 dark:text-gray-400'
-                        }`}>
+                        <div 
+                          className={`px-2 py-1 rounded-md text-xs font-bold text-white mt-2 ${isCurrentMonth ? 'ring-2 ring-emerald-500' : ''}`}
+                          style={{ 
+                            backgroundColor: ['#3B82F6', '#EC4899', '#10B981', '#F97316', '#22C55E', '#0EA5E9',
+                                   '#8B5CF6', '#DB2777', '#84CC16', '#EA580C', '#059669', '#2563EB'][data.monthNum]
+                          }}
+                        >
                           {data.month}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="absolute inset-4 flex items-end justify-between gap-1">
-                  {inspectionDailyData.map((data, index) => {
-                    const vehicleTypes = ['รย.1', 'รย.2', 'รย.3', 'รย.12'];
-                    const colors = [
-                      'bg-gradient-to-t from-blue-600 to-blue-400',
-                      'bg-gradient-to-t from-yellow-600 to-yellow-400', 
-                      'bg-gradient-to-t from-orange-600 to-orange-400',
-                      'bg-gradient-to-t from-pink-600 to-pink-400'
-                    ];
-                    const maxCount = Math.max(
-                      ...inspectionDailyData.flatMap(d => 
-                        vehicleTypes.map(type => d.byType[type] || 0)
-                      ),
-                      1
-                    );
-                    const isToday = new Date().getDate() === data.day && new Date().getMonth() === selectedInspectionMonth;
-                    
-                    return (
-                      <div key={index} className="flex-1 flex flex-col items-center gap-1 h-full">
-                        <div className="flex-1 w-full flex items-end justify-center gap-0.5">
-                          {vehicleTypes.map((type, typeIndex) => {
-                            const count = data.byType[type] || 0;
-                            const heightPercentage = count > 0 ? Math.max((count / maxCount) * 100, 12) : 0;
-                            
-                            return (
-                              <div key={typeIndex} className="flex-1 flex flex-col items-center justify-end h-full">
-                                {count > 0 && (
-                                  <span className="text-[8px] font-bold text-gray-700 dark:text-gray-300 mb-0.5">
-                                    {count}
-                                  </span>
-                                )}
-                                <motion.div 
-                                  className={`w-full rounded-t-sm shadow-sm ${colors[typeIndex]}`}
-                                  initial={{ height: 0 }}
-                                  animate={{ height: `${heightPercentage}%` }}
-                                  transition={{ duration: 0.8, delay: index * 0.01 + typeIndex * 0.01, ease: 'easeOut' }}
-                                  style={{ minHeight: count > 0 ? '20px' : '0', maxHeight: '100%' }}
-                                />
-                              </div>
-                            );
-                          })}
                         </div>
-                        <span className={`text-xs font-medium mt-0.5 ${
-                          isToday ? 'text-green-700 dark:text-green-300 font-bold' : 'text-gray-600 dark:text-gray-400'
-                        }`}>
-                          {data.day}
-                        </span>
                       </div>
                     );
                   })}
+                  </div>
+                </>
+              ) : (
+                <div className="overflow-x-auto -mx-4 px-4 pb-4">
+                  <div className="relative flex items-end gap-2 h-80 pl-12" style={{ minWidth: `${inspectionDailyData.length * 60}px` }}>
+                    {inspectionDailyData.map((data, index) => {
+                        const vehicleTypes = ['รย.1', 'รย.2', 'รย.3', 'รย.12'];
+                        const colors = [
+                          'bg-gradient-to-t from-sky-400 to-sky-300',
+                          'bg-gradient-to-t from-blue-400 to-blue-300', 
+                          'bg-gradient-to-t from-cyan-400 to-cyan-300',
+                          'bg-gradient-to-t from-green-400 to-green-300'
+                        ];
+                        const maxCount = Math.max(
+                          ...inspectionDailyData.flatMap(d => 
+                            vehicleTypes.map(type => d.byType[type] || 0)
+                          ),
+                          1
+                        );
+                        const isToday = new Date().getDate() === data.day && new Date().getMonth() === selectedInspectionMonth;
+                        
+                        return (
+                          <div 
+                            key={index} 
+                            className="flex flex-col items-center gap-2 h-full cursor-crosshair" 
+                            style={{ width: '50px' }}
+                            onMouseMove={(e) => {
+                              setHoveredBar({
+                                x: e.clientX,
+                                y: e.clientY,
+                                data: {
+                                  label: `วันที่ ${data.day}`,
+                                  count: data.count,
+                                  details: data.byType
+                                }
+                              });
+                            }}
+                            onMouseLeave={() => setHoveredBar(null)}
+                          >
+                            <div className="flex-1 w-full flex items-end justify-center gap-1">
+                              {vehicleTypes.map((type, typeIndex) => {
+                                const count = data.byType[type] || 0;
+                                const heightPercentage = count > 0 ? Math.max((count / maxCount) * 100, 12) : 0;
+                                
+                                return (
+                                  <div key={typeIndex} className="flex flex-col items-center justify-end h-full" style={{ width: '11px' }}>
+                                    {count > 0 && (
+                                      <span className="text-[10px] font-bold text-gray-700 dark:text-gray-300 mb-0.5">
+                                        {count}
+                                      </span>
+                                    )}
+                                    <motion.div 
+                                      className={`w-full rounded-t-md shadow-sm transition-all ${colors[typeIndex]} hover:brightness-110`}
+                                      initial={{ height: 0 }}
+                                      animate={{ height: `${heightPercentage}%` }}
+                                      transition={{ duration: 0.8, delay: index * 0.01 + typeIndex * 0.01, ease: 'easeOut' }}
+                                      style={{ minHeight: count > 0 ? '25px' : '0', maxHeight: '100%' }}
+                                    />
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <div 
+                              className={`px-1.5 py-0.5 rounded text-[10px] font-bold text-white mt-2 ${isToday ? 'ring-2 ring-green-500' : ''}`}
+                              style={{ 
+                                backgroundColor: `hsl(${(data.day - 1) * 12}, 70%, 60%)`
+                              }}
+                            >
+                              {data.day}
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
                 </div>
               )}
             </div>
@@ -736,9 +1203,9 @@ export default function DashboardPage() {
                       {inspectionMonthlyData.reduce((sum, d) => sum + (d.byType['รย.3'] || 0), 0)} คัน
                     </p>
                     </div>
-                  <div className="text-center p-3 bg-pink-50 dark:bg-pink-900/20 rounded-xl">
+                  <div className="text-center p-3 bg-teal-50 dark:bg-teal-900/20 rounded-xl">
                     <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">รย.12</p>
-                    <p className="text-xl font-bold text-pink-600 dark:text-pink-400">
+                    <p className="text-xl font-bold text-teal-600 dark:text-teal-400">
                       {inspectionMonthlyData.reduce((sum, d) => sum + (d.byType['รย.12'] || 0), 0)} คัน
                     </p>
                   </div>
@@ -769,16 +1236,16 @@ export default function DashboardPage() {
                       {inspectionDailyData.reduce((sum, d) => sum + (d.byType['รย.3'] || 0), 0)} คัน
                     </p>
                   </div>
-                  <div className="text-center p-3 bg-pink-50 dark:bg-pink-900/20 rounded-xl">
+                  <div className="text-center p-3 bg-teal-50 dark:bg-teal-900/20 rounded-xl">
                     <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">รย.12</p>
-                    <p className="text-xl font-bold text-pink-600 dark:text-pink-400">
+                    <p className="text-xl font-bold text-teal-600 dark:text-teal-400">
                       {inspectionDailyData.reduce((sum, d) => sum + (d.byType['รย.12'] || 0), 0)} คัน
                     </p>
                 </div>
                 </>
               )}
             </div>
-            </div>
+          </div>
         </motion.div>
 
         {/* KPI Cards - Full Width */}
@@ -795,17 +1262,17 @@ export default function DashboardPage() {
               >
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-xl transition-all p-5 border border-gray-100 dark:border-gray-700">
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="p-2.5 rounded-xl bg-purple-100 dark:bg-purple-900/30">
+                    <div className="p-2.5 rounded-xl bg-emerald-100 dark:bg-emerald-900/30">
                       <FontAwesomeIcon 
                         icon={stat.icon} 
-                        className="text-lg text-purple-600 dark:text-purple-400"
+                        className="text-lg text-emerald-600 dark:text-emerald-400"
                       />
                     </div>
                     <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 flex-1">
                       {stat.label}
                     </h3>
                   </div>
-                  <p className="text-2xl font-bold text-purple-600 dark:text-purple-400 mb-1">
+                  <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mb-1">
                     {stat.value}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -822,7 +1289,7 @@ export default function DashboardPage() {
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 border border-gray-100 dark:border-gray-700">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-gray-900 dark:text-white">รถที่ต้องต่อภาษีปีหน้า</h2>
-              <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 rounded-full text-sm font-bold text-purple-600 dark:text-purple-400">
+              <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-900/30 rounded-full text-sm font-bold text-emerald-600 dark:text-emerald-400">
                 {nextYearTax.length} คัน
               </span>
             </div>
@@ -832,10 +1299,10 @@ export default function DashboardPage() {
                 nextYearTax.map((customer: Record<string, unknown>, index: number) => (
                   <div 
                     key={index} 
-                    className="p-3 bg-purple-50 dark:bg-purple-900/10 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-900/20 transition-all"
+                    className="p-3 bg-emerald-50 dark:bg-emerald-900/10 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-900/20 transition-all"
                   >
                     <div className="flex items-center gap-3">
-                      <FontAwesomeIcon icon={faCar} className="text-purple-600 dark:text-purple-400" />
+                      <FontAwesomeIcon icon={faCar} className="text-emerald-600 dark:text-emerald-400" />
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">
                           {String(customer.licensePlate || 'ไม่มีทะเบียน')}
@@ -858,7 +1325,7 @@ export default function DashboardPage() {
               <div className="mt-4 text-center">
               <Link 
                 href="/tax-expiry-next-year"
-                  className="text-purple-600 dark:text-purple-400 hover:underline text-sm font-medium"
+                  className="text-emerald-600 dark:text-emerald-400 hover:underline text-sm font-medium"
               >
                   ดูทั้งหมด
               </Link>
@@ -870,9 +1337,9 @@ export default function DashboardPage() {
         {/* Alerts */}
         {(upcomingExpiry > 0 || overdueCount > 0) && (
           <motion.div variants={itemVariants} initial="hidden" animate="show" transition={{ delay: 0.6 }} className="mb-8">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-5 border-l-4 border-purple-500">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-5 border-l-4 border-emerald-500">
                 <div className="flex items-center gap-3">
-                <FontAwesomeIcon icon={faBell} className="text-xl text-purple-600 dark:text-purple-400" />
+                <FontAwesomeIcon icon={faBell} className="text-xl text-emerald-600 dark:text-emerald-400" />
                 <div className="flex-1">
                   <h3 className="font-bold text-gray-900 dark:text-white mb-1">การแจ้งเตือน</h3>
                   <div className="text-sm text-gray-600 dark:text-gray-400">
@@ -886,6 +1353,6 @@ export default function DashboardPage() {
         </motion.div>
         )}
       </div>
-        </div>
+    </div>
   );
 }

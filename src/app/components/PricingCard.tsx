@@ -44,7 +44,7 @@ export default function PricingCard({ data, onEdit, onDelete, onDeleteConfirm }:
       <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
         <button
           onClick={() => onEdit(data)}
-          className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-all duration-200"
+          className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-all duration-200"
           title="แก้ไข"
         >
           <FontAwesomeIcon icon={faEdit} className="text-xs" />
@@ -73,7 +73,7 @@ export default function PricingCard({ data, onEdit, onDelete, onDeleteConfirm }:
 
       {/* Price */}
       <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-        <div className="text-xl font-bold text-purple-500 dark:text-purple-400">
+        <div className="text-xl font-bold text-emerald-500 dark:text-emerald-400">
           ฿{formatPrice(data.servicePrice)}
         </div>
       </div>

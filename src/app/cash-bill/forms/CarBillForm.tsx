@@ -500,7 +500,7 @@ export default function CarBillForm({ onBack }: { onBack: () => void }) {
           </div>
           <button
             onClick={handleSearch}
-            className="flex items-center justify-center bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 px-6 rounded-lg focus:outline-none focus:shadow-outline min-w-[120px] transition-all duration-300 shadow-md"
+            className="flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-6 rounded-lg focus:outline-none focus:shadow-outline min-w-[120px] transition-all duration-300 shadow-md"
           >
             <FontAwesomeIcon icon={faSearch} className="mr-2" /> ค้นหา
           </button>
@@ -904,7 +904,7 @@ export default function CarBillForm({ onBack }: { onBack: () => void }) {
 
         <button
           onClick={handlePrint}
-          className="py-3 px-6 rounded-lg bg-purple-600 hover:bg-purple-700 text-white focus:outline-none focus:shadow-outline flex items-center justify-center min-w-[180px] transition-all duration-300 text-lg shadow-md"
+          className="py-3 px-6 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white focus:outline-none focus:shadow-outline flex items-center justify-center min-w-[180px] transition-all duration-300 text-lg shadow-md"
         >
           <FontAwesomeIcon icon={faPrint} className="mr-3 text-xl" /> ปริ้น/บันทึก PDF
         </button>

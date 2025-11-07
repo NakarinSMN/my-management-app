@@ -43,7 +43,7 @@ export default function Modal({ isOpen, children }) {
           // onClick={handleBackdropClick} // ลบ handleBackdropClick ถ้าไม่ได้ใช้แล้ว
         >
           <motion.div
-            className="relative p-6 m-4 max-w-lg w-full"
+            className="relative p-6 m-4 max-w-6xl w-full"
             variants={modalVariants}
             animate={controls}
             onClick={(e) => e.stopPropagation()} // Prevents click inside modal from closing it

@@ -328,7 +328,7 @@ export default function PricingPage() {
             </div>
             <button
               onClick={handleAddCategoryClick}
-              className="px-4 py-2 bg-purple-500 text-white rounded-lg font-semibold hover:bg-purple-600 transition-colors duration-200 flex items-center gap-2 text-sm"
+              className="px-4 py-2 bg-emerald-500 text-white rounded-lg font-semibold hover:bg-emerald-600 transition-colors duration-200 flex items-center gap-2 text-sm"
             >
               <FontAwesomeIcon icon={faPlus} className="text-xs" />
               เพิ่มหมวดหมู่
@@ -349,7 +349,7 @@ export default function PricingPage() {
                   placeholder="ค้นหาบริการ..."
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder:text-gray-400 text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all"
+                  className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder:text-gray-400 text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all"
                 />
               </div>
               
@@ -400,7 +400,7 @@ export default function PricingPage() {
               <div className="sm:col-span-2 lg:col-span-2">
                 <button
                   onClick={handleFilterReset}
-                  className="w-full px-3 py-1.5 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 text-purple-600 dark:text-purple-400 rounded-xl hover:from-purple-200 hover:to-pink-200 dark:hover:from-purple-900/50 dark:hover:to-pink-900/50 transition-all duration-200 font-semibold text-xs shadow-sm hover:shadow-md"
+                  className="w-full px-3 py-1.5 bg-gradient-to-r from-emerald-100 to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl hover:from-emerald-200 hover:to-teal-200 dark:hover:from-emerald-900/50 dark:hover:to-teal-900/50 transition-all duration-200 font-semibold text-xs shadow-sm hover:shadow-md"
                 >
                   รีเซ็ต
                 </button>
@@ -457,7 +457,7 @@ export default function PricingPage() {
                   {!searchTerm && !selectedCategory && priceRange.min === 0 && priceRange.max === 0 && (
                     <button
                       onClick={handleAddCategoryClick}
-                      className="px-6 py-2.5 bg-purple-400 text-white rounded-2xl font-semibold hover:bg-purple-500 transition-colors duration-200 inline-flex items-center gap-2 text-sm shadow-md"
+                      className="px-6 py-2.5 bg-emerald-400 text-white rounded-2xl font-semibold hover:bg-emerald-500 transition-colors duration-200 inline-flex items-center gap-2 text-sm shadow-md"
                     >
                       <FontAwesomeIcon icon={faPlus} />
                       เพิ่มหมวดหมู่แรก
@@ -488,7 +488,7 @@ export default function PricingPage() {
                               setIsServiceModalOpen(true);
                               setSelectedCategoryForService(categoryName);
                             }}
-                            className="px-3 py-1.5 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-lg font-medium hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors flex items-center gap-1.5 text-xs"
+                            className="px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-lg font-medium hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors flex items-center gap-1.5 text-xs"
                           >
                             <FontAwesomeIcon icon={faPlus} className="text-xs" />
                             เพิ่มบริการ
@@ -525,7 +525,7 @@ export default function PricingPage() {
                                 {service.serviceDetails || '-'}
                               </td>
                               <td className="px-4 py-3 text-left">
-                                <span className="text-lg font-bold text-purple-500 dark:text-purple-400">
+                                <span className="text-lg font-bold text-emerald-500 dark:text-emerald-400">
                                   ฿{service.servicePrice.toLocaleString('th-TH')}
                                 </span>
                               </td>
@@ -533,7 +533,7 @@ export default function PricingPage() {
                                 <div className="flex justify-center gap-2">
                                   <button
                                     onClick={() => handleEditServiceClick(service)}
-                                    className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-all"
+                                    className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-all"
                                     title="แก้ไข"
                                   >
                                     <FontAwesomeIcon icon={faEdit} className="text-xs" />

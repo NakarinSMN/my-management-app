@@ -17,7 +17,7 @@ export default function OtherBillForm({ onBack }: { onBack: () => void }) {
           <FontAwesomeIcon icon={faArrowLeft} className="text-xl" />
         </button>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center">
-          <FontAwesomeIcon icon={faFileAlt} className="mr-3 text-purple-600" /> ออกบิลเงินสด: บิลอื่นๆ
+          <FontAwesomeIcon icon={faFileAlt} className="mr-3 text-emerald-600" /> ออกบิลเงินสด: บิลอื่นๆ
         </h1>
       </div>
 
@@ -99,7 +99,7 @@ export default function OtherBillForm({ onBack }: { onBack: () => void }) {
         </div>
       </div>
 
-      <button className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline flex items-center justify-center min-w-[120px]">
+      <button className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline flex items-center justify-center min-w-[120px]">
         <FontAwesomeIcon icon={faSave} className="mr-2" /> บันทึกบิล
       </button>
     </motion.div>

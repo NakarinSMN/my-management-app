@@ -44,8 +44,8 @@ export default function PricingListItem({ data, onEdit, onDelete, onDeleteConfir
         {/* Left side - Icon & Service info */}
         <div className="flex items-center gap-3 flex-1 min-w-0">
           {/* Icon */}
-          <div className="flex-shrink-0 w-9 h-9 flex items-center justify-center bg-purple-50 dark:bg-purple-900/20 rounded-xl">
-            <FontAwesomeIcon icon={faCheckCircle} className="text-purple-400 dark:text-purple-300 text-sm" />
+          <div className="flex-shrink-0 w-9 h-9 flex items-center justify-center bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
+            <FontAwesomeIcon icon={faCheckCircle} className="text-emerald-400 dark:text-emerald-300 text-sm" />
           </div>
 
           {/* Info */}
@@ -65,7 +65,7 @@ export default function PricingListItem({ data, onEdit, onDelete, onDeleteConfir
         <div className="flex items-center gap-6 flex-shrink-0">
           {/* Price */}
           <div className="text-right min-w-[100px]">
-            <div className="text-lg font-bold text-purple-400 dark:text-purple-300">
+            <div className="text-lg font-bold text-emerald-400 dark:text-emerald-300">
               ฿{formatPrice(data.servicePrice)}
             </div>
           </div>
@@ -74,7 +74,7 @@ export default function PricingListItem({ data, onEdit, onDelete, onDeleteConfir
           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
             <button
               onClick={() => onEdit(data)}
-              className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-purple-500 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-all duration-200"
+              className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-emerald-500 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-all duration-200"
               title="แก้ไข"
             >
               <FontAwesomeIcon icon={faEdit} className="text-xs" />

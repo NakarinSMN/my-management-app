@@ -48,10 +48,10 @@ export default function FilterDropdown({
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={`
-          w-full flex items-center justify-between px-3 py-2 
+          w-full flex items-center justify-between px-3 py-2.5
           border border-gray-300 dark:border-gray-600 
           rounded-lg bg-white dark:bg-gray-800 
-          text-gray-900 dark:text-white text-sm
+          text-gray-900 dark:text-white text-base
           hover:border-blue-500 dark:hover:border-blue-400
           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
           transition-all duration-200
@@ -61,9 +61,9 @@ export default function FilterDropdown({
         <div className="flex items-center gap-2">
           <FontAwesomeIcon 
             icon={icon} 
-            className="text-gray-400 dark:text-gray-500 text-xs" 
+            className="text-gray-400 dark:text-gray-500 text-sm" 
           />
-          <span className={hasValue ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}>
+          <span className={`font-medium ${hasValue ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
             {selectedOption ? selectedOption.label : placeholder}
           </span>
         </div>
@@ -76,21 +76,21 @@ export default function FilterDropdown({
                 onChange('');
                 setIsOpen(false);
               }}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors text-xs cursor-pointer"
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors text-sm cursor-pointer"
             >
-              <FontAwesomeIcon icon={faTimes} className="text-xs" />
+              <FontAwesomeIcon icon={faTimes} className="text-sm" />
             </div>
           )}
           <FontAwesomeIcon 
             icon={faChevronDown} 
-            className={`text-gray-400 transition-transform duration-200 text-xs ${isOpen ? 'rotate-180' : ''}`}
+            className={`text-gray-400 transition-transform duration-200 text-sm ${isOpen ? 'rotate-180' : ''}`}
           />
         </div>
       </button>
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto text-sm">
+        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
           {options.map((option, index) => (
             <button
               key={index}
@@ -119,7 +119,7 @@ export default function FilterDropdown({
               </div>
               {option.value === value && (
                 <div className="text-blue-600 dark:text-blue-400">
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
                 </div>

@@ -163,16 +163,16 @@ export default function BillingMainPage() {
               </button>
               <button
                 onClick={() => setActiveBillType("other")}
-                className="flex flex-col items-center justify-center p-6 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-600 rounded-xl shadow-sm hover:shadow-md hover:bg-purple-50 dark:hover:bg-gray-600 transition duration-300 ease-in-out transform hover:-translate-y-1"
+                className="flex flex-col items-center justify-center p-6 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-600 rounded-xl shadow-sm hover:shadow-md hover:bg-emerald-50 dark:hover:bg-gray-600 transition duration-300 ease-in-out transform hover:-translate-y-1"
               >
-                <FontAwesomeIcon icon={faFileAlt} className="text-3xl mb-3 text-purple-600 dark:text-purple-400" />
+                <FontAwesomeIcon icon={faFileAlt} className="text-3xl mb-3 text-emerald-600 dark:text-emerald-400" />
                 <span className="text-lg font-semibold">บิลอื่นๆ</span>
               </button>
             </div>
             {/* ส่วนค้นหา */}
             <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600 mb-8"> {/* ปรับ padding, rounded, shadow, border, mb */}
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-5 flex items-center"> {/* ปรับ mb */}
-                    <FontAwesomeIcon icon={faSearch} className="mr-3 text-indigo-600 dark:text-indigo-400" /> ค้นหารายการบิล
+                    <FontAwesomeIcon icon={faSearch} className="mr-3 text-emerald-600 dark:text-emerald-400" /> ค้นหารายการบิล
                 </h2>
                 <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4 sm:gap-6"> {/* ปรับ gap */}
                     <div className="flex-grow">
@@ -180,7 +180,7 @@ export default function BillingMainPage() {
                         <select
                             id="searchCategory"
                             name="searchCategory"
-                            className="block w-full py-2.5 px-4 rounded-lg border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-base text-gray-800 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" // ปรับ padding, rounded, border, text size
+                            className="block w-full py-2.5 px-4 rounded-lg border border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-base text-gray-800 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" // ปรับ padding, rounded, border, text size
                             value={searchCategory}
                             onChange={(e) => setSearchCategory(e.target.value as keyof Bill)}
                         >
@@ -197,7 +197,7 @@ export default function BillingMainPage() {
                             type="text"
                             id="searchTerm"
                             name="searchTerm"
-                            className="block w-full py-2.5 px-4 rounded-lg border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-base text-gray-800 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500" // ปรับ padding, rounded, border, text size, placeholder
+                            className="block w-full py-2.5 px-4 rounded-lg border border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-base text-gray-800 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500" // ปรับ padding, rounded, border, text size, placeholder
                             placeholder={`ค้นหาด้วย ${
                                 searchCategory === 'id' ? 'เลขที่บิล' :
                                 searchCategory === 'customer' ? 'ชื่อลูกค้า' :
@@ -211,7 +211,7 @@ export default function BillingMainPage() {
                     </div>
                     <button
                         type="submit"
-                        className="inline-flex justify-center items-center px-6 py-2.5 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out" // ปรับ padding, font size, rounded
+                        className="inline-flex justify-center items-center px-6 py-2.5 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition duration-150 ease-in-out" // ปรับ padding, font size, rounded
                     >
                         <FontAwesomeIcon icon={faSearch} className="mr-2" /> ค้นหา
                     </button>

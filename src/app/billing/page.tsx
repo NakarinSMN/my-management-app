@@ -214,7 +214,7 @@ export default function BillingPage() {
             <div className="flex gap-2">
               <button
                 onClick={refreshData}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium flex items-center gap-2"
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium flex items-center gap-2"
                 title="รีเฟรชข้อมูล"
               >
                 <FontAwesomeIcon icon={faSync} className={isLoading ? 'animate-spin' : ''} />

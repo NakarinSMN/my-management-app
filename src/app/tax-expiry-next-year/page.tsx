@@ -1282,7 +1282,7 @@ export default function TaxExpiryNextYearPage() {
                                   </p>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+                                  <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
                                   <p className="text-gray-900 dark:text-white">
                                     <span className="font-semibold text-gray-600 dark:text-gray-400">เบอร์:</span> 
                                     <span className="ml-2">{item.phone}</span>
@@ -1514,7 +1514,7 @@ export default function TaxExpiryNextYearPage() {
                                         </p>
                                       </div>
                                       <div className="flex items-center gap-2">
-                                        <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+                                        <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
                                         <p className="text-gray-900 dark:text-white">
                                           <span className="font-semibold text-gray-600 dark:text-gray-400">เบอร์:</span> 
                                           <span className="ml-2">{carData.phone}</span>

@@ -425,7 +425,7 @@ export default function DevToolPage() {
               <motion.button
                 onClick={clearNotificationStatus}
                 disabled={isClearingStatus}
-                className="w-full p-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full p-4 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 whileHover={{ scale: isClearingStatus ? 1 : 1.02 }}
                 whileTap={{ scale: isClearingStatus ? 1 : 0.98 }}
               >
