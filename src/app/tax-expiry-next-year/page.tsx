@@ -58,14 +58,6 @@ interface NotificationStatus {
 }
 
 
-// Interfaces สำหรับ Component ลูก
-
-interface PageButtonProps {
-  onClick: () => void;
-  disabled: boolean;
-  icon: IconDefinition;
-}
-
 // Maps สำหรับสถานะและสี/ไอคอน
 const statusColor: { [key: string]: string } = {
   'ต่อภาษีแล้ว': 'bg-green-200 dark:bg-green-700 text-green-800 dark:text-white',
@@ -82,20 +74,6 @@ const statusIcon: { [key: string]: IconDefinition } = {
   'เกินกำหนด': faTimesCircle,
   'รอดำเนินการ': faClock,
 };
-
-
-// Component ลูก: PageButton
-function PageButton({ onClick, disabled, icon }: PageButtonProps) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className="p-2 rounded bg-gray-200 dark:bg-neutral-700 text-gray-700 dark:text-gray-200 disabled:opacity-40 transition"
-    >
-      <FontAwesomeIcon icon={icon} />
-    </button>
-  );
-}
 
 // ฟังก์ชันแปลงวันที่เป็นรูปแบบ DD/MM/YYYY (พ.ศ.)
 function formatDate(dateStr: string, useBuddhistYear: boolean = true): string {
@@ -886,13 +864,6 @@ export default function TaxExpiryNextYearPage() {
     }
   }, [customerData, swrError]);
 
-  const resetFilters = () => {
-    setSearch('');
-    setFilterMonth('');
-    setFilterStatus('');
-    setCurrentPage(1);
-  };
-
   const resetAllFilters = () => {
     setSearch('');
     setFilterMonth('');
@@ -1274,22 +1245,22 @@ export default function TaxExpiryNextYearPage() {
           <>
             {/* Mobile Card View */}
             <div className="md:hidden px-3 space-y-3 mb-4">
-              {paginatedData.length === 0 ? (
+              {currentData.length === 0 ? (
                 <div className="text-center py-10 text-gray-500 dark:text-gray-400">
                   ไม่พบข้อมูลที่ตรงกับตัวกรอง
                 </div>
               ) : (
-                paginatedData.map((item, idx) => (
+                currentData.map((item, idx) => (
                   <TaxExpiryCard
                     key={item.licensePlate + item.customerName + idx}
                     item={item}
-                    rowNumber={startIdx + idx + 1}
+                    rowNumber={startIndex + idx + 1}
                     notificationStatus={notificationStatus}
                     isFavorite={favorites.has(item.licensePlate)}
                     onToggleFavorite={toggleFavorite}
                     statusColor={statusColor}
                     statusIcon={statusIcon}
-                    formatDate={formatDateFlexible}
+                    formatDate={formatDate}
                   />
                 ))
               )}
@@ -1987,7 +1958,6 @@ export default function TaxExpiryNextYearPage() {
           vehicleTypes={uniqueVehicleTypes}
           currentFilters={advancedFilters}
         />
-      </div>
     </div>
   );
-} 
+}

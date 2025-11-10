@@ -34,15 +34,6 @@ import {
   faFilter,
   faStar,
 } from '@fortawesome/free-solid-svg-icons';
-// Interfaces สำหรับ Component ลูก
-
-interface PageButtonProps {
-  onClick: () => void;
-  disabled: boolean;
-  icon: IconDefinition;
-}
-
-
 // Maps สำหรับสถานะและสี/ไอคอน
 const statusColor: { [key: string]: string } = {
   'ต่อภาษีแล้ว': 'bg-green-200 dark:bg-green-700 text-green-800 dark:text-white',
@@ -59,21 +50,6 @@ const statusIcon: { [key: string]: IconDefinition } = {
   'เกินกำหนด': faTimesCircle,
   'รอดำเนินการ': faClock,
 };
-
-
-
-// Component ลูก: PageButton
-function PageButton({ onClick, disabled, icon }: PageButtonProps) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className="p-2 rounded bg-gray-200 dark:bg-neutral-700 text-gray-700 dark:text-gray-200 disabled:opacity-40 transition"
-    >
-      <FontAwesomeIcon icon={icon} />
-    </button>
-  );
-}
 
 function getPageNumbers(currentPage: number, totalPages: number, maxPages = 5) {
   const pages: (number | string)[] = [];

@@ -45,7 +45,6 @@ export default function TaxExpiryCard({
   formatDate
 }: TaxExpiryCardProps) {
   const isSent = notificationStatus[item.licensePlate]?.sent || false;
-  const sentAt = notificationStatus[item.licensePlate]?.sentAt;
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700">
