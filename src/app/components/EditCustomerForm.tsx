@@ -127,6 +127,7 @@ export default function EditCustomerForm({ customerData, onSuccess, onCancel }: 
         },
         body: JSON.stringify({
           originalLicensePlate: customerData.licensePlate, // ใช้ทะเบียนเดิมเป็น key
+          originalVehicleType: customerData.vehicleType || '', // ประเภทรถเดิม
           licensePlate: formData.licensePlate,
           customerName: `${formData.firstName} ${formData.lastName}`.trim(),
           phone: formData.phone,

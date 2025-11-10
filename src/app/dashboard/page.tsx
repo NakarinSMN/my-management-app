@@ -120,7 +120,7 @@ export default function DashboardPage() {
     }
   }, [customerData]);
 
-  // คำนวณข้อมูลรายเดือน
+  // คำนวณข้อมูลรายเดือน (กรองเฉพาะที่มีแท็ก "ภาษี")
   useEffect(() => {
     if (customerData && customerData.data) {
       const monthNames = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 
@@ -132,6 +132,10 @@ export default function DashboardPage() {
       }
       
       customerData.data.forEach((item: Record<string, unknown>) => {
+        // กรองเฉพาะที่มีแท็ก "ภาษี"
+        const tags = item['tags'] as string[] | undefined;
+        if (!tags || !tags.includes('ภาษี')) return;
+        
         const lastTaxDate = String(item['registerDate'] || item['วันที่ชำระภาษีล่าสุด'] || '');
         const vehicleType = String(item['vehicleType'] || '');
         
@@ -221,7 +225,7 @@ export default function DashboardPage() {
     }
   }, [customerData]);
 
-  // คำนวณข้อมูลรายวัน
+  // คำนวณข้อมูลรายวัน (กรองเฉพาะที่มีแท็ก "ภาษี")
   useEffect(() => {
     if (customerData && customerData.data && selectedMonth !== null) {
       const currentYear = new Date().getFullYear();
@@ -233,6 +237,10 @@ export default function DashboardPage() {
       }
       
       customerData.data.forEach((item: Record<string, unknown>) => {
+        // กรองเฉพาะที่มีแท็ก "ภาษี"
+        const tags = item['tags'] as string[] | undefined;
+        if (!tags || !tags.includes('ภาษี')) return;
+        
         const lastTaxDate = String(item['registerDate'] || item['วันที่ชำระภาษีล่าสุด'] || '');
         const vehicleType = String(item['vehicleType'] || '');
         
@@ -502,7 +510,12 @@ export default function DashboardPage() {
         <motion.div variants={itemVariants} initial="hidden" animate="show" transition={{ delay: 0.1 }} className="mb-8">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">กราฟการต่อภาษี</h2>
+              <div>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">กราฟการต่อภาษี</h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  📌 แสดงเฉพาะรายการที่มีแท็ก &quot;ภาษี&quot;
+                </p>
+              </div>
               
               {/* Dropdown เลือกเดือน */}
               <div className="w-48">

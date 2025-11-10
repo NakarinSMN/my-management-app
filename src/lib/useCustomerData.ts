@@ -9,6 +9,7 @@ const MONGODB_CUSTOMER_API_URL = '/api/customers';
 
 interface RawCustomerDataItem {
   // MongoDB fields
+  sequenceNumber?: number;
   licensePlate?: string;
   brand?: string;
   customerName?: string;
@@ -36,6 +37,7 @@ interface RawCustomerDataItem {
 
 export interface CustomerData {
   _id?: string; // MongoDB ObjectId
+  sequenceNumber?: number; // เลขลำดับ 6 หลัก
   licensePlate: string;
   brand?: string;
   customerName: string;
@@ -147,6 +149,7 @@ export function formatCustomerData(item: RawCustomerDataItem): CustomerData {
     const phone: string = rawPhone.startsWith('0') || rawPhone.length === 0 ? rawPhone : `0${rawPhone}`;
     
     return {
+      sequenceNumber: item.sequenceNumber || 0,
       licensePlate: item.licensePlate || '',
       brand: item.brand || '',
       customerName: item.customerName || '',
@@ -230,9 +233,14 @@ export function useCustomerData() {
       
       console.log('🔍 [useCustomerData] Formatted data:', formatted);
       
-      // เรียงข้อมูลให้แถวล่าสุดอยู่บนสุด (reverse order)
-      const reversedData = formatted.reverse();
-      setFormattedData(reversedData);
+      // เรียงข้อมูลตาม sequenceNumber จากมากไปน้อย (ข้อมูลใหม่อยู่บนสุด)
+      const sortedData = formatted.sort((a, b) => {
+        const seqA = a.sequenceNumber || 0;
+        const seqB = b.sequenceNumber || 0;
+        return seqB - seqA; // เรียงจากมากไปน้อย
+      });
+      
+      setFormattedData(sortedData);
     }
   }, [swrData]);
 

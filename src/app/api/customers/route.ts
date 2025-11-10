@@ -1,9 +1,32 @@
 // src/app/api/customers/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import { Db } from 'mongodb';
 import { getDatabase } from '@/lib/mongodb';
 
-// GET: ดึงข้อมูลลูกค้าทั้งหมด (เร็วขึ้น)
-export async function GET() {
+// Interface สำหรับ Counter Document
+interface CounterDocument {
+  _id: string;
+  sequence: number;
+}
+
+// ฟังก์ชันสร้างเลขลำดับอัตโนมัติ (Auto Increment)
+async function getNextSequenceNumber(db: Db): Promise<number> {
+  const counters = db.collection<CounterDocument>('counters');
+  
+  const result = await counters.findOneAndUpdate(
+    { _id: 'customerId' },
+    { $inc: { sequence: 1 } },
+    { 
+      upsert: true, 
+      returnDocument: 'after' 
+    }
+  );
+  
+  return result?.sequence || 1;
+}
+
+// GET: ดึงข้อมูลลูกค้าทั้งหมด หรือค้นหาตามทะเบียน
+export async function GET(request: NextRequest) {
   const startTime = Date.now();
   
   try {
@@ -18,6 +41,46 @@ export async function GET() {
     console.log('✅ [Customers API] MongoDB connected successfully');
     
     const customers = db.collection('customers');
+    
+    // เช็คว่ามี query parameter licensePlate หรือไม่
+    const { searchParams } = new URL(request.url);
+    const licensePlate = searchParams.get('licensePlate');
+    
+    if (licensePlate) {
+      // ค้นหาตามทะเบียน
+      console.log('🔍 [Customers API] Searching for license plate:', licensePlate);
+      const data = await customers.find(
+        { licensePlate: licensePlate },
+        {
+          projection: {
+            _id: 0,
+            sequenceNumber: 1,
+            licensePlate: 1,
+            brand: 1,
+            customerName: 1,
+            phone: 1,
+            registerDate: 1,
+            inspectionDate: 1,
+            vehicleType: 1,
+            status: 1,
+            note: 1,
+            tags: 1,
+            createdAt: 1,
+            updatedAt: 1
+          }
+        }
+      ).toArray();
+      
+      const duration = Date.now() - startTime;
+      console.log(`✅ [Customers API] Found ${data.length} customers with plate ${licensePlate} in ${duration}ms`);
+      
+      return NextResponse.json({ 
+        success: true, 
+        data: data,
+        count: data.length,
+        duration: duration
+      });
+    }
     console.log('🔍 [Customers API] Fetching customers from collection...');
     
     // ตรวจสอบว่า collection มีอยู่หรือไม่
@@ -38,6 +101,7 @@ export async function GET() {
     const data = await customers.find({}, {
       projection: {
         _id: 0, // ไม่ส่ง _id
+        sequenceNumber: 1,
         licensePlate: 1,
         brand: 1,
         customerName: 1,
@@ -103,20 +167,53 @@ export async function POST(request: NextRequest) {
     const db = await getDatabase();
     const customers = db.collection('customers');
     
-    // ตรวจสอบว่าทะเบียนรถซ้ำหรือไม่
-    const existingCustomer = await customers.findOne({ 
-      licensePlate: body.licensePlate 
+    // ตรวจสอบว่าทะเบียนรถซ้ำกับประเภทรถเดียวกันหรือไม่
+    // หากไม่มีประเภทรถ (ข้อมูลเก่า) ให้เช็คเฉพาะทะเบียน
+    // หากมีประเภทรถ ให้เช็คทั้งทะเบียนและประเภท
+    const newVehicleType = body.vehicleType || '';
+    
+    // หาทะเบียนที่ซ้ำทั้งหมด
+    const duplicates = await customers.find({ 
+      licensePlate: body.licensePlate
+    }).toArray();
+    
+    // เช็คว่ามีทะเบียนซ้ำกับประเภทเดียวกันหรือไม่
+    const existingCustomer = duplicates.find(doc => {
+      const existingType = doc.vehicleType || '';
+      return existingType === newVehicleType;
     });
     
     if (existingCustomer) {
+      const sequenceStr = existingCustomer.sequenceNumber 
+        ? String(existingCustomer.sequenceNumber).padStart(6, '0') 
+        : 'ไม่ทราบ';
+      
       return NextResponse.json(
-        { success: false, error: 'ทะเบียนรถนี้มีอยู่แล้วในระบบ' },
+        { 
+          success: false, 
+          error: `ทะเบียนรถ ${body.licensePlate} ประเภท "${body.vehicleType || 'ไม่ระบุ'}" มีอยู่แล้วในระบบ\n\nซ้ำกับเลขลำดับ: ${sequenceStr}\nชื่อลูกค้า: ${existingCustomer.customerName}`,
+          duplicateSequence: existingCustomer.sequenceNumber
+        },
         { status: 400 }
       );
     }
     
+    // แจ้งเตือนว่ามีทะเบียนซ้ำ (แต่ต่างประเภท)
+    if (duplicates.length > 0) {
+      console.log(`⚠️ [Customers API] Duplicate license plate found, but different vehicle type. Allowing...`);
+      duplicates.forEach(dup => {
+        console.log(`   - Existing: ${dup.licensePlate} (${dup.vehicleType || 'ไม่ระบุ'}) - Seq: ${dup.sequenceNumber}`);
+      });
+      console.log(`   - New: ${body.licensePlate} (${body.vehicleType || 'ไม่ระบุ'})`);
+    }
+    
+    // สร้างเลขลำดับอัตโนมัติ (Auto Increment)
+    const sequenceNumber = await getNextSequenceNumber(db);
+    console.log('🔢 [Customers API] Generated sequence number:', sequenceNumber);
+    
     const now = new Date();
     const newCustomer = {
+      sequenceNumber: sequenceNumber,
       licensePlate: body.licensePlate,
       brand: body.brand || '',
       customerName: body.customerName,
@@ -131,8 +228,9 @@ export async function POST(request: NextRequest) {
       updatedAt: now
     };
     
-    console.log('💾 [Customers API] Saving customer with timestamps:', {
-      ...newCustomer,
+    console.log('💾 [Customers API] Saving customer with sequence number:', {
+      sequenceNumber: newCustomer.sequenceNumber,
+      licensePlate: newCustomer.licensePlate,
       createdAt: newCustomer.createdAt.toISOString(),
       updatedAt: newCustomer.updatedAt.toISOString()
     });
@@ -145,6 +243,7 @@ export async function POST(request: NextRequest) {
       success: true, 
       message: 'เพิ่มข้อมูลลูกค้าสำเร็จ',
       id: result.insertedId,
+      sequenceNumber: sequenceNumber,
       data: newCustomer
     });
   } catch (error) {
@@ -165,27 +264,63 @@ export async function PUT(request: NextRequest) {
     const db = await getDatabase();
     const customers = db.collection('customers');
     
-    const { originalLicensePlate, ...updateData } = body;
+    const { originalLicensePlate, originalVehicleType, ...updateData } = body;
     
-    // ตรวจสอบว่าทะเบียนรถใหม่ซ้ำหรือไม่ (ถ้าเปลี่ยนทะเบียน)
-    if (updateData.licensePlate !== originalLicensePlate) {
-      const existingCustomer = await customers.findOne({ 
-        licensePlate: updateData.licensePlate 
+    // หาข้อมูลเดิม
+    const originalCustomer = await customers.findOne({ 
+      licensePlate: originalLicensePlate,
+      vehicleType: originalVehicleType || ''
+    });
+    
+    if (!originalCustomer) {
+      return NextResponse.json(
+        { success: false, error: 'ไม่พบข้อมูลลูกค้าที่ต้องการแก้ไข' },
+        { status: 404 }
+      );
+    }
+    
+    // ตรวจสอบว่าทะเบียนรถใหม่และประเภทรถใหม่ซ้ำกับข้อมูลอื่นหรือไม่
+    const isDifferent = updateData.licensePlate !== originalLicensePlate || 
+                       (updateData.vehicleType || '') !== (originalVehicleType || '');
+    
+    if (isDifferent) {
+      const newVehicleType = updateData.vehicleType || '';
+      
+      // หาทะเบียนที่ซ้ำทั้งหมด (ยกเว้นตัวเอง)
+      const duplicates = await customers.find({ 
+        licensePlate: updateData.licensePlate,
+        _id: { $ne: originalCustomer._id }
+      }).toArray();
+      
+      // เช็คว่ามีทะเบียนซ้ำกับประเภทเดียวกันหรือไม่
+      const existingCustomer = duplicates.find(doc => {
+        const existingType = doc.vehicleType || '';
+        return existingType === newVehicleType;
       });
       
       if (existingCustomer) {
+        const sequenceStr = existingCustomer.sequenceNumber 
+          ? String(existingCustomer.sequenceNumber).padStart(6, '0') 
+          : 'ไม่ทราบ';
+        
         return NextResponse.json(
-          { success: false, error: 'ทะเบียนรถใหม่นี้มีอยู่แล้วในระบบ' },
+          { 
+            success: false, 
+            error: `ทะเบียนรถ ${updateData.licensePlate} ประเภท "${updateData.vehicleType || 'ไม่ระบุ'}" มีอยู่แล้วในระบบ\n\nซ้ำกับเลขลำดับ: ${sequenceStr}\nชื่อลูกค้า: ${existingCustomer.customerName}`,
+            duplicateSequence: existingCustomer.sequenceNumber
+          },
           { status: 400 }
         );
       }
+      
+      // แจ้งเตือนว่ามีทะเบียนซ้ำ (แต่ต่างประเภท)
+      if (duplicates.length > 0) {
+        console.log(`⚠️ [Customers API] Duplicate license plate found during update, but different vehicle type. Allowing...`);
+      }
     }
     
-    // หาข้อมูลเดิมเพื่อเก็บ createdAt
-    const existingData = await customers.findOne({ licensePlate: originalLicensePlate });
-    
-    const result = await customers.updateOne(
-      { licensePlate: originalLicensePlate },
+    await customers.updateOne(
+      { _id: originalCustomer._id },
       { 
         $set: {
           licensePlate: updateData.licensePlate,
@@ -198,18 +333,12 @@ export async function PUT(request: NextRequest) {
           status: updateData.status,
           note: updateData.note || '',
           tags: updateData.tags || [],
-          createdAt: existingData?.createdAt || new Date(),
+          sequenceNumber: originalCustomer.sequenceNumber || 0, // เก็บเลขลำดับเดิม
+          createdAt: originalCustomer.createdAt || new Date(),
           updatedAt: new Date()
         }
       }
     );
-    
-    if (result.matchedCount === 0) {
-      return NextResponse.json(
-        { success: false, error: 'ไม่พบข้อมูลลูกค้าที่ต้องการแก้ไข' },
-        { status: 404 }
-      );
-    }
     
     console.log('✅ [Customers API] Customer updated successfully');
     

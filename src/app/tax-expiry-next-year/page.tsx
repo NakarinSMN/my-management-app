@@ -32,6 +32,7 @@ import { useDialog } from '../contexts/DialogContext';
 
 // กำหนด Interface สำหรับข้อมูลลูกค้าที่มีวันสิ้นอายุภาษีปีถัดไป
 interface TaxExpiryData {
+  sequenceNumber?: number;
   licensePlate: string;
   customerName: string;
   phone: string;
@@ -197,10 +198,12 @@ function getPageNumbers(currentPage: number, totalPages: number, maxPages = 5) {
 }
 
 const TaxExpiryRow = memo(function TaxExpiryRow({ 
-  item, 
+  item,
+  rowNumber,
   notificationStatus 
 }: { 
   item: TaxExpiryData;
+  rowNumber: number;
   notificationStatus: NotificationStatus;
 }) {
   const isSent = notificationStatus[item.licensePlate]?.sent || false;
@@ -208,6 +211,9 @@ const TaxExpiryRow = memo(function TaxExpiryRow({
   
   return (
     <tr className="hover:bg-gray-50 dark:hover:bg-gray-700">
+      <td className="px-6 py-5 align-middle text-sm font-bold text-blue-600 dark:text-blue-400">
+        {item.sequenceNumber ? String(item.sequenceNumber).padStart(6, '0') : String(rowNumber).padStart(6, '0')}
+      </td>
       <td className="px-6 py-5 align-middle text-sm font-medium text-gray-900 dark:text-white">{item.licensePlate}</td>
       <td className="px-6 py-5 align-middle text-sm text-gray-900 dark:text-white">{item.customerName}</td>
       <td className="px-6 py-5 align-middle text-sm text-gray-900 dark:text-white">{item.phone}</td>
@@ -724,8 +730,8 @@ export default function TaxExpiryNextYearPage() {
       console.log('Customer data length:', customerData.length);
       console.log('First item:', customerData[0]);
       
-      const formatted: TaxExpiryData[] = customerData
-        .map((item) => {
+      const formatted = customerData
+        .map((item): TaxExpiryData | null => {
           // ดึงวันครบกำหนดจากข้อมูล MongoDB
           let expiryDate = item.expiryDate || item.nextTaxDate || '';
           
@@ -773,6 +779,7 @@ export default function TaxExpiryNextYearPage() {
           const lastTaxDate = item.lastTaxDate || item.registerDate || '';
           const status = calculateStatus(lastTaxDate);
           return {
+            sequenceNumber: item.sequenceNumber || 0,
             licensePlate: item.licensePlate || '',
             customerName: item.customerName || '',
             phone,
@@ -782,11 +789,15 @@ export default function TaxExpiryNextYearPage() {
             status
           };
         })
-        .filter((item: TaxExpiryData | null): item is TaxExpiryData => item !== null);
+        .filter((item): item is TaxExpiryData => item !== null);
       
-      // เรียงข้อมูลให้แถวล่าสุดอยู่บนสุด (reverse order)
-      const reversedData = formatted.reverse();
-      setData(reversedData);
+      // เรียงข้อมูลตาม sequenceNumber จากมากไปน้อย (ข้อมูลใหม่อยู่บนสุด)
+      const sortedData: TaxExpiryData[] = formatted.sort((a, b) => {
+        const seqA = a.sequenceNumber || 0;
+        const seqB = b.sequenceNumber || 0;
+        return seqB - seqA; // เรียงจากมากไปน้อย
+      });
+      setData(sortedData);
       
       console.log('Formatted data length:', formatted.length);
     }
@@ -801,12 +812,14 @@ export default function TaxExpiryNextYearPage() {
 
   const filteredData: TaxExpiryData[] = useMemo(() => data
     .filter(item => {
-      // กรองตามการค้นหา
+      // กรองตามการค้นหา (รวมเลขลำดับด้วย)
       const searchLower = search.toLowerCase();
+      const sequenceStr = item.sequenceNumber ? String(item.sequenceNumber).padStart(6, '0') : '';
       const matchesSearch = !search || 
         item.licensePlate.toLowerCase().includes(searchLower) ||
         item.customerName.toLowerCase().includes(searchLower) ||
-        item.phone.includes(search);
+        item.phone.includes(search) ||
+        sequenceStr.includes(search);
 
       // กรองตามเดือน
       const expiryMonth = new Date(item.expiryDate).getMonth() + 1;
@@ -944,16 +957,16 @@ export default function TaxExpiryNextYearPage() {
         {/* Filters */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-            <div className="relative">
-              <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="ค้นหาทะเบียนรถ, ชื่อลูกค้า, เบอร์โทร"
-                value={search}
-                onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              />
-            </div>
+              <div className="relative">
+                <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="ค้นหาเลขลำดับ, ทะเบียนรถ, ชื่อลูกค้า, เบอร์โทร"
+                  value={search}
+                  onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+              </div>
             
             <FilterDropdown
               value={filterMonth}
@@ -1031,6 +1044,9 @@ export default function TaxExpiryNextYearPage() {
                   <thead className="bg-gray-50 dark:bg-gray-700">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        ลำดับ
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                         ทะเบียนรถ
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -1059,7 +1075,7 @@ export default function TaxExpiryNextYearPage() {
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                     {currentData.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
+                        <td colSpan={9} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
                           ไม่พบข้อมูลภาษีครั้งถัดไป
                         </td>
                       </tr>
@@ -1068,6 +1084,7 @@ export default function TaxExpiryNextYearPage() {
                         <TaxExpiryRow 
                           key={item.licensePlate + item.customerName + idx} 
                           item={item}
+                          rowNumber={startIndex + idx + 1}
                           notificationStatus={notificationStatus}
                         />
                       ))
@@ -1238,8 +1255,8 @@ export default function TaxExpiryNextYearPage() {
                           <div className="flex items-start gap-4">
                             {/* เลขลำดับ */}
                             <div className="flex-shrink-0">
-                              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center font-bold text-xl shadow-lg">
-                                {idx + 1}
+                              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-lg">
+                                {item.sequenceNumber ? String(item.sequenceNumber).padStart(6, '0') : String(idx + 1).padStart(6, '0')}
                               </div>
                             </div>
                             
@@ -1483,8 +1500,8 @@ export default function TaxExpiryNextYearPage() {
                             <div className="flex items-start gap-4">
                               {/* เลขลำดับ */}
                               <div className="flex-shrink-0">
-                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-green-600 text-white flex items-center justify-center font-bold text-xl shadow-lg">
-                                  {idx + 1}
+                                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-green-500 to-green-600 text-white flex items-center justify-center font-bold text-sm shadow-lg">
+                                  {carData?.sequenceNumber ? String(carData.sequenceNumber).padStart(6, '0') : String(idx + 1).padStart(6, '0')}
                                 </div>
                               </div>
                               

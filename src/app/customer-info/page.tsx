@@ -143,8 +143,16 @@ export default function CustomerInfoPage() {
       const dateStr = formatDateFlexible(item.registerDate);
       const [dd, mm, yyyy] = dateStr.split('/');
       if (!dd || !mm || !yyyy) return false;
-      const matchSearch = item.licensePlate.toLowerCase().includes(search.toLowerCase()) ||
-                         item.customerName.toLowerCase().includes(search.toLowerCase());
+      
+      // กรองตามการค้นหา (รวมเลขลำดับด้วย)
+      const searchLower = search.toLowerCase();
+      const sequenceStr = item.sequenceNumber ? String(item.sequenceNumber).padStart(6, '0') : '';
+      const matchSearch = !search || 
+        item.licensePlate.toLowerCase().includes(searchLower) ||
+        item.customerName.toLowerCase().includes(searchLower) ||
+        item.phone.includes(search) ||
+        sequenceStr.includes(search);
+      
       // ลบ matchDay ออก
       const matchMonth = !filterMonth || mm === filterMonth.padStart(2, '0');
       const matchStatus = !filterStatus || item.status === filterStatus;
@@ -266,7 +274,7 @@ export default function CustomerInfoPage() {
                 <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="ค้นหาทะเบียนรถ, ชื่อลูกค้า, เบอร์โทร"
+                  placeholder="ค้นหาเลขลำดับ, ทะเบียนรถ, ชื่อลูกค้า, เบอร์โทร"
                   value={search}
                   onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
@@ -345,6 +353,7 @@ export default function CustomerInfoPage() {
                   <table className="w-full">
                     <thead className="bg-gray-50 dark:bg-gray-700">
                       <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ลำดับ</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ทะเบียนรถ</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ประเภท</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ยี่ห้อ</th>
@@ -359,7 +368,7 @@ export default function CustomerInfoPage() {
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                       {paginatedData.length === 0 ? (
                         <tr>
-                          <td colSpan={9} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
+                          <td colSpan={10} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
                             ไม่พบข้อมูลที่ตรงกับตัวกรอง
                           </td>
                         </tr>
@@ -367,7 +376,8 @@ export default function CustomerInfoPage() {
                         paginatedData.map((item, idx) => (
                           <CustomerRow 
                             key={item.licensePlate + item.customerName + idx} 
-                            item={item} 
+                            item={item}
+                            rowNumber={startIdx + idx + 1}
                             onView={(customer) => {
                               setSelectedCustomer(customer);
                               setIsViewModalOpen(true);
@@ -444,7 +454,9 @@ export default function CustomerInfoPage() {
       <Modal isOpen={isAddModalOpen}>
         <AddCustomerForm
           onSuccess={() => { 
-            setIsAddModalOpen(false); 
+            setIsAddModalOpen(false);
+            setCurrentPage(1); // กลับไปหน้าแรก
+            setSearch(''); // เคลียร์การค้นหา
             refreshData(); // บังคับ refresh ข้อมูล
           }}
           onCancel={() => setIsAddModalOpen(false)}
@@ -465,7 +477,8 @@ export default function CustomerInfoPage() {
           }}
           onSuccess={() => { 
             setIsEditModalOpen(false); 
-            setSelectedCustomer(null); 
+            setSelectedCustomer(null);
+            setCurrentPage(1); // กลับไปหน้าแรก
             refreshData(); // บังคับ refresh ข้อมูล
           }}
           onCancel={() => { setIsEditModalOpen(false); setSelectedCustomer(null); }}
@@ -658,14 +671,19 @@ export default function CustomerInfoPage() {
 
 // Table Row Memoized
 const CustomerRow = memo(function CustomerRow({ 
-  item, 
+  item,
+  rowNumber,
   onView 
 }: { 
-  item: CustomerData; 
+  item: CustomerData;
+  rowNumber: number;
   onView: (customer: CustomerData) => void;
 }) {
   return (
     <tr className="hover:bg-gray-50 dark:hover:bg-gray-700">
+      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600 dark:text-blue-400">
+        {item.sequenceNumber ? String(item.sequenceNumber).padStart(6, '0') : String(rowNumber).padStart(6, '0')}
+      </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{item.licensePlate}</td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
         {item.vehicleType ? (
