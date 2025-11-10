@@ -36,16 +36,14 @@ export default function AnimatedPage({ children }: AnimatedPageProps) {
   return (
     <motion.div
       // ใช้ motion.div เป็นตัวครอบหลักเพื่อให้สามารถใส่อนิเมชั่นได้
-      className="flex flex-col items-center justify-center min-h-screen p-8 sm:p-20 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+      className="w-full h-full"
       variants={containerVariants}
       initial="hidden" // กำหนดสถานะเริ่มต้นของอนิเมชั่น
       animate="show"   // กำหนดสถานะเมื่ออนิเมชั่นทำงาน
       exit="exit"    // กำหนดสถานะเมื่อเปลี่ยนหน้าออก (มีประโยชน์เมื่อใช้กับ AnimatePresence)
     >
-      <main className="flex flex-col gap-8 items-center text-center w-full">
-        {/* แสดงผล "children" หรือเนื้อหาของหน้าที่ถูกส่งเข้ามา */}
-        {children}
-      </main>
+      {/* แสดงผล "children" หรือเนื้อหาของหน้าที่ถูกส่งเข้ามา */}
+      {children}
     </motion.div>
   );
 }

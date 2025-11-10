@@ -396,7 +396,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
         </motion.header>
 
-        <main className="flex-1 p-5 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto">
           {children} {/* children คือ BillingMainPage ของคุณ */}
         </main>
       </motion.div>

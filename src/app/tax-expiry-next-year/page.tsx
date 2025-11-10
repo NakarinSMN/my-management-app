@@ -22,13 +22,18 @@ import {
   faCheck,
   faTrash,
   faSync,
-  faSpinner
+  faSpinner,
+  faFilter,
+  faStar
 } from '@fortawesome/free-solid-svg-icons';
 
 // ⚡ ใช้ Custom Hook แทน useSWR
 import { useCustomerData } from '@/lib/useCustomerData';
+import { useDebounce } from '@/lib/useDebounce';
 import FilterDropdown from '../components/FilterDropdown';
 import { useDialog } from '../contexts/DialogContext';
+import AdvancedFilterModal, { AdvancedFilters } from '../components/AdvancedFilterModal';
+import TaxExpiryCard from '../components/TaxExpiryCard';
 
 // กำหนด Interface สำหรับข้อมูลลูกค้าที่มีวันสิ้นอายุภาษีปีถัดไป
 interface TaxExpiryData {
@@ -40,6 +45,8 @@ interface TaxExpiryData {
   expiryDate: string;
   daysUntilExpiry: number;
   status: string;
+  brand?: string;
+  vehicleType?: string;
 }
 
 // Interface สำหรับสถานะการส่งข้อความ
@@ -188,38 +195,78 @@ function calculateStatus(registerDate: string): string {
 }
 
 function getPageNumbers(currentPage: number, totalPages: number, maxPages = 5) {
-  let start = Math.max(1, currentPage - Math.floor(maxPages / 2));
-  let end = start + maxPages - 1;
-  if (end > totalPages) {
-    end = totalPages;
-    start = Math.max(1, end - maxPages + 1);
+  const pages: (number | string)[] = [];
+  
+  if (totalPages <= maxPages + 2) {
+    // แสดงทุกหน้าถ้าไม่เยอะมาก
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
   }
-  return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+  
+  // เสมอแสดงหน้าแรก
+  pages.push(1);
+  
+  if (currentPage > 3) {
+    pages.push('...');
+  }
+  
+  // แสดงหน้าปัจจุบันและข้างเคียง
+  const start = Math.max(2, currentPage - 1);
+  const end = Math.min(totalPages - 1, currentPage + 1);
+  
+  for (let i = start; i <= end; i++) {
+    pages.push(i);
+  }
+  
+  if (currentPage < totalPages - 2) {
+    pages.push('...');
+  }
+  
+  // เสมอแสดงหน้าสุดท้าย
+  if (totalPages > 1) {
+    pages.push(totalPages);
+  }
+  
+  return pages;
 }
 
 const TaxExpiryRow = memo(function TaxExpiryRow({ 
   item,
   rowNumber,
-  notificationStatus 
+  notificationStatus,
+  isFavorite,
+  onToggleFavorite
 }: { 
   item: TaxExpiryData;
   rowNumber: number;
   notificationStatus: NotificationStatus;
+  isFavorite: boolean;
+  onToggleFavorite: (licensePlate: string) => void;
 }) {
   const isSent = notificationStatus[item.licensePlate]?.sent || false;
   const sentAt = notificationStatus[item.licensePlate]?.sentAt;
   
   return (
     <tr className="hover:bg-gray-50 dark:hover:bg-gray-700">
-      <td className="px-6 py-5 align-middle text-sm font-bold text-blue-600 dark:text-blue-400">
-        {item.sequenceNumber ? String(item.sequenceNumber).padStart(6, '0') : String(rowNumber).padStart(6, '0')}
+      <td className="px-6 py-4 whitespace-nowrap text-sm">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => onToggleFavorite(item.licensePlate)}
+            className="text-yellow-500 hover:text-yellow-600 transition-colors"
+            title={isFavorite ? "ลบออกจากรายการโปรด" : "เพิ่มในรายการโปรด"}
+          >
+            <FontAwesomeIcon icon={faStar} className={isFavorite ? 'text-yellow-500' : 'text-gray-300 dark:text-gray-600'} />
+          </button>
+          <span className="font-bold text-blue-600 dark:text-blue-400">
+            {item.sequenceNumber ? String(item.sequenceNumber).padStart(6, '0') : String(rowNumber).padStart(6, '0')}
+          </span>
+        </div>
       </td>
-      <td className="px-6 py-5 align-middle text-sm font-medium text-gray-900 dark:text-white">{item.licensePlate}</td>
-      <td className="px-6 py-5 align-middle text-sm text-gray-900 dark:text-white">{item.customerName}</td>
-      <td className="px-6 py-5 align-middle text-sm text-gray-900 dark:text-white">{item.phone}</td>
-      <td className="px-6 py-5 align-middle text-sm text-gray-900 dark:text-white">{formatDate(item.lastTaxDate)}</td>
-      <td className="px-6 py-5 align-middle text-sm text-gray-900 dark:text-white">{formatDate(item.expiryDate)}</td>
-      <td className="px-6 py-5 align-middle font-medium">
+      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{item.licensePlate}</td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.customerName}</td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.phone}</td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{formatDate(item.lastTaxDate)}</td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{formatDate(item.expiryDate)}</td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
         <span className={
           item.daysUntilExpiry < 0 ? 'text-red-600 dark:text-red-400' :
           item.daysUntilExpiry <= 30 ? 'text-orange-600 dark:text-orange-400' :
@@ -231,13 +278,13 @@ const TaxExpiryRow = memo(function TaxExpiryRow({
             `${item.daysUntilExpiry} วัน`}
         </span>
       </td>
-      <td className="px-6 py-5 align-middle">
+      <td className="px-6 py-4 whitespace-nowrap">
         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor[item.status]}`}>
           <FontAwesomeIcon icon={statusIcon[item.status]} className="mr-1" />
           {item.status}
         </span>
       </td>
-      <td className="px-6 py-5 align-middle">
+      <td className="px-6 py-4 whitespace-nowrap">
         {isSent ? (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-100">
             <FontAwesomeIcon icon={faCheck} className="mr-1" />
@@ -281,12 +328,46 @@ export default function TaxExpiryNextYearPage() {
   const [showSentHistoryModal, setShowSentHistoryModal] = useState<boolean>(false);
   const [isClearingBoard, setIsClearingBoard] = useState<boolean>(false);
   const [isCreatingNew, setIsCreatingNew] = useState<boolean>(false);
+  const [jumpToPage, setJumpToPage] = useState<string>('');
+  const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>({
+    dateFrom: '',
+    dateTo: '',
+    selectedBrands: [],
+    selectedVehicleTypes: []
+  });
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
   // ⚡ ใช้ Custom Hook พร้อม Cache
   const { data: customerData, error: swrError, isLoading, refreshData } = useCustomerData();
 
   // ⚡ ใช้ Dialog Hook
   const { showSuccess, showError, showConfirm } = useDialog();
+  
+  // ⚡ Debounce search เพื่อลด re-render
+  const debouncedSearch = useDebounce(search, 300);
+
+  // โหลด favorites จาก localStorage
+  useEffect(() => {
+    const savedFavorites = localStorage.getItem('tax-expiry-favorites');
+    if (savedFavorites) {
+      setFavorites(new Set(JSON.parse(savedFavorites)));
+    }
+  }, []);
+
+  // บันทึก favorites ลง localStorage
+  const toggleFavorite = (licensePlate: string) => {
+    setFavorites(prev => {
+      const newFavorites = new Set(prev);
+      if (newFavorites.has(licensePlate)) {
+        newFavorites.delete(licensePlate);
+      } else {
+        newFavorites.add(licensePlate);
+      }
+      localStorage.setItem('tax-expiry-favorites', JSON.stringify(Array.from(newFavorites)));
+      return newFavorites;
+    });
+  };
 
   // โหลดสถานะการส่งข้อความจาก MongoDB
   const loadNotificationStatus = async () => {
@@ -786,7 +867,9 @@ export default function TaxExpiryNextYearPage() {
             lastTaxDate: item.lastTaxDate || item.registerDate || '',
             expiryDate,
             daysUntilExpiry,
-            status
+            status,
+            brand: item.brand,
+            vehicleType: item.vehicleType
           };
         })
         .filter((item): item is TaxExpiryData => item !== null);
@@ -810,16 +893,46 @@ export default function TaxExpiryNextYearPage() {
     setCurrentPage(1);
   };
 
+  const resetAllFilters = () => {
+    setSearch('');
+    setFilterMonth('');
+    setFilterStatus('');
+    setAdvancedFilters({
+      dateFrom: '',
+      dateTo: '',
+      selectedBrands: [],
+      selectedVehicleTypes: []
+    });
+    setCurrentPage(1);
+  };
+
+  // สร้างรายการ brands และ vehicle types ที่ unique
+  const uniqueBrands = useMemo(() => {
+    const brands = new Set<string>();
+    customerData?.forEach(customer => {
+      if (customer.brand) brands.add(customer.brand);
+    });
+    return Array.from(brands).sort();
+  }, [customerData]);
+
+  const uniqueVehicleTypes = useMemo(() => {
+    const types = new Set<string>();
+    customerData?.forEach(customer => {
+      if (customer.vehicleType) types.add(customer.vehicleType);
+    });
+    return Array.from(types).sort();
+  }, [customerData]);
+
   const filteredData: TaxExpiryData[] = useMemo(() => data
     .filter(item => {
-      // กรองตามการค้นหา (รวมเลขลำดับด้วย)
-      const searchLower = search.toLowerCase();
+      // กรองตามการค้นหา (ใช้ debouncedSearch แทน search)
+      const searchLower = debouncedSearch.toLowerCase();
       const sequenceStr = item.sequenceNumber ? String(item.sequenceNumber).padStart(6, '0') : '';
-      const matchesSearch = !search || 
+      const matchesSearch = !debouncedSearch || 
         item.licensePlate.toLowerCase().includes(searchLower) ||
         item.customerName.toLowerCase().includes(searchLower) ||
-        item.phone.includes(search) ||
-        sequenceStr.includes(search);
+        item.phone.includes(debouncedSearch) ||
+        sequenceStr.includes(debouncedSearch);
 
       // กรองตามเดือน
       const expiryMonth = new Date(item.expiryDate).getMonth() + 1;
@@ -828,14 +941,86 @@ export default function TaxExpiryNextYearPage() {
       // กรองตามสถานะ
       const matchesStatus = !filterStatus || item.status === filterStatus;
 
-      return matchesSearch && matchesMonth && matchesStatus;
-    }), [data, search, filterMonth, filterStatus]);
+      // กรองตาม Advanced Filters - ช่วงวันที่
+      let matchesDateRange = true;
+      if (advancedFilters.dateFrom || advancedFilters.dateTo) {
+        const lastTaxDate = new Date(item.lastTaxDate);
+        if (advancedFilters.dateFrom) {
+          const fromDate = new Date(advancedFilters.dateFrom);
+          matchesDateRange = matchesDateRange && lastTaxDate >= fromDate;
+        }
+        if (advancedFilters.dateTo) {
+          const toDate = new Date(advancedFilters.dateTo);
+          matchesDateRange = matchesDateRange && lastTaxDate <= toDate;
+        }
+      }
+
+      // กรองตาม brands
+      const matchesBrand = advancedFilters.selectedBrands.length === 0 || 
+        (item.brand && advancedFilters.selectedBrands.includes(item.brand));
+
+      // กรองตาม vehicle types
+      const matchesVehicleType = advancedFilters.selectedVehicleTypes.length === 0 || 
+        (item.vehicleType && advancedFilters.selectedVehicleTypes.includes(item.vehicleType));
+
+      return matchesSearch && matchesMonth && matchesStatus && matchesDateRange && matchesBrand && matchesVehicleType;
+    }), [data, debouncedSearch, filterMonth, filterStatus, advancedFilters]);
+
+  // นับจำนวน active filters
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (advancedFilters.dateFrom || advancedFilters.dateTo) count++;
+    if (advancedFilters.selectedBrands.length > 0) count += advancedFilters.selectedBrands.length;
+    if (advancedFilters.selectedVehicleTypes.length > 0) count += advancedFilters.selectedVehicleTypes.length;
+    return count;
+  }, [advancedFilters]);
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   // ใน pagination และการ slice ข้อมูล ให้รองรับ itemsPerPage = filteredData.length (all)
   const currentData = useMemo(() => itemsPerPage === filteredData.length ? filteredData : filteredData.slice(startIndex, endIndex), [filteredData, itemsPerPage, startIndex, endIndex]);
+
+  // Handler สำหรับกระโดดไปหน้าที่ต้องการ
+  const handleJumpToPage = () => {
+    const page = parseInt(jumpToPage);
+    if (!isNaN(page) && page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+      setJumpToPage('');
+    }
+  };
+
+  // Keyboard shortcuts สำหรับเปลี่ยนหน้า
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // ป้องกันไม่ให้ทำงานถ้ากำลังพิมพ์ใน input/textarea หรือเปิด modal
+      if (
+        e.target instanceof HTMLInputElement || 
+        e.target instanceof HTMLTextAreaElement ||
+        showNotificationModal ||
+        showSentHistoryModal
+      ) {
+        return;
+      }
+
+      if (e.key === 'ArrowLeft' && currentPage > 1) {
+        e.preventDefault();
+        setCurrentPage(currentPage - 1);
+      } else if (e.key === 'ArrowRight' && currentPage < totalPages) {
+        e.preventDefault();
+        setCurrentPage(currentPage + 1);
+      } else if (e.key === 'Home' && currentPage !== 1) {
+        e.preventDefault();
+        setCurrentPage(1);
+      } else if (e.key === 'End' && currentPage !== totalPages) {
+        e.preventDefault();
+        setCurrentPage(totalPages);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [currentPage, totalPages, showNotificationModal, showSentHistoryModal]);
 
   const monthOptions = [
     { value: '', label: 'ทุกเดือน', color: '#6B7280' },
@@ -862,11 +1047,12 @@ export default function TaxExpiryNextYearPage() {
     { value: 'รอดำเนินการ', label: 'รอดำเนินการ', color: '#6B7280' },
   ];
 
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="w-full h-full">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6 px-3 pt-3">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
@@ -908,7 +1094,7 @@ export default function TaxExpiryNextYearPage() {
           </div>
 
           {/* สถิติสรุป */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
               <div className="flex items-center">
                 <FontAwesomeIcon icon={faInfoCircle} className="text-blue-500 mr-2" />
@@ -955,16 +1141,16 @@ export default function TaxExpiryNextYearPage() {
         </div>
 
         {/* Filters */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-2 mb-3 mx-3">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
               <div className="relative">
-                <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <FontAwesomeIcon icon={faSearch} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
                 <input
                   type="text"
                   placeholder="ค้นหาเลขลำดับ, ทะเบียนรถ, ชื่อลูกค้า, เบอร์โทร"
                   value={search}
                   onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full pl-7 pr-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
                 />
               </div>
             
@@ -1002,43 +1188,115 @@ export default function TaxExpiryNextYearPage() {
               ]}
             />
             
+            {/* Advanced Filter Button */}
             <button
-              onClick={resetFilters}
-              className="px-3 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors w-full font-medium text-sm"
+              onClick={() => setShowAdvancedFilter(true)}
+              className="relative px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors w-full font-medium text-xs flex items-center justify-center gap-1.5"
             >
-              รีเซ็ต
+              <FontAwesomeIcon icon={faFilter} />
+              ตัวกรองขั้นสูง
+              {activeFiltersCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                  {activeFiltersCount}
+                </span>
+              )}
+            </button>
+            
+            <button
+              onClick={resetAllFilters}
+              className="px-3 py-1.5 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors w-full font-medium text-xs"
+            >
+              รีเซ็ตทั้งหมด
             </button>
           </div>
-        </div>
 
-        {/* Data Table */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-          {isLoading ? (
-            <div className="flex items-center justify-center p-8 w-full">
-              <div className="w-full">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="animate-pulse flex space-x-4 mb-4">
-                    <div className="rounded bg-gray-200 dark:bg-gray-700 h-6 w-1/6"></div>
-                    <div className="rounded bg-gray-200 dark:bg-gray-700 h-6 w-1/4"></div>
-                    <div className="rounded bg-gray-200 dark:bg-gray-700 h-6 w-1/5"></div>
-                    <div className="rounded bg-gray-200 dark:bg-gray-700 h-6 w-1/5"></div>
-                    <div className="rounded bg-gray-200 dark:bg-gray-700 h-6 w-1/6"></div>
-                  </div>
+          {/* Active Filters Display */}
+          {activeFiltersCount > 0 && (
+            <div className="mt-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-3 border border-indigo-200 dark:border-indigo-800">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">ตัวกรองที่เปิดใช้งาน:</p>
+                <button
+                  onClick={resetAllFilters}
+                  className="text-[10px] text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200 underline"
+                >
+                  ล้างทั้งหมด
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {(advancedFilters.dateFrom || advancedFilters.dateTo) && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-[10px] font-medium">
+                    <FontAwesomeIcon icon={faCalendarAlt} />
+                    {advancedFilters.dateFrom && `จาก ${advancedFilters.dateFrom}`}
+                    {advancedFilters.dateTo && ` ถึง ${advancedFilters.dateTo}`}
+                  </span>
+                )}
+                {advancedFilters.selectedBrands.map(brand => (
+                  <span key={brand} className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-md text-[10px] font-medium">
+                    {brand}
+                  </span>
+                ))}
+                {advancedFilters.selectedVehicleTypes.map(type => (
+                  <span key={type} className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-md text-[10px] font-medium">
+                    {type}
+                  </span>
                 ))}
               </div>
             </div>
-          ) : swrError ? (
-            <div className="p-8 text-center">
-              <p className="text-red-500 mb-4">เกิดข้อผิดพลาดในการโหลดข้อมูล</p>
-              <button
-                onClick={refreshData}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                ลองใหม่
-              </button>
+          )}
+        </div>
+
+        {/* Data Display - Table for Desktop, Cards for Mobile */}
+        {isLoading ? (
+          <div className="flex items-center justify-center p-8 w-full">
+            <div className="w-full">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="animate-pulse flex space-x-4 mb-4">
+                  <div className="rounded bg-gray-200 dark:bg-gray-700 h-6 w-1/6"></div>
+                  <div className="rounded bg-gray-200 dark:bg-gray-700 h-6 w-1/4"></div>
+                  <div className="rounded bg-gray-200 dark:bg-gray-700 h-6 w-1/5"></div>
+                  <div className="rounded bg-gray-200 dark:bg-gray-700 h-6 w-1/5"></div>
+                  <div className="rounded bg-gray-200 dark:bg-gray-700 h-6 w-1/6"></div>
+                </div>
+              ))}
             </div>
-          ) : (
-            <>
+          </div>
+        ) : swrError ? (
+          <div className="p-8 text-center">
+            <p className="text-red-500 mb-4">เกิดข้อผิดพลาดในการโหลดข้อมูล</p>
+            <button
+              onClick={refreshData}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              ลองใหม่
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Mobile Card View */}
+            <div className="md:hidden px-3 space-y-3 mb-4">
+              {paginatedData.length === 0 ? (
+                <div className="text-center py-10 text-gray-500 dark:text-gray-400">
+                  ไม่พบข้อมูลที่ตรงกับตัวกรอง
+                </div>
+              ) : (
+                paginatedData.map((item, idx) => (
+                  <TaxExpiryCard
+                    key={item.licensePlate + item.customerName + idx}
+                    item={item}
+                    rowNumber={startIdx + idx + 1}
+                    notificationStatus={notificationStatus}
+                    isFavorite={favorites.has(item.licensePlate)}
+                    onToggleFavorite={toggleFavorite}
+                    statusColor={statusColor}
+                    statusIcon={statusIcon}
+                    formatDate={formatDateFlexible}
+                  />
+                ))
+              )}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden mx-3 mb-4">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50 dark:bg-gray-700">
@@ -1076,7 +1334,7 @@ export default function TaxExpiryNextYearPage() {
                     {currentData.length === 0 ? (
                       <tr>
                         <td colSpan={9} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
-                          ไม่พบข้อมูลภาษีครั้งถัดไป
+                          ไม่พบข้อมูลที่ตรงกับตัวกรอง
                         </td>
                       </tr>
                     ) : (
@@ -1086,66 +1344,168 @@ export default function TaxExpiryNextYearPage() {
                           item={item}
                           rowNumber={startIndex + idx + 1}
                           notificationStatus={notificationStatus}
+                          isFavorite={favorites.has(item.licensePlate)}
+                          onToggleFavorite={toggleFavorite}
                         />
                       ))
                     )}
                   </tbody>
                 </table>
               </div>
+            </div>
 
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="bg-white dark:bg-gray-800 px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700">
-                  <div className="flex-1 flex justify-between sm:hidden">
+            {/* Pagination - แสดงทั้ง Mobile และ Desktop */}
+            {totalPages > 1 && (
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow px-4 py-4 mx-3 mt-3">
+                  {/* Mobile Pagination */}
+                  <div className="flex flex-col gap-2 sm:hidden">
+                    <div className="flex justify-between items-center">
                     <button
                       onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                       disabled={currentPage === 1}
-                      className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                        className="relative inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-xs font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50"
                     >
                       ก่อนหน้า
                     </button>
+                      <span className="text-xs text-gray-700 dark:text-gray-300">
+                        หน้า {currentPage} / {totalPages}
+                      </span>
                     <button
                       onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                       disabled={currentPage === totalPages}
-                      className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                        className="relative inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-xs font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50"
                     >
                       ถัดไป
                     </button>
                   </div>
-                  <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                    <div className="flex items-center justify-center gap-2">
+                      <span className="text-xs text-gray-600 dark:text-gray-400">ไปหน้า:</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max={totalPages}
+                        value={jumpToPage}
+                        onChange={(e) => setJumpToPage(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && handleJumpToPage()}
+                        placeholder={currentPage.toString()}
+                        className="w-14 px-2 py-0.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <button
+                        onClick={handleJumpToPage}
+                        className="px-2.5 py-0.5 text-xs font-medium rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                      >
+                        ไป
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Desktop Pagination */}
+                  <div className="hidden sm:flex sm:flex-col sm:gap-2">
+                    <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-gray-700 dark:text-gray-300">
+                        <p className="text-xs text-gray-700 dark:text-gray-300">
                         แสดง <span className="font-medium">{startIndex + 1}</span> ถึง{' '}
                         <span className="font-medium">{Math.min(endIndex, filteredData.length)}</span> จาก{' '}
-                        <span className="font-medium">{filteredData.length}</span> รายการ
+                          <span className="font-medium">{filteredData.length.toLocaleString()}</span> รายการ
+                          <span className="text-gray-500 dark:text-gray-400 ml-2">
+                            (หน้า {currentPage} / {totalPages})
+                          </span>
                       </p>
                     </div>
-                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-600 dark:text-gray-400">ไปหน้า:</span>
+                        <input
+                          type="number"
+                          min="1"
+                          max={totalPages}
+                          value={jumpToPage}
+                          onChange={(e) => setJumpToPage(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && handleJumpToPage()}
+                          placeholder={currentPage.toString()}
+                          className="w-16 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <button
+                          onClick={handleJumpToPage}
+                          className="px-3 py-1 text-xs font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                        >
+                          ไป
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex justify-center">
                       <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                        <PageButton
+                        {/* First Page Button */}
+                        <button
+                          onClick={() => setCurrentPage(1)}
+                          disabled={currentPage === 1}
+                          className="relative inline-flex items-center px-2 py-1.5 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-xs font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="หน้าแรก"
+                        >
+                          <span className="sr-only">หน้าแรก</span>
+                          «
+                        </button>
+                        
+                        {/* Previous Page Button */}
+                        <button
                           onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                           disabled={currentPage === 1}
-                          icon={faChevronLeft}
-                        />
-                        {getPageNumbers(currentPage, totalPages).map(page => (
+                          className="relative inline-flex items-center px-2 py-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="หน้าก่อนหน้า"
+                        >
+                          <FontAwesomeIcon icon={faChevronLeft} />
+                        </button>
+                        
+                        {/* Page Numbers */}
+                        {getPageNumbers(currentPage, totalPages).map((page, idx) => (
+                          typeof page === 'number' ? (
                           <button
-                            key={page}
+                              key={`page-${page}`}
                             onClick={() => setCurrentPage(page)}
-                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                              className={`relative inline-flex items-center px-3 py-1.5 border text-xs font-medium transition-colors ${
                               currentPage === page
-                                ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                                : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                                  ? 'z-10 bg-blue-50 dark:bg-blue-900 border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-300'
+                                  : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
                             }`}
                           >
                             {page}
                           </button>
+                          ) : (
+                            <span
+                              key={`ellipsis-${idx}`}
+                              className="relative inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-xs font-medium text-gray-700 dark:text-gray-300"
+                            >
+                              {page}
+                            </span>
+                          )
                         ))}
-                        <PageButton
+                        
+                        {/* Next Page Button */}
+                        <button
                           onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                           disabled={currentPage === totalPages}
-                          icon={faChevronRight}
-                        />
+                          className="relative inline-flex items-center px-2 py-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="หน้าถัดไป"
+                        >
+                          <FontAwesomeIcon icon={faChevronRight} />
+                        </button>
+                        
+                        {/* Last Page Button */}
+                        <button
+                          onClick={() => setCurrentPage(totalPages)}
+                          disabled={currentPage === totalPages}
+                          className="relative inline-flex items-center px-2 py-1.5 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-xs font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="หน้าสุดท้าย"
+                        >
+                          <span className="sr-only">หน้าสุดท้าย</span>
+                          »
+                        </button>
                       </nav>
+                    </div>
+                    {/* Keyboard Shortcuts Hint */}
+                    <div className="text-center">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        💡 ใช้ ← → สำหรับเปลี่ยนหน้า | Home/End สำหรับหน้าแรก/สุดท้าย
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1614,6 +1974,19 @@ export default function TaxExpiryNextYearPage() {
             </div>
           </div>
         )}
+
+        {/* Advanced Filter Modal */}
+        <AdvancedFilterModal
+          isOpen={showAdvancedFilter}
+          onClose={() => setShowAdvancedFilter(false)}
+          onApply={(filters) => {
+            setAdvancedFilters(filters);
+            setCurrentPage(1);
+          }}
+          brands={uniqueBrands}
+          vehicleTypes={uniqueVehicleTypes}
+          currentFilters={advancedFilters}
+        />
       </div>
     </div>
   );
