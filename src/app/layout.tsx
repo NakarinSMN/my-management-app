@@ -38,7 +38,7 @@ export default function RootLayout({
   return (
     <html lang="th" suppressHydrationWarning>
       <body className={`${inter.variable} ${kanit.variable}`} suppressHydrationWarning={true}>
-        <ThemeProvider attribute="class">
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} forcedTheme="light" storageKey="theme">
           <DialogProvider>
             <NotificationProvider>
               <Layout>

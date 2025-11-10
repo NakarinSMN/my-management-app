@@ -11,6 +11,7 @@ interface FilterDropdownProps {
   placeholder: string;
   options: { value: string; label: string; color?: string }[];
   className?: string;
+  showClearButton?: boolean;
 }
 
 export default function FilterDropdown({
@@ -19,7 +20,8 @@ export default function FilterDropdown({
   icon,
   placeholder,
   options,
-  className = ''
+  className = '',
+  showClearButton = true
 }: FilterDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -48,49 +50,49 @@ export default function FilterDropdown({
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={`
-          w-full flex items-center justify-between px-2 py-1.5
+          w-full flex items-center justify-between px-3 py-2.5
           border border-gray-300 dark:border-gray-600 
           rounded-lg bg-white dark:bg-gray-800 
-          text-gray-900 dark:text-white text-xs
-          hover:border-blue-500 dark:hover:border-blue-400
-          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+          text-gray-900 dark:text-white text-sm
+          hover:border-emerald-500 dark:hover:border-emerald-400
+          focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent
           transition-all duration-200
-          ${isOpen ? 'ring-2 ring-blue-500 border-blue-500' : ''}
+          ${isOpen ? 'ring-2 ring-emerald-500 border-emerald-500' : ''}
         `}
       >
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <FontAwesomeIcon 
             icon={icon} 
-            className="text-gray-400 dark:text-gray-500 text-xs" 
+            className="text-emerald-500 dark:text-emerald-400 text-sm" 
           />
           <span className={`font-medium ${hasValue ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
             {selectedOption ? selectedOption.label : placeholder}
           </span>
         </div>
         
-        <div className="flex items-center gap-1.5">
-          {hasValue && (
+        <div className="flex items-center gap-2">
+          {showClearButton && hasValue && (
             <div
               onClick={(e) => {
                 e.stopPropagation();
                 onChange('');
                 setIsOpen(false);
               }}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors text-xs cursor-pointer"
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors text-sm cursor-pointer"
             >
-              <FontAwesomeIcon icon={faTimes} className="text-xs" />
+              <FontAwesomeIcon icon={faTimes} className="text-sm" />
             </div>
           )}
           <FontAwesomeIcon 
             icon={faChevronDown} 
-            className={`text-gray-400 transition-transform duration-200 text-xs ${isOpen ? 'rotate-180' : ''}`}
+            className={`text-gray-400 transition-transform duration-200 text-sm ${isOpen ? 'rotate-180' : ''}`}
           />
         </div>
       </button>
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-0.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
           {options.map((option, index) => (
             <button
               key={index}
@@ -100,26 +102,26 @@ export default function FilterDropdown({
                 setIsOpen(false);
               }}
               className={`
-                w-full flex items-center justify-between px-2.5 py-1.5 text-left
-                hover:bg-gray-50 dark:hover:bg-gray-700
+                w-full flex items-center justify-between px-3 py-2.5 text-left
+                hover:bg-emerald-50 dark:hover:bg-emerald-900/20
                 transition-colors duration-150
-                ${option.value === value ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' : 'text-gray-900 dark:text-white'}
+                ${option.value === value ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300' : 'text-gray-900 dark:text-white'}
                 ${index === 0 ? 'rounded-t-lg' : ''}
                 ${index === options.length - 1 ? 'rounded-b-lg' : ''}
               `}
             >
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 {option.color && (
                   <div 
-                    className="w-1.5 h-1.5 rounded-full" 
+                    className="w-2 h-2 rounded-full" 
                     style={{ backgroundColor: option.color }}
                   />
                 )}
-                <span className="font-medium text-xs">{option.label}</span>
+                <span className="font-medium text-sm">{option.label}</span>
               </div>
               {option.value === value && (
-                <div className="text-blue-600 dark:text-blue-400">
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                <div className="text-emerald-600 dark:text-emerald-400">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
                 </div>

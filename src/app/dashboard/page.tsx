@@ -33,6 +33,7 @@ export default function DashboardPage() {
   const [inspectionMonthlyData, setInspectionMonthlyData] = useState<{month: string, count: number, monthNum: number, byType: Record<string, number>}[]>([]);
   const [inspectionDailyData, setInspectionDailyData] = useState<{day: number, count: number, byType: Record<string, number>}[]>([]);
   const [selectedInspectionMonth, setSelectedInspectionMonth] = useState<number | null>(null);
+  const [selectedInspectionYear, setSelectedInspectionYear] = useState<number>(new Date().getFullYear());
   const [inspection7DaysData, setInspection7DaysData] = useState<{date: string, count: number, byType: Record<string, number>}[]>([]);
   const [hoveredBar, setHoveredBar] = useState<{x: number, y: number, data: {label: string, count: number, details: Record<string, number>}} | null>(null);
 
@@ -183,7 +184,7 @@ export default function DashboardPage() {
         monthlyData[i] = { total: 0, byType: {} };
       }
       
-      // กรองเฉพาะที่มีแท็ก "ตรอ."
+      // กรองเฉพาะที่มีแท็ก "ตรอ." และปีที่เลือก
       customerData.data.forEach((item: Record<string, unknown>) => {
         const tags = item['tags'] as string[] | undefined;
         if (!tags || !tags.includes('ตรอ.')) return;
@@ -193,18 +194,23 @@ export default function DashboardPage() {
         
         if (lastInspectionDate) {
           let month = -1;
+          let year = -1;
           
           if (/^\d{2}\/\d{2}\/\d{4}$/.test(lastInspectionDate)) {
-            const [, mm] = lastInspectionDate.split('/');
+            const [, mm, yyyy] = lastInspectionDate.split('/');
             month = parseInt(mm) - 1;
+            year = parseInt(yyyy);
           } else if (/^\d{4}-\d{2}-\d{2}$/.test(lastInspectionDate)) {
-            const [, mm] = lastInspectionDate.split('-');
+            const [yyyy, mm] = lastInspectionDate.split('-');
             month = parseInt(mm) - 1;
+            year = parseInt(yyyy);
           } else if (lastInspectionDate.includes('T')) {
-            month = new Date(lastInspectionDate).getMonth();
+            const dateObj = new Date(lastInspectionDate);
+            month = dateObj.getMonth();
+            year = dateObj.getFullYear();
           }
           
-          if (month >= 0 && month < 12) {
+          if (month >= 0 && month < 12 && year === selectedInspectionYear) {
             monthlyData[month].total++;
             if (vehicleType) {
               monthlyData[month].byType[vehicleType] = (monthlyData[month].byType[vehicleType] || 0) + 1;
@@ -221,9 +227,9 @@ export default function DashboardPage() {
       }));
       
       setInspectionMonthlyData(array);
-      console.log('📊 Inspection Monthly Data:', array);
+      console.log('📊 Inspection Monthly Data (Year:', selectedInspectionYear, '):', array);
     }
-  }, [customerData]);
+  }, [customerData, selectedInspectionYear]);
 
   // คำนวณข้อมูลรายวัน (กรองเฉพาะที่มีแท็ก "ภาษี")
   useEffect(() => {
@@ -284,15 +290,14 @@ export default function DashboardPage() {
   // คำนวณข้อมูลตรวจรถรายวัน
   useEffect(() => {
     if (customerData && customerData.data && selectedInspectionMonth !== null) {
-      const currentYear = new Date().getFullYear();
-      const daysInMonth = new Date(currentYear, selectedInspectionMonth + 1, 0).getDate();
+      const daysInMonth = new Date(selectedInspectionYear, selectedInspectionMonth + 1, 0).getDate();
       
       const dailyData: {[key: number]: {total: number, byType: Record<string, number>}} = {};
       for (let i = 1; i <= daysInMonth; i++) {
         dailyData[i] = { total: 0, byType: {} };
       }
       
-      // กรองเฉพาะที่มีแท็ก "ตรอ."
+      // กรองเฉพาะที่มีแท็ก "ตรอ." และปีที่เลือก
       customerData.data.forEach((item: Record<string, unknown>) => {
         const tags = item['tags'] as string[] | undefined;
         if (!tags || !tags.includes('ตรอ.')) return;
@@ -303,22 +308,26 @@ export default function DashboardPage() {
         if (lastInspectionDate) {
           let day = -1;
           let month = -1;
+          let year = -1;
           
           if (/^\d{2}\/\d{2}\/\d{4}$/.test(lastInspectionDate)) {
-            const [dd, mm] = lastInspectionDate.split('/');
+            const [dd, mm, yyyy] = lastInspectionDate.split('/');
             day = parseInt(dd);
             month = parseInt(mm) - 1;
+            year = parseInt(yyyy);
           } else if (/^\d{4}-\d{2}-\d{2}$/.test(lastInspectionDate)) {
-            const [, mm, dd] = lastInspectionDate.split('-');
+            const [yyyy, mm, dd] = lastInspectionDate.split('-');
             day = parseInt(dd);
             month = parseInt(mm) - 1;
+            year = parseInt(yyyy);
           } else if (lastInspectionDate.includes('T')) {
             const dateObj = new Date(lastInspectionDate);
             day = dateObj.getDate();
             month = dateObj.getMonth();
+            year = dateObj.getFullYear();
           }
           
-          if (month === selectedInspectionMonth && day >= 1 && day <= daysInMonth) {
+          if (month === selectedInspectionMonth && year === selectedInspectionYear && day >= 1 && day <= daysInMonth) {
             dailyData[day].total++;
             if (vehicleType) {
               dailyData[day].byType[vehicleType] = (dailyData[day].byType[vehicleType] || 0) + 1;
@@ -334,9 +343,9 @@ export default function DashboardPage() {
       }));
       
       setInspectionDailyData(array);
-      console.log('📊 Inspection Daily Data for month', selectedInspectionMonth, ':', array);
+      console.log('📊 Inspection Daily Data for month', selectedInspectionMonth, 'year', selectedInspectionYear, ':', array);
     }
-  }, [customerData, selectedInspectionMonth]);
+  }, [customerData, selectedInspectionMonth, selectedInspectionYear]);
 
   // คำนวณข้อมูลตรวจรถ 7 วันล่าสุด
   useEffect(() => {
@@ -936,8 +945,8 @@ export default function DashboardPage() {
                   </h2>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
                     {selectedInspectionMonth === null 
-                      ? 'ภาพรวมการตรวจรถทั้งปี (แยกตามเดือน)' 
-                      : `รายละเอียดการตรวจรถในเดือน ${inspectionMonthlyData[selectedInspectionMonth]?.month || ''}`}
+                      ? `ภาพรวมการตรวจรถทั้งปี ${selectedInspectionYear} (แยกตามเดือน)` 
+                      : `รายละเอียดการตรวจรถในเดือน ${inspectionMonthlyData[selectedInspectionMonth]?.month || ''} ปี ${selectedInspectionYear}`}
                   </p>
                 
                 {/* Legend */}
@@ -961,21 +970,36 @@ export default function DashboardPage() {
                 </div>
               </div>
               
-              {/* Dropdown เลือกเดือน */}
-              <div className="w-48">
-                <FilterDropdown
-                  value={selectedInspectionMonth === null ? '' : selectedInspectionMonth.toString()}
-                  onChange={(value) => setSelectedInspectionMonth(value === '' ? null : parseInt(value))}
-                  icon={faCalendarAlt}
-                  placeholder="เลือกเดือน"
-                  options={[
-                    { value: '', label: 'ทั้งปี' },
-                    ...inspectionMonthlyData.map(data => ({
-                      value: data.monthNum.toString(),
-                      label: data.month
-                    }))
-                  ]}
-                />
+              {/* Dropdown เลือกปีและเดือน */}
+              <div className="flex gap-3">
+                <div className="w-32">
+                  <FilterDropdown
+                    value={selectedInspectionYear.toString()}
+                    onChange={(value) => setSelectedInspectionYear(parseInt(value))}
+                    icon={faCalendarAlt}
+                    placeholder="เลือกปี"
+                    options={Array.from({ length: 10 }, (_, i) => {
+                      const year = new Date().getFullYear() - i;
+                      return { value: year.toString(), label: year.toString() };
+                    })}
+                    showClearButton={false}
+                  />
+                </div>
+                <div className="w-48">
+                  <FilterDropdown
+                    value={selectedInspectionMonth === null ? '' : selectedInspectionMonth.toString()}
+                    onChange={(value) => setSelectedInspectionMonth(value === '' ? null : parseInt(value))}
+                    icon={faCalendarAlt}
+                    placeholder="เลือกเดือน"
+                    options={[
+                      { value: '', label: 'ทั้งปี' },
+                      ...inspectionMonthlyData.map(data => ({
+                        value: data.monthNum.toString(),
+                        label: data.month
+                      }))
+                    ]}
+                  />
+                </div>
               </div>
             </div>
             

@@ -155,6 +155,51 @@ html {
   background: #707070;
 }
 
+/* Tailwind Scrollbar Utilities for Emerald Theme */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+.scrollbar-thumb-emerald-300 {
+  scrollbar-color: #6ee7b7 transparent;
+}
+
+.scrollbar-thumb-emerald-700 {
+  scrollbar-color: #047857 transparent;
+}
+
+.scrollbar-track-transparent {
+  scrollbar-color: transparent transparent;
+}
+
+/* Webkit (Chrome, Safari, Edge) Scrollbar Styles */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thumb-emerald-300::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #6ee7b7, #34d399);
+  border-radius: 8px;
+}
+
+.scrollbar-thumb-emerald-700::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #047857, #065f46);
+  border-radius: 8px;
+}
+
+.scrollbar-track-transparent::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thumb-emerald-300::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #34d399, #10b981);
+}
+
+.scrollbar-thumb-emerald-700::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #065f46, #064e3b);
+}
+
 /* Animations for Modal */
 @keyframes fadeIn {
   from {

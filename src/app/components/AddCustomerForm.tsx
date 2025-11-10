@@ -3,6 +3,7 @@ import { FaSave, FaTimes, FaCheckCircle, FaExclamationCircle } from 'react-icons
 import { faCar, faMoneyBillWave, faShield, faFileAlt, faTag } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import FilterDropdown from './FilterDropdown';
+import BrandSearchableDropdown from './BrandSearchableDropdown';
 
 interface AddCustomerFormProps {
   onSuccess: () => void;
@@ -270,13 +271,11 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
           <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
             ยี่ห้อ / รุ่น <span className="text-red-500">*</span>
           </label>
-          <input 
-            type="text" 
-            name="brand" 
-            value={formData.brand} 
-            onChange={handleChange} 
-            required 
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all" 
+          <BrandSearchableDropdown
+            value={formData.brand}
+            onChange={(value) => setFormData(prev => ({ ...prev, brand: value }))}
+            name="brand"
+            required
             placeholder="เช่น Toyota Camry"
           />
         </div>

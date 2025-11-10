@@ -18,8 +18,6 @@ import {
   faAngleLeft,
   faBars,
   faClock,
-  faSun,
-  faMoon,
 } from "@fortawesome/free-solid-svg-icons";
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 
@@ -37,14 +35,28 @@ const SidebarMenuItem: React.FC<MenuItemProps> = ({ href, icon, text }) => {
   return (
     <Link
       href={href}
-      className={`flex items-center p-3 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-blue-100 dark:hover:bg-gray-700 transition-colors duration-200
-        ${isActive ? "bg-blue-500 text-white dark:bg-blue-700" : ""}
+      className={`flex items-center p-3.5 rounded-xl text-gray-700 dark:text-gray-200 transition-all duration-300 group
+        ${isActive 
+          ? "bg-gradient-to-r from-emerald-500 to-green-500 text-white dark:from-emerald-600 dark:to-green-600 shadow-lg shadow-emerald-500/30" 
+          : "hover:bg-gradient-to-r hover:from-emerald-50 hover:to-green-50 dark:hover:from-emerald-900/20 dark:hover:to-green-900/20 hover:shadow-md"
+        }
         justify-start`}
       title={text}
     >
-      <motion.div whileHover={{ scale: 1.02 }} className="flex items-center w-full">
-        <FontAwesomeIcon icon={icon} className="text-xl mr-3" />
-        <span className="font-medium text-[14px]">{text}</span>
+      <motion.div 
+        whileHover={{ scale: 1.03, x: 3 }} 
+        whileTap={{ scale: 0.98 }}
+        className="flex items-center w-full"
+      >
+        <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-300
+          ${isActive 
+            ? "bg-white/20 shadow-md" 
+            : "bg-gray-100 dark:bg-gray-700 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-800/30"
+          }`}
+        >
+          <FontAwesomeIcon icon={icon} className="text-lg" />
+        </div>
+        <span className="font-semibold text-[14px] ml-3">{text}</span>
       </motion.div>
     </Link>
   );
@@ -58,7 +70,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true); // sidebar state (mobile เท่านั้น)
   const [isMobile, setIsMobile] = useState(false); // Mobile state
   const [sidebarWidth, setSidebarWidth] = useState(300); // default 300px
-  const [isDarkMode, setIsDarkMode] = useState(false); // Dark mode state
 
   useEffect(() => {
     const handleResize = () => {
@@ -82,34 +93,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       setSidebarWidth(300);
     }
   }, [isMobile]);
-
-  // Dark mode management
-  useEffect(() => {
-    // ตรวจสอบ localStorage สำหรับ theme preference
-    const savedTheme = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-      setIsDarkMode(true);
-      document.documentElement.classList.add('dark');
-    } else {
-      setIsDarkMode(false);
-      document.documentElement.classList.remove('dark');
-    }
-  }, []);
-
-  const toggleDarkMode = () => {
-    const newDarkMode = !isDarkMode;
-    setIsDarkMode(newDarkMode);
-
-    if (newDarkMode) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  };
 
   const toggleMobileSidebar = () => {
     if (isMobile) setIsSidebarOpen((open) => !open);
@@ -150,33 +133,38 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           stiffness: 300,
           damping: 30
         }}
-        className={`fixed top-0 left-0 h-full ${sidebarWidthClass} bg-white dark:bg-gray-800 shadow-lg z-40
-          flex flex-col
-          lg:flex-shrink-0 lg:overflow-y-auto lg:shadow-none lg:transform-none lg:transition-all lg:duration-300 lg:ease-in-out`}
+        className={`fixed top-0 left-0 h-full ${sidebarWidthClass} bg-gradient-to-b from-white via-emerald-50/30 to-green-50/20 dark:from-gray-800 dark:via-emerald-950/20 dark:to-gray-800 shadow-2xl z-40
+          flex flex-col border-r-2 border-emerald-100 dark:border-emerald-900/30
+          lg:flex-shrink-0 lg:overflow-y-auto lg:transform-none lg:transition-all lg:duration-300 lg:ease-in-out`}
       // ลบคลาส lg:fixed ออกจาก Sidebar เพราะเราจะใช้ flexbox และ margin-left แทนการ fixed
       // **คำอธิบาย: จริงๆ แล้ว lg:fixed ใน aside ถูกต้องแล้วครับ เพื่อให้มันตรึงอยู่**
       // **ปัญหาคือ div main content ไม่ได้ใช้ margin-left/padding-left ที่ถูกต้องและ dynamic**
       // ผมจะกลับไปใช้ lg:fixed เหมือนเดิมใน aside และแก้ไขที่ main content
       >
-        <div className="p-6 flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
+        <div className="p-6 flex items-center justify-between border-b-2 border-emerald-100 dark:border-emerald-900/30 bg-gradient-to-r from-emerald-50/50 to-green-50/30 dark:from-emerald-950/30 dark:to-gray-800">
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.3 }}
+            className="flex items-center gap-3"
           >
-            <Image
-              className="h-8 w-auto"
-              src="/ToRoOo.png"
-              alt="Billing System Logo"
-              width={100}
-              height={100}
-              priority
-            />
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-500 p-0.5 shadow-lg">
+              <div className="w-full h-full rounded-xl bg-white dark:bg-gray-800 flex items-center justify-center">
+                <Image
+                  className="h-6 w-auto"
+                  src="/ToRoOo.png"
+                  alt="Billing System Logo"
+                  width={100}
+                  height={100}
+                  priority
+                />
+              </div>
+            </div>
           </motion.div>
 
           {(isMobile || isSidebarOpen) && (
             <motion.h2
-              className="text-lg font-semibold text-gray-700 dark:text-gray-300 ml-4 flex-grow"
+              className="text-lg font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent ml-3 flex-grow"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4, delay: 0.1 }}
@@ -191,26 +179,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               onClick={toggleMobileSidebar}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="lg:hidden p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none transition-colors duration-200"
+              className="lg:hidden p-2 rounded-xl text-gray-600 bg-white hover:bg-gradient-to-r hover:from-emerald-50 hover:to-green-50 focus:outline-none transition-all duration-200 shadow-sm hover:shadow-md"
               aria-label="ปิดเมนู"
             >
-              <FontAwesomeIcon icon={faAngleLeft} className="text-xl" />
+              <FontAwesomeIcon icon={faAngleLeft} className="text-lg" />
             </motion.button>
           )}
-
-          {/* ปุ่มปรับโหมดสว่าง/มืด */}
-          <motion.button
-            onClick={toggleDarkMode}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none transition-colors duration-200"
-            aria-label={isDarkMode ? "เปลี่ยนเป็นโหมดสว่าง" : "เปลี่ยนเป็นโหมดมืด"}
-          >
-            <FontAwesomeIcon
-              icon={isDarkMode ? faSun : faMoon}
-              className="text-xl"
-            />
-          </motion.button>
 
           {/* ลบปุ่มย่อ/ขยายสำหรับเดสก์ท็อป */}
           {/* <motion.button
@@ -223,8 +197,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </motion.button> */}
         </div>
 
-        <nav className="flex-1 px-4 py-6">
-          <ul className="space-y-2">
+        <nav className="flex-1 px-4 py-6 overflow-y-auto scrollbar-thin scrollbar-thumb-emerald-300 dark:scrollbar-thumb-emerald-700 scrollbar-track-transparent">
+          <ul className="space-y-2.5">
             <SidebarMenuItem
               href="/dashboard"
               icon={faTachometerAlt}
@@ -240,10 +214,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
 
             {/* Divider */}
-            <div className="my-4 mx-3 border-t border-gray-200 dark:border-gray-700"></div>
+            <div className="my-5 mx-3 border-t-2 border-emerald-100 dark:border-emerald-900/30"></div>
             
             <motion.h3
-              className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-6 mb-2 px-3"
+              className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mt-6 mb-3 px-3"
               initial={{ opacity: 0, x: -20 }}
               animate={{
                 opacity: (isMobile || isSidebarOpen) ? 1 : 0,
@@ -275,10 +249,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
 
             {/* Divider */}
-            <div className="my-4 mx-3 border-t border-gray-200 dark:border-gray-700"></div>
+            <div className="my-5 mx-3 border-t-2 border-emerald-100 dark:border-emerald-900/30"></div>
             
             <motion.h3
-              className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-6 mb-2 px-3"
+              className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mt-6 mb-3 px-3"
               initial={{ opacity: 0, x: -20 }}
               animate={{
                 opacity: (isMobile || isSidebarOpen) ? 1 : 0,
@@ -288,7 +262,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             >{(isMobile || isSidebarOpen) ? "คำนวณ" : ""}</motion.h3>
 
             <SidebarMenuItem
-              href="https://billingv2.netlify.app/adjust-carpet"
+              href="/adjust-carpet"
               icon={faClock}
               text="ปรับรอบพรบ."
               isSidebarOpen={isMobile || isSidebarOpen}
@@ -302,10 +276,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             />
 
             {/* Divider */}
-            <div className="my-4 mx-3 border-t border-gray-200 dark:border-gray-700"></div>
+            <div className="my-5 mx-3 border-t-2 border-emerald-100 dark:border-emerald-900/30"></div>
             
             <motion.h3
-              className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-6 mb-2 px-3"
+              className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mt-6 mb-3 px-3"
               initial={{ opacity: 0, x: -20 }}
               animate={{
                 opacity: (isMobile || isSidebarOpen) ? 1 : 0,
@@ -324,7 +298,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             />
 
             <motion.h3
-              className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-6 mb-2 px-3"
+              className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mt-6 mb-3 px-3"
               initial={{ opacity: 0, x: -20 }}
               animate={{
                 opacity: (isMobile || isSidebarOpen) ? 1 : 0,
@@ -336,7 +310,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </nav>
 
         <motion.footer
-          className={`p-4 text-center text-[10px] text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700`}
+          className={`p-4 text-center text-[10px] text-gray-500 dark:text-gray-400 border-t-2 border-emerald-100 dark:border-emerald-900/30 bg-gradient-to-r from-emerald-50/30 to-green-50/20 dark:from-emerald-950/20 dark:to-gray-800`}
           initial={{ opacity: 0, y: 20 }}
           animate={{
             opacity: (isMobile || isSidebarOpen) ? 1 : 0,
@@ -372,27 +346,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <FontAwesomeIcon icon={faBars} className="text-xl" />
             </motion.button>
             <motion.h1
-              className="text-lg font-semibold text-gray-700 dark:text-gray-300"
+              className="text-lg font-semibold text-gray-700"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
               ตรอ.บังรีท่าอิฐ
             </motion.h1>
-
-            {/* ปุ่มปรับโหมดสว่าง/มืดสำหรับมือถือ */}
-            <motion.button
-              onClick={toggleDarkMode}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none transition-colors duration-200"
-              aria-label={isDarkMode ? "เปลี่ยนเป็นโหมดสว่าง" : "เปลี่ยนเป็นโหมดมืด"}
-            >
-              <FontAwesomeIcon
-                icon={isDarkMode ? faSun : faMoon}
-                className="text-xl"
-              />
-            </motion.button>
           </div>
         </motion.header>
 

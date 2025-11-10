@@ -2,6 +2,7 @@
 'use client';
 
 import React from 'react';
+import { motion } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faInfoCircle, faStar, faTag, IconDefinition } from '@fortawesome/free-solid-svg-icons';
 import { CustomerData } from '@/lib/useCustomerData';
@@ -28,20 +29,29 @@ export default function CustomerCard({
   formatDate
 }: CustomerCardProps) {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700">
+    <motion.div 
+      whileHover={{ y: -4, scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      className="bg-white rounded-lg shadow-md p-4 hover:shadow-2xl transition-all border border-gray-200 cursor-pointer"
+    >
       {/* Header - ลำดับ + Favorite */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => onToggleFavorite(item.licensePlate)}
+          <motion.button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleFavorite(item.licensePlate);
+            }}
+            whileHover={{ scale: 1.2, rotate: 15 }}
+            whileTap={{ scale: 0.9 }}
             className="text-yellow-500 hover:text-yellow-600 transition-colors"
           >
             <FontAwesomeIcon 
               icon={faStar} 
-              className={isFavorite ? 'text-yellow-500' : 'text-gray-300 dark:text-gray-600'} 
+              className={isFavorite ? 'text-yellow-500' : 'text-gray-300'} 
             />
-          </button>
-          <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
+          </motion.button>
+          <span className="text-sm font-bold text-emerald-600">
             #{item.sequenceNumber ? String(item.sequenceNumber).padStart(6, '0') : String(rowNumber).padStart(6, '0')}
           </span>
         </div>
@@ -103,14 +113,19 @@ export default function CustomerCard({
       )}
 
       {/* Action Button */}
-      <button
-        onClick={() => onView(item)}
-        className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-lg text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors"
+      <motion.button
+        onClick={(e) => {
+          e.stopPropagation();
+          onView(item);
+        }}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-lg text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-colors"
       >
         <FontAwesomeIcon icon={faInfoCircle} />
         ดูข้อมูล
-      </button>
-    </div>
+      </motion.button>
+    </motion.div>
   );
 }
 

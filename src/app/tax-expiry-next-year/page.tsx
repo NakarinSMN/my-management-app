@@ -64,7 +64,7 @@ const statusColor: { [key: string]: string } = {
   'กำลังจะครบกำหนด': 'bg-yellow-200 dark:bg-yellow-600 text-yellow-800 dark:text-white',
   'ครบกำหนดวันนี้': 'bg-orange-200 dark:bg-orange-700 text-orange-800 dark:text-white',
   'เกินกำหนด': 'bg-red-200 dark:bg-red-700 text-red-800 dark:text-white',
-  'รอดำเนินการ': 'bg-blue-200 dark:bg-blue-700 text-blue-800 dark:text-white',
+  'รอดำเนินการ': 'bg-emerald-200 dark:bg-emerald-700 text-emerald-800 dark:text-white',
 };
 
 const statusIcon: { [key: string]: IconDefinition } = {
@@ -234,7 +234,7 @@ const TaxExpiryRow = memo(function TaxExpiryRow({
           >
             <FontAwesomeIcon icon={faStar} className={isFavorite ? 'text-yellow-500' : 'text-gray-300 dark:text-gray-600'} />
           </button>
-          <span className="font-bold text-blue-600 dark:text-blue-400">
+          <span className="font-bold text-emerald-600 dark:text-emerald-400">
             {item.sequenceNumber ? String(item.sequenceNumber).padStart(6, '0') : String(rowNumber).padStart(6, '0')}
           </span>
         </div>
@@ -1057,7 +1057,7 @@ export default function TaxExpiryNextYearPage() {
               </button>
               <Link
                 href="/customer-info"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-lg hover:from-emerald-600 hover:to-green-600 transition-all shadow-md hover:shadow-lg"
               >
                 กลับไปหน้าข้อมูลต่อภาษี
               </Link>
@@ -1068,7 +1068,7 @@ export default function TaxExpiryNextYearPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
               <div className="flex items-center">
-                <FontAwesomeIcon icon={faInfoCircle} className="text-blue-500 mr-2" />
+                <FontAwesomeIcon icon={faInfoCircle} className="text-emerald-500 mr-2" />
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">รายการทั้งหมด</p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">{filteredData.length}</p>
@@ -1121,7 +1121,7 @@ export default function TaxExpiryNextYearPage() {
                   placeholder="ค้นหาเลขลำดับ, ทะเบียนรถ, ชื่อลูกค้า, เบอร์โทร"
                   value={search}
                   onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
-                  className="w-full pl-7 pr-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
+                  className="w-full pl-7 pr-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-xs"
                 />
               </div>
             
@@ -1195,7 +1195,7 @@ export default function TaxExpiryNextYearPage() {
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {(advancedFilters.dateFrom || advancedFilters.dateTo) && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-[10px] font-medium">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-md text-[10px] font-medium">
                     <FontAwesomeIcon icon={faCalendarAlt} />
                     {advancedFilters.dateFrom && `จาก ${advancedFilters.dateFrom}`}
                     {advancedFilters.dateTo && ` ถึง ${advancedFilters.dateTo}`}
@@ -1359,11 +1359,11 @@ export default function TaxExpiryNextYearPage() {
                         onChange={(e) => setJumpToPage(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleJumpToPage()}
                         placeholder={currentPage.toString()}
-                        className="w-14 px-2 py-0.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-14 px-2 py-0.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-center focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       />
                       <button
                         onClick={handleJumpToPage}
-                        className="px-2.5 py-0.5 text-xs font-medium rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                        className="px-2.5 py-0.5 text-xs font-medium rounded bg-gradient-to-r from-emerald-500 to-green-500 text-white hover:from-emerald-600 hover:to-green-600 transition-all"
                       >
                         ไป
                       </button>
@@ -1393,11 +1393,11 @@ export default function TaxExpiryNextYearPage() {
                           onChange={(e) => setJumpToPage(e.target.value)}
                           onKeyPress={(e) => e.key === 'Enter' && handleJumpToPage()}
                           placeholder={currentPage.toString()}
-                          className="w-16 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-16 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-center focus:outline-none focus:ring-2 focus:ring-emerald-500"
                         />
                         <button
                           onClick={handleJumpToPage}
-                          className="px-3 py-1 text-xs font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                          className="px-3 py-1 text-xs font-medium rounded-md bg-gradient-to-r from-emerald-500 to-green-500 text-white hover:from-emerald-600 hover:to-green-600 transition-all"
                         >
                           ไป
                         </button>
@@ -1434,7 +1434,7 @@ export default function TaxExpiryNextYearPage() {
                             onClick={() => setCurrentPage(page)}
                               className={`relative inline-flex items-center px-3 py-1.5 border text-xs font-medium transition-colors ${
                               currentPage === page
-                                  ? 'z-10 bg-blue-50 dark:bg-blue-900 border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-300'
+                                  ? 'z-10 bg-emerald-50 dark:bg-emerald-900 border-emerald-500 dark:border-emerald-400 text-emerald-600 dark:text-emerald-300'
                                   : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
                             }`}
                           >
@@ -1504,7 +1504,7 @@ export default function TaxExpiryNextYearPage() {
               }}
             >
               {/* Header */}
-              <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-orange-50 to-blue-50 dark:from-gray-800 dark:to-gray-800">
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-emerald-50 to-green-50 dark:from-gray-800 dark:to-gray-800">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center shadow-lg">
@@ -1581,12 +1581,12 @@ export default function TaxExpiryNextYearPage() {
                       return (
                         <div
                           key={item.licensePlate + idx}
-                          className="border-2 rounded-xl p-5 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-xl hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 transform hover:-translate-y-1"
+                          className="border-2 rounded-xl p-5 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-xl hover:border-emerald-400 dark:hover:border-emerald-500 transition-all duration-300 transform hover:-translate-y-1"
                         >
                           <div className="flex items-start gap-4">
                             {/* เลขลำดับ */}
                             <div className="flex-shrink-0">
-                              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-lg">
+                              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-emerald-500 to-green-500 text-white flex items-center justify-center font-bold text-sm shadow-lg">
                                 {item.sequenceNumber ? String(item.sequenceNumber).padStart(6, '0') : String(idx + 1).padStart(6, '0')}
                               </div>
                             </div>
@@ -1601,7 +1601,7 @@ export default function TaxExpiryNextYearPage() {
                                     ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white animate-pulse'
                                     : item.daysUntilExpiry <= 30
                                     ? 'bg-gradient-to-r from-yellow-400 to-orange-400 text-gray-900'
-                                    : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'
+                                    : 'bg-gradient-to-r from-emerald-500 to-green-500 text-white'
                                 }`}>
                                   {item.daysUntilExpiry < 0
                                     ? `⚠️ เกินกำหนด ${Math.abs(item.daysUntilExpiry)} วัน`
@@ -1616,7 +1616,7 @@ export default function TaxExpiryNextYearPage() {
                               
                               <div className="space-y-2 text-sm">
                                 <div className="flex items-center gap-2">
-                                  <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                  <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
                                   <p className="text-gray-900 dark:text-white">
                                     <span className="font-semibold text-gray-600 dark:text-gray-400">ทะเบียน:</span> 
                                     <span className="ml-2 font-bold">{item.licensePlate}</span>
@@ -1656,7 +1656,7 @@ export default function TaxExpiryNextYearPage() {
                                     ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg shadow-green-500/50 animate-pulse'
                                     : hasCopied
                                     ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md'
-                                    : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 shadow-md hover:shadow-lg'
+                                    : 'bg-gradient-to-r from-emerald-500 to-green-500 text-white hover:from-emerald-600 hover:to-green-600 shadow-md hover:shadow-lg'
                                 }`}
                               >
                                 <FontAwesomeIcon icon={isCopied || hasCopied ? faCheck : faCopy} className="text-lg" />
@@ -1709,7 +1709,7 @@ export default function TaxExpiryNextYearPage() {
               </div>
 
               {/* Footer */}
-              <div className="p-6 border-t-2 border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-800 dark:to-gray-800">
+              <div className="p-6 border-t-2 border-gray-200 dark:border-gray-700 bg-gradient-to-r from-emerald-50 to-green-50 dark:from-gray-800 dark:to-gray-800">
                 <div className="flex items-center justify-between flex-wrap gap-4">
                   <div className="flex items-center gap-4 flex-wrap">
                     {/* รายการคงเหลือ */}
@@ -1775,7 +1775,7 @@ export default function TaxExpiryNextYearPage() {
               }}
             >
               {/* Header */}
-              <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-green-50 to-blue-50 dark:from-gray-800 dark:to-gray-800">
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-emerald-50 to-green-50 dark:from-gray-800 dark:to-gray-800">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
@@ -1846,7 +1846,7 @@ export default function TaxExpiryNextYearPage() {
                                 
                                 <div className="space-y-2 text-sm">
                                   <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
                                     <p className="text-gray-900 dark:text-white">
                                       <span className="font-semibold text-gray-600 dark:text-gray-400">ทะเบียน:</span> 
                                       <span className="ml-2 font-bold">{licensePlate}</span>
@@ -1897,7 +1897,7 @@ export default function TaxExpiryNextYearPage() {
                               <div className="flex flex-col gap-3 flex-shrink-0">
                                 <button
                                   onClick={() => resetNotificationStatus(licensePlate)}
-                                  className="px-6 py-3 rounded-xl transition-all flex items-center justify-center gap-2 text-sm font-semibold min-w-[140px] transform hover:scale-105 bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 shadow-md hover:shadow-lg"
+                                  className="px-6 py-3 rounded-xl transition-all flex items-center justify-center gap-2 text-sm font-semibold min-w-[140px] transform hover:scale-105 bg-gradient-to-r from-emerald-500 to-green-500 text-white hover:from-emerald-600 hover:to-green-600 shadow-md hover:shadow-lg"
                                   title="รีเซ็ตเพื่อแจ้งเตือนใหม่"
                                 >
                                   <FontAwesomeIcon icon={faSync} className="text-lg" />
@@ -1930,7 +1930,7 @@ export default function TaxExpiryNextYearPage() {
                     <div className="text-sm text-gray-600 dark:text-gray-400">
                       <p className="flex items-center gap-2">
                         <span className="text-xl">💡</span>
-                        <span>กดปุ่ม <span className="font-semibold text-blue-600 dark:text-blue-400">&quot;รีเซ็ต&quot;</span> เพื่อให้รถคันนั้นกลับมาแจ้งเตือนได้อีกครั้ง</span>
+                        <span>กดปุ่ม <span className="font-semibold text-emerald-600 dark:text-emerald-400">&quot;รีเซ็ต&quot;</span> เพื่อให้รถคันนั้นกลับมาแจ้งเตือนได้อีกครั้ง</span>
                       </p>
                     </div>
                   </div>

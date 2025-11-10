@@ -14,6 +14,10 @@ import EditCustomerForm from '../components/EditCustomerForm';
 import FilterDropdown from '../components/FilterDropdown';
 import AdvancedFilterModal, { AdvancedFilters } from '../components/AdvancedFilterModal';
 import CustomerCard from '../components/CustomerCard';
+import LoadingSkeleton from '../components/LoadingSkeleton';
+import RippleButton from '../components/RippleButton';
+import { ToastContainer } from '../components/Toast';
+import { useToast } from '../hooks/useToast';
 
 // ⚡ ใช้ Custom Hook แทน SWR โดยตรง
 import { useCustomerData, CustomerData } from '@/lib/useCustomerData';
@@ -40,7 +44,7 @@ const statusColor: { [key: string]: string } = {
   'กำลังจะครบกำหนด': 'bg-yellow-200 dark:bg-yellow-600 text-yellow-800 dark:text-white',
   'ครบกำหนดวันนี้': 'bg-orange-200 dark:bg-orange-700 text-orange-800 dark:text-white',
   'เกินกำหนด': 'bg-red-200 dark:bg-red-700 text-red-800 dark:text-white',
-  'รอดำเนินการ': 'bg-blue-200 dark:bg-blue-700 text-blue-800 dark:text-white',
+  'รอดำเนินการ': 'bg-emerald-200 dark:bg-emerald-700 text-emerald-800 dark:text-white',
 };
 
 const statusIcon: { [key: string]: IconDefinition } = {
@@ -143,6 +147,7 @@ export default function CustomerInfoPage() {
 
   // ⚡ ใช้ Custom Hook แทน useSWR โดยตรง
   const { data, error, isLoading, refreshData } = useCustomerData();
+  const toast = useToast();
   
   // ⚡ Debounce search เพื่อลด re-render
   const debouncedSearch = useDebounce(search, 300);
@@ -343,15 +348,15 @@ export default function CustomerInfoPage() {
                 </motion.p>
               </div>
               <div className="flex gap-2">
-                <button
+                <RippleButton
                   onClick={() => setIsAddModalOpen(true)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-lg hover:from-emerald-600 hover:to-green-600 transition-all shadow-md hover:shadow-lg"
                 >
                   + เพิ่มข้อมูลลูกค้า
-                </button>
+                </RippleButton>
                 <Link
                   href="/tax-expiry-next-year"
-                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors inline-block"
                 >
                   ภาษีครั้งถัดไป
                 </Link>
@@ -362,7 +367,7 @@ export default function CustomerInfoPage() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
               <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
                 <div className="flex items-center">
-                  <FontAwesomeIcon icon={faInfoCircle} className="text-blue-500 mr-2" />
+                  <FontAwesomeIcon icon={faInfoCircle} className="text-emerald-500 mr-2" />
                   <div>
                     <p className="text-sm text-gray-600 dark:text-gray-400">รายการทั้งหมด</p>
                     <p className="text-2xl font-bold text-gray-900 dark:text-white">{filteredData.length}</p>
@@ -415,7 +420,7 @@ export default function CustomerInfoPage() {
                   placeholder="ค้นหาเลขลำดับ, ทะเบียนรถ, ชื่อลูกค้า, เบอร์โทร"
                   value={search}
                   onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
-                  className="w-full pl-7 pr-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
+                  className="w-full pl-7 pr-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-xs"
                 />
               </div>
               {/* ใน filter UI ลบ SelectFilter ของวันออก */}
@@ -477,12 +482,12 @@ export default function CustomerInfoPage() {
               {activeFiltersCount > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {advancedFilters.dateFrom && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-xs">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-md text-xs">
                       จาก: {advancedFilters.dateFrom}
                     </span>
                   )}
                   {advancedFilters.dateTo && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-xs">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-md text-xs">
                       ถึง: {advancedFilters.dateTo}
                     </span>
                   )}
@@ -508,28 +513,18 @@ export default function CustomerInfoPage() {
 
           {/* Data Display - Table for Desktop, Cards for Mobile */}
           {isLoading ? (
-            <div className="flex items-center justify-center p-8 w-full">
-              <div className="w-full">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="animate-pulse flex space-x-4 mb-4">
-                    <div className="rounded bg-gray-200 dark:bg-gray-700 h-6 w-1/6"></div>
-                    <div className="rounded bg-gray-200 dark:bg-gray-700 h-6 w-1/4"></div>
-                    <div className="rounded bg-gray-200 dark:bg-gray-700 h-6 w-1/5"></div>
-                    <div className="rounded bg-gray-200 dark:bg-gray-700 h-6 w-1/5"></div>
-                    <div className="rounded bg-gray-200 dark:bg-gray-700 h-6 w-1/6"></div>
-                  </div>
-                ))}
-              </div>
+            <div className="p-6">
+              <LoadingSkeleton variant="list" count={8} />
             </div>
           ) : error ? (
             <div className="p-8 text-center">
               <p className="text-red-500 mb-4">เกิดข้อผิดพลาดในการโหลดข้อมูล</p>
-              <button
+              <RippleButton
                 onClick={refreshData}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-lg hover:from-emerald-600 hover:to-green-600 transition-all shadow-md hover:shadow-lg"
               >
                 ลองใหม่
-              </button>
+              </RippleButton>
             </div>
           ) : (
             <>
@@ -638,11 +633,11 @@ export default function CustomerInfoPage() {
                           onChange={(e) => setJumpToPage(e.target.value)}
                           onKeyPress={(e) => e.key === 'Enter' && handleJumpToPage()}
                           placeholder={currentPage.toString()}
-                          className="w-14 px-2 py-0.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-14 px-2 py-0.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-center focus:outline-none focus:ring-2 focus:ring-emerald-500"
                         />
                         <button
                           onClick={handleJumpToPage}
-                          className="px-2.5 py-0.5 text-xs font-medium rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                          className="px-2.5 py-0.5 text-xs font-medium rounded bg-gradient-to-r from-emerald-500 to-green-500 text-white hover:from-emerald-600 hover:to-green-600 transition-all"
                         >
                           ไป
                         </button>
@@ -672,11 +667,11 @@ export default function CustomerInfoPage() {
                             onChange={(e) => setJumpToPage(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && handleJumpToPage()}
                             placeholder={currentPage.toString()}
-                            className="w-16 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-16 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-center focus:outline-none focus:ring-2 focus:ring-emerald-500"
                           />
                           <button
                             onClick={handleJumpToPage}
-                            className="px-3 py-1 text-xs font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                            className="px-3 py-1 text-xs font-medium rounded-md bg-gradient-to-r from-emerald-500 to-green-500 text-white hover:from-emerald-600 hover:to-green-600 transition-all"
                           >
                             ไป
                           </button>
@@ -713,7 +708,7 @@ export default function CustomerInfoPage() {
                                 onClick={() => setCurrentPage(page)}
                                 className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium transition-colors ${
                                   currentPage === page
-                                    ? 'z-10 bg-blue-50 dark:bg-blue-900 border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-300'
+                                    ? 'z-10 bg-emerald-50 dark:bg-emerald-900 border-emerald-500 dark:border-emerald-400 text-emerald-600 dark:text-emerald-300'
                                     : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
                                 }`}
                               >
@@ -772,6 +767,7 @@ export default function CustomerInfoPage() {
             setCurrentPage(1); // กลับไปหน้าแรก
             setSearch(''); // เคลียร์การค้นหา
             refreshData(); // บังคับ refresh ข้อมูล
+            toast.success('✅ เพิ่มข้อมูลลูกค้าสำเร็จ!');
           }}
           onCancel={() => setIsAddModalOpen(false)}
         />
@@ -794,10 +790,14 @@ export default function CustomerInfoPage() {
             setSelectedCustomer(null);
             setCurrentPage(1); // กลับไปหน้าแรก
             refreshData(); // บังคับ refresh ข้อมูล
+            toast.success('✅ แก้ไขข้อมูลลูกค้าสำเร็จ!');
           }}
           onCancel={() => { setIsEditModalOpen(false); setSelectedCustomer(null); }}
         />
       </Modal>
+      
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toast.toasts} onClose={toast.removeToast} />
 
       {/* Modal สำหรับ Advanced Filter */}
       <AdvancedFilterModal
@@ -857,10 +857,10 @@ export default function CustomerInfoPage() {
               {/* ส่วนข้อมูลลูกค้า */}
               <div>
                 <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                  <div className="w-1 h-4 bg-gradient-to-b from-blue-500 to-cyan-500 rounded-full"></div>
+                  <div className="w-1 h-4 bg-gradient-to-b from-emerald-500 to-green-500 rounded-full"></div>
                   ข้อมูลลูกค้า
                 </h3>
-                <div className="grid grid-cols-2 gap-4 bg-blue-50 dark:bg-blue-900/10 rounded-xl p-4">
+                <div className="grid grid-cols-2 gap-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-xl p-4">
                   <div>
                     <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">ชื่อ-นามสกุล</p>
                     <p className="text-base font-bold text-gray-900 dark:text-white">{selectedCustomer.customerName}</p>
@@ -897,7 +897,7 @@ export default function CustomerInfoPage() {
                           <span 
                             key={index}
                             className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium ${
-                              tag === 'ภาษี' ? 'bg-blue-500 text-white' :
+                              tag === 'ภาษี' ? 'bg-emerald-500 text-white' :
                               tag === 'ตรอ.' ? 'bg-green-500 text-white' :
                               tag === 'พรบ.' ? 'bg-orange-500 text-white' :
                               'bg-gray-500 text-white'
@@ -1021,7 +1021,7 @@ const CustomerRow = memo(function CustomerRow({
           >
             <FontAwesomeIcon icon={faStar} className={isFavorite ? 'text-yellow-500' : 'text-gray-300 dark:text-gray-600'} />
           </button>
-          <span className="font-bold text-blue-600 dark:text-blue-400">
+          <span className="font-bold text-emerald-600 dark:text-emerald-400">
             {item.sequenceNumber ? String(item.sequenceNumber).padStart(6, '0') : String(rowNumber).padStart(6, '0')}
           </span>
         </div>
