@@ -1,0 +1,13 @@
+# MongoDB Configuration
+# คัดลอกเนื้อหานี้ไปใส่ในไฟล์ .env.local (สร้างใหม่ในโฟลเดอร์หลัก)
+
+MONGODB_URI=mongodb+srv://your-username:your-password@your-cluster.mongodb.net/?retryWrites=true&w=majority
+MONGODB_DATABASE=management_app
+
+# หมายเหตุ:
+# 1. ให้สร้างบัญชี MongoDB Atlas ที่ https://www.mongodb.com/cloud/atlas
+# 2. สร้าง Cluster ใหม่ (ฟรี)
+# 3. คัดลอก Connection String มาใส่ใน MONGODB_URI
+# 4. แทนที่ username และ password ด้วยข้อมูลจริงของคุณ
+# 5. ตั้งค่า Network Access ให้อนุญาตทุก IP (0.0.0.0/0) หรือ IP ของคุณ
+

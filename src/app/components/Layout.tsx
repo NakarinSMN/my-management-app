@@ -18,6 +18,7 @@ import {
   faAngleLeft,
   faBars,
   faClock,
+  faMoneyBillWave,
 } from "@fortawesome/free-solid-svg-icons";
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 
@@ -237,6 +238,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               href="/customer-info"
               icon={faUserCircle}
               text="ข้อมูลต่อภาษี"
+              isSidebarOpen={isMobile || isSidebarOpen}
+            />
+            <SidebarMenuItem
+              href="/installment-insurance"
+              icon={faMoneyBillWave}
+              text="ข้อมูลผ่อนประกัน"
               isSidebarOpen={isMobile || isSidebarOpen}
             />
 
