@@ -888,9 +888,19 @@ export default function InstallmentInsurancePage() {
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">จำนวนงวด</p>
+                      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">วันที่เริ่มผ่อน</p>
                       <p className="text-sm font-bold text-gray-900 dark:text-white">
-                        {selectedData.installmentCount} งวด
+                        {selectedData.startDate ? (() => {
+                          try {
+                            const date = new Date(selectedData.startDate);
+                            const dd = String(date.getDate()).padStart(2, '0');
+                            const mm = String(date.getMonth() + 1).padStart(2, '0');
+                            const yyyy = date.getFullYear();
+                            return `${dd}/${mm}/${yyyy}`;
+                          } catch {
+                            return selectedData.startDate;
+                          }
+                        })() : '-'}
                       </p>
                     </div>
                     <div>
