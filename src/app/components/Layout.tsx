@@ -21,22 +21,25 @@ import {
   faMoneyBillWave,
 } from "@fortawesome/free-solid-svg-icons";
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import { useRenewalNotificationCount } from "@/lib/useRenewalNotificationCount";
 
 interface MenuItemProps {
   href: string;
   icon: IconDefinition;
   text: string;
   isSidebarOpen: boolean;
+  notificationCount?: number;
 }
 
-const SidebarMenuItem: React.FC<MenuItemProps> = ({ href, icon, text }) => {
+const SidebarMenuItem: React.FC<MenuItemProps> = ({ href, icon, text, notificationCount = 0 }) => {
   const pathname = usePathname();
   const isActive = pathname !== null && pathname.startsWith(href) && (pathname.length === href.length || pathname.charAt(href.length) === '/');
+  const hasNotification = notificationCount > 0;
 
   return (
     <Link
       href={href}
-      className={`flex items-center p-3.5 rounded-xl text-gray-700 dark:text-gray-200 transition-all duration-300 group
+      className={`flex items-center p-3.5 rounded-xl text-gray-700 dark:text-gray-200 transition-all duration-300 group relative
         ${isActive 
           ? "bg-gradient-to-r from-emerald-500 to-green-500 text-white dark:from-emerald-600 dark:to-green-600 shadow-lg shadow-emerald-500/30" 
           : "hover:bg-gradient-to-r hover:from-emerald-50 hover:to-green-50 dark:hover:from-emerald-900/20 dark:hover:to-green-900/20 hover:shadow-md"
@@ -49,15 +52,28 @@ const SidebarMenuItem: React.FC<MenuItemProps> = ({ href, icon, text }) => {
         whileTap={{ scale: 0.98 }}
         className="flex items-center w-full"
       >
-        <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-300
+        <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-300 relative
           ${isActive 
             ? "bg-white/20 shadow-md" 
             : "bg-gray-100 dark:bg-gray-700 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-800/30"
           }`}
         >
           <FontAwesomeIcon icon={icon} className="text-lg" />
+          {/* Badge แจ้งเตือน */}
+          {hasNotification && (
+            <>
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1 shadow-lg border border-white dark:border-gray-800">
+                {notificationCount > 99 ? '99+' : notificationCount}
+              </span>
+            </>
+          )}
         </div>
-        <span className="font-semibold text-[14px] ml-3">{text}</span>
+        <span className="font-semibold text-[14px] ml-3 flex-1">{text}</span>
+        {/* วงกลมสีแดงที่ข้อความ */}
+        {hasNotification && (
+          <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse ml-2"></div>
+        )}
       </motion.div>
     </Link>
   );
@@ -71,6 +87,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true); // sidebar state (mobile เท่านั้น)
   const [isMobile, setIsMobile] = useState(false); // Mobile state
   const [sidebarWidth, setSidebarWidth] = useState(300); // default 300px
+  
+  // ดึงจำนวนแจ้งเตือน
+  const { count: renewalNotificationCount } = useRenewalNotificationCount();
 
   useEffect(() => {
     const handleResize = () => {
@@ -245,6 +264,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               icon={faMoneyBillWave}
               text="ข้อมูลผ่อนประกัน"
               isSidebarOpen={isMobile || isSidebarOpen}
+              notificationCount={renewalNotificationCount}
             />
 
             {/* <SidebarMenuItem

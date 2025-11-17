@@ -33,6 +33,8 @@ import {
   faTag,
   faStar,
   faMoneyBill,
+  faBell,
+  faChevronRight as faChevronRightIcon,
 } from '@fortawesome/free-solid-svg-icons';
 
 // Maps สำหรับสถานะและสี/ไอคอน
@@ -79,6 +81,115 @@ function getPageNumbers(currentPage: number, totalPages: number, maxPages = 5) {
   return pages;
 }
 
+// ฟังก์ชันคำนวณวันที่หมดอายุของกรมธรรม์
+function calculateExpiryDate(startDate: string, installmentCount: number): string | null {
+  if (!startDate || !installmentCount) return null;
+  
+  try {
+    const start = new Date(startDate);
+    // เพิ่มจำนวนเดือนตาม installmentCount
+    const expiryDate = new Date(start);
+    expiryDate.setMonth(expiryDate.getMonth() + installmentCount);
+    
+    // แปลงเป็นรูปแบบ DD/MM/YYYY
+    const dd = String(expiryDate.getDate()).padStart(2, '0');
+    const mm = String(expiryDate.getMonth() + 1).padStart(2, '0');
+    const yyyy = expiryDate.getFullYear();
+    
+    return `${dd}/${mm}/${yyyy}`;
+  } catch {
+    return null;
+  }
+}
+
+// ฟังก์ชันคำนวณวันเหลือจนถึงวันหมดอายุ
+function calculateDaysUntilExpiry(expiryDateStr: string): number | null {
+  if (!expiryDateStr) return null;
+  
+  try {
+    // แปลงจาก DD/MM/YYYY เป็น Date
+    const [dd, mm, yyyy] = expiryDateStr.split('/');
+    const expiry = new Date(parseInt(yyyy), parseInt(mm) - 1, parseInt(dd));
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    expiry.setHours(0, 0, 0, 0);
+    
+    const timeDiff = expiry.getTime() - today.getTime();
+    return Math.ceil(timeDiff / (1000 * 3600 * 24));
+  } catch {
+    return null;
+  }
+}
+
+// Interface สำหรับข้อมูลแจ้งเตือน
+interface RenewalNotification {
+  licensePlate: string;
+  customerName: string;
+  expiryDate: string;
+  daysUntilExpiry: number;
+  insuranceCompany: string;
+  type: 'renewal' | 'payment'; // ประเภทแจ้งเตือน
+  paymentDay?: number; // วันที่ต้องผ่อน (สำหรับ payment)
+  installmentNumber?: number; // งวดที่ต้องผ่อน
+  amount?: number; // จำนวนเงินที่ต้องผ่อน
+}
+
+// ฟังก์ชันตรวจสอบว่าวันนี้เป็นวันที่ต้องผ่อนหรือไม่
+function isPaymentDayToday(paymentDay: number, startDate: string, paidDates?: { [key: number]: string }): { isToday: boolean; installmentNumber?: number; amount?: number; insurancePremium: number; installmentCount: number } {
+  if (!paymentDay || !startDate) {
+    return { isToday: false, insurancePremium: 0, installmentCount: 0 };
+  }
+
+  const today = new Date();
+  const currentDay = today.getDate();
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
+  const daysInCurrentMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+  // ตรวจสอบว่าวันนี้ตรงกับ paymentDay หรือไม่
+  // รองรับกรณีที่ paymentDay > วันที่ในเดือนนี้ (เช่น paymentDay = 31 แต่เดือนนี้มี 30 วัน)
+  const isPaymentDay = currentDay === paymentDay || (currentDay === daysInCurrentMonth && paymentDay > daysInCurrentMonth);
+  
+  if (!isPaymentDay) {
+    return { isToday: false, insurancePremium: 0, installmentCount: 0 };
+  }
+
+  // คำนวณงวดที่ควรจะผ่อนในเดือนนี้
+  try {
+    const start = new Date(startDate);
+    const startDay = start.getDate();
+    const startMonth = start.getMonth();
+    const startYear = start.getFullYear();
+    
+    // คำนวณจำนวนเดือนที่ผ่านมา
+    let monthsDiff = (currentYear - startYear) * 12 + (currentMonth - startMonth);
+    
+    // ถ้าวันที่ปัจจุบันยังไม่ถึงวันที่เริ่มผ่อนในเดือนนี้ ให้ลดเดือนลง 1
+    if (currentDay < startDay) {
+      monthsDiff -= 1;
+    }
+    
+    // งวดที่ควรจะผ่อน = monthsDiff + 1 (เริ่มจากงวดที่ 1)
+    const expectedInstallment = monthsDiff + 1;
+    
+    // ตรวจสอบว่าจ่ายงวดนี้ไปแล้วหรือยัง
+    const isPaid = paidDates && paidDates[expectedInstallment];
+    
+    if (!isPaid && expectedInstallment > 0) {
+      return {
+        isToday: true,
+        installmentNumber: expectedInstallment,
+        insurancePremium: 0, // จะคำนวณภายหลัง
+        installmentCount: 0
+      };
+    }
+  } catch {
+    return { isToday: false, insurancePremium: 0, installmentCount: 0 };
+  }
+
+  return { isToday: false, insurancePremium: 0, installmentCount: 0 };
+}
+
 export default function InstallmentInsurancePage() {
   const [search, setSearch] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('');
@@ -90,6 +201,8 @@ export default function InstallmentInsurancePage() {
   const [selectedData, setSelectedData] = useState<InstallmentInsuranceData | null>(null);
   const [jumpToPage, setJumpToPage] = useState<string>('');
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [isNotificationTooltipOpen, setIsNotificationTooltipOpen] = useState<boolean>(false);
+  const notificationTooltipRef = React.useRef<HTMLDivElement>(null);
 
   // ⚡ ใช้ Custom Hook
   const { data, error, isLoading, refreshData } = useInstallmentInsuranceData();
@@ -105,6 +218,109 @@ export default function InstallmentInsurancePage() {
       setFavorites(new Set(JSON.parse(savedFavorites)));
     }
   }, []);
+
+  // คำนวณรายการแจ้งเตือนกรมธรรม์ต่ออายุ และวันที่ต้องผ่อน
+  const renewalNotifications = useMemo<RenewalNotification[]>(() => {
+    const notifications: RenewalNotification[] = [];
+    
+    data.forEach(item => {
+      // ตรวจสอบเฉพาะรายการที่ status เป็น 'กำลังผ่อน'
+      if (item.status === 'กำลังผ่อน') {
+        // 1. ตรวจสอบว่าวันนี้เป็นวันที่ต้องผ่อนหรือไม่
+        if (item.paymentDay && item.startDate) {
+          const paymentCheck = isPaymentDayToday(
+            item.paymentDay,
+            item.startDate,
+            item.paidDates
+          );
+          
+          if (paymentCheck.isToday && paymentCheck.installmentNumber) {
+            // คำนวณจำนวนเงินที่ต้องผ่อน
+            const defaultAmount = item.insurancePremium / item.installmentCount;
+            const amount = item.installmentAmounts?.[paymentCheck.installmentNumber] || defaultAmount;
+            
+            notifications.push({
+              licensePlate: item.licensePlate,
+              customerName: item.customerName,
+              expiryDate: '',
+              daysUntilExpiry: 0,
+              insuranceCompany: item.insuranceCompany || '',
+              type: 'payment',
+              paymentDay: item.paymentDay,
+              installmentNumber: paymentCheck.installmentNumber,
+              amount: amount,
+            });
+          }
+        }
+        
+        // 2. ตรวจสอบกรมธรรม์ใกล้หมดอายุ (สำหรับรายการที่ผ่อนครบแล้วด้วย)
+        if (item.startDate && item.installmentCount) {
+          const expiryDate = calculateExpiryDate(item.startDate, item.installmentCount);
+          if (expiryDate) {
+            const daysUntilExpiry = calculateDaysUntilExpiry(expiryDate);
+            if (daysUntilExpiry !== null && daysUntilExpiry <= 5) {
+              notifications.push({
+                licensePlate: item.licensePlate,
+                customerName: item.customerName,
+                expiryDate: expiryDate,
+                daysUntilExpiry: daysUntilExpiry,
+                insuranceCompany: item.insuranceCompany || '',
+                type: 'renewal',
+              });
+            }
+          }
+        }
+      }
+      
+      // ตรวจสอบกรมธรรม์ใกล้หมดอายุสำหรับรายการที่ผ่อนครบแล้ว
+      if (item.status === 'ผ่อนครบแล้ว') {
+        if (item.startDate && item.installmentCount) {
+          const expiryDate = calculateExpiryDate(item.startDate, item.installmentCount);
+          if (expiryDate) {
+            const daysUntilExpiry = calculateDaysUntilExpiry(expiryDate);
+            if (daysUntilExpiry !== null && daysUntilExpiry <= 5) {
+              notifications.push({
+                licensePlate: item.licensePlate,
+                customerName: item.customerName,
+                expiryDate: expiryDate,
+                daysUntilExpiry: daysUntilExpiry,
+                insuranceCompany: item.insuranceCompany || '',
+                type: 'renewal',
+              });
+            }
+          }
+        }
+      }
+    });
+    
+    // เรียงลำดับ: payment มาก่อน, renewal ตามหลัง
+    // และเรียงตามวันเหลือ (น้อยที่สุดก่อน)
+    return notifications.sort((a, b) => {
+      // payment มาก่อน renewal
+      if (a.type === 'payment' && b.type === 'renewal') return -1;
+      if (a.type === 'renewal' && b.type === 'payment') return 1;
+      
+      // ถ้าเป็นประเภทเดียวกัน เรียงตามวันเหลือ
+      return a.daysUntilExpiry - b.daysUntilExpiry;
+    });
+  }, [data]);
+
+  // ปิด notification tooltip เมื่อคลิกข้างนอก
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (notificationTooltipRef.current && !notificationTooltipRef.current.contains(event.target as Node)) {
+        setIsNotificationTooltipOpen(false);
+      }
+    }
+
+    if (isNotificationTooltipOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isNotificationTooltipOpen]);
 
   // บันทึก favorites ลง localStorage
   const toggleFavorite = (licensePlate: string) => {
@@ -215,7 +431,111 @@ export default function InstallmentInsurancePage() {
                   รายการข้อมูลผ่อนประกันทั้งหมด
                 </motion.p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
+                {/* ไอคอนกระดิ่งพร้อม badge และวงกลมสีแดง + Tooltip */}
+                {renewalNotifications.length > 0 && (
+                  <div className="relative" ref={notificationTooltipRef}>
+                    <button
+                      onClick={() => setIsNotificationTooltipOpen(!isNotificationTooltipOpen)}
+                      className="relative"
+                    >
+                      {/* วงกลมสีแดงรอบไอคอน */}
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full animate-pulse"></div>
+                      <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-red-600 rounded-full"></div>
+                      
+                      <FontAwesomeIcon 
+                        icon={faBell} 
+                        className="text-2xl text-gray-700 dark:text-gray-300 relative z-10 cursor-pointer hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+                      />
+                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full min-w-[22px] h-6 flex items-center justify-center px-1.5 shadow-lg border-2 border-white dark:border-gray-800">
+                        {renewalNotifications.length > 99 ? '99+' : renewalNotifications.length}
+                      </span>
+                    </button>
+
+                    {/* Notification Tooltip */}
+                    {isNotificationTooltipOpen && (
+                      <div className="absolute right-0 top-full mt-2 w-96 bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 z-50 max-h-96 overflow-hidden flex flex-col">
+                        {/* Header - แถบส้ม */}
+                        <div className="bg-orange-500 text-white px-4 py-3 rounded-t-lg flex-shrink-0">
+                          <h2 className="text-base font-semibold">
+                            การแจ้งเตือน - รายการที่ต้องติดตาม
+                          </h2>
+                        </div>
+                        
+                        {/* รายการแจ้งเตือน - Scrollable */}
+                        <div className="overflow-y-auto flex-1">
+                          <div className="p-3 space-y-2">
+                            {renewalNotifications.slice(0, 10).map((notification, index) => (
+                              <div 
+                                key={`${notification.licensePlate}-${index}`}
+                                className="flex items-center text-sm text-gray-800 dark:text-gray-200 py-2 px-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors"
+                                onClick={() => {
+                                  setIsNotificationTooltipOpen(false);
+                                  // ค้นหาและแสดงข้อมูลที่เกี่ยวข้อง
+                                  const relatedItem = data.find(item => item.licensePlate === notification.licensePlate);
+                                  if (relatedItem) {
+                                    setSelectedData(relatedItem);
+                                    setIsViewModalOpen(true);
+                                  }
+                                }}
+                              >
+                                <FontAwesomeIcon 
+                                  icon={faChevronRightIcon} 
+                                  className="text-gray-400 mr-2 text-xs flex-shrink-0"
+                                />
+                                <span className="flex-1">
+                                  {notification.type === 'payment' ? (
+                                    <>
+                                      <span className="font-semibold text-red-600 dark:text-red-400">⚠️ ต้องผ่อนวันนี้:</span>{' '}
+                                      <span className="text-blue-600 dark:text-blue-400 font-medium">
+                                        {notification.customerName}
+                                      </span>
+                                      {' '}งวดที่ {notification.installmentNumber}
+                                      {notification.amount && (
+                                        <span className="text-orange-600 dark:text-orange-400 font-semibold ml-2">
+                                          ({notification.amount.toLocaleString()} บาท)
+                                        </span>
+                                      )}
+                                    </>
+                                  ) : (
+                                    <>
+                                      <span className="font-semibold">กรมธรรม์ต่ออายุ:</span>{' '}
+                                      <span className="text-blue-600 dark:text-blue-400 font-medium">
+                                        {notification.customerName}
+                                      </span>
+                                      , หมดอายุวันที่{' '}
+                                      <span className="font-semibold text-orange-600 dark:text-orange-400">
+                                        {notification.expiryDate}
+                                      </span>
+                                    </>
+                                  )}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        {/* Footer - ลิงก์รายการอื่นๆ */}
+                        {renewalNotifications.length > 10 && (
+                          <div className="border-t border-gray-200 dark:border-gray-700 flex-shrink-0 p-3">
+                            <button
+                              onClick={() => {
+                                setIsNotificationTooltipOpen(false);
+                                setFilterStatus('');
+                                setSearch('');
+                                setCurrentPage(1);
+                                window.scrollTo({ top: 600, behavior: 'smooth' });
+                              }}
+                              className="text-blue-600 dark:text-blue-400 text-sm font-medium hover:underline w-full text-left py-1"
+                            >
+                              รายการอื่นๆ ({renewalNotifications.length - 10} รายการ)
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
                 <RippleButton
                   onClick={() => setIsAddModalOpen(true)}
                   className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-lg hover:from-emerald-600 hover:to-green-600 transition-all shadow-md hover:shadow-lg"
