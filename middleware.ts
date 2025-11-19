@@ -25,9 +25,10 @@ export async function middleware(request: NextRequest) {
   }
 
   // ตรวจสอบ token
+  // getToken จะหา cookie อัตโนมัติตามที่ NextAuth config ไว้
   const token = await getToken({ 
     req: request,
-    secret: process.env.NEXTAUTH_SECRET 
+    secret: process.env.NEXTAUTH_SECRET
   });
 
   // ถ้าไม่มี token และไม่ใช่หน้า login ให้ redirect ไปหน้า login
@@ -53,14 +54,20 @@ export async function middleware(request: NextRequest) {
     }
     
     // For other pages, redirect to login with callbackUrl
+    // แต่ถ้ามี callbackUrl อยู่แล้วใน query string ให้ใช้ค่านั้น
     const loginUrl = new URL("/login", request.url);
-    // Only set callbackUrl if it's a valid page (not login/register/api)
-    if (
+    const existingCallbackUrl = request.nextUrl.searchParams.get("callbackUrl");
+    
+    if (existingCallbackUrl) {
+      // ถ้ามี callbackUrl อยู่แล้ว (เช่น redirect จาก NextAuth) ให้ใช้ค่านั้น
+      loginUrl.searchParams.set("callbackUrl", existingCallbackUrl);
+    } else if (
       pathname !== "/login" && 
       pathname !== "/register" && 
       !pathname.startsWith("/api/") &&
       pathname !== "/"
     ) {
+      // ถ้าไม่มี callbackUrl ให้ใช้ pathname ปัจจุบัน
       loginUrl.searchParams.set("callbackUrl", pathname);
     }
     return NextResponse.redirect(loginUrl);
