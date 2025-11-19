@@ -22,6 +22,8 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { useRenewalNotificationCount } from "@/lib/useRenewalNotificationCount";
+import { useAuth } from "@/app/contexts/AuthContext";
+import { faSignOutAlt } from "@fortawesome/free-solid-svg-icons";
 
 interface MenuItemProps {
   href: string;
@@ -84,12 +86,22 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
+  const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true); // sidebar state (mobile เท่านั้น)
   const [isMobile, setIsMobile] = useState(false); // Mobile state
   const [sidebarWidth, setSidebarWidth] = useState(300); // default 300px
   
+  // ตรวจสอบว่าอยู่ในหน้า login หรือ register หรือไม่
+  const isAuthPage = pathname === "/login" || pathname === "/register";
+  
   // ดึงจำนวนแจ้งเตือน
   const { count: renewalNotificationCount } = useRenewalNotificationCount();
+  
+  // ดึงข้อมูล user และ auth functions
+  // Note: useAuth must always be called (React hook rule)
+  const auth = useAuth();
+  const user = isAuthPage ? null : auth.user;
+  const signOut = auth.signOut;
 
   useEffect(() => {
     const handleResize = () => {
@@ -124,6 +136,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   // ใช้ state isMobile แทนการเช็ค window.innerWidth โดยตรง
   const marginLeftMain = isMobile ? '0px' : '300px'; // 256px = w-64, 80px = w-20
+
+  // ถ้าอยู่ในหน้า login หรือ register ให้ไม่แสดง sidebar
+  if (isAuthPage) {
+    return (
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-950">
+        {children}
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-100 dark:bg-gray-950">
@@ -305,36 +326,70 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             {/* Divider */}
             <div className="my-5 mx-3 border-t-2 border-emerald-100 dark:border-emerald-900/30"></div>
             
-            <motion.h3
-              className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mt-6 mb-3 px-3"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{
-                opacity: (isMobile || isSidebarOpen) ? 1 : 0,
-                x: (isMobile || isSidebarOpen) ? 0 : -20
-              }}
-              transition={{ duration: 0.3, delay: 0.1 }}
-            >
-
-              {(isMobile || isSidebarOpen) ? "Admin Menu" : ""}
-            </motion.h3>
-            <SidebarMenuItem
-              href="/devtool"
-              icon={faFileAlt}
-              text="DevMenu"
-              isSidebarOpen={isMobile || isSidebarOpen}
-            />
-
-            <motion.h3
-              className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mt-6 mb-3 px-3"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{
-                opacity: (isMobile || isSidebarOpen) ? 1 : 0,
-                x: (isMobile || isSidebarOpen) ? 0 : -20
-              }}
-              transition={{ duration: 0.3, delay: 0.1 }}
-            />
+            {/* แสดง DevTool เฉพาะ dev, superadmin, admin */}
+            {user && (user.role === 'dev' || user.role === 'superadmin' || user.role === 'admin') && (
+              <>
+                <motion.h3
+                  className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mt-6 mb-3 px-3"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{
+                    opacity: (isMobile || isSidebarOpen) ? 1 : 0,
+                    x: (isMobile || isSidebarOpen) ? 0 : -20
+                  }}
+                  transition={{ duration: 0.3, delay: 0.1 }}
+                >
+                  {(isMobile || isSidebarOpen) ? "Admin Menu" : ""}
+                </motion.h3>
+                <SidebarMenuItem
+                  href="/devtool"
+                  icon={faFileAlt}
+                  text="DevMenu"
+                  isSidebarOpen={isMobile || isSidebarOpen}
+                />
+              </>
+            )}
           </ul>
         </nav>
+
+        {/* User Info Section */}
+        {user && (
+          <motion.div
+            className={`p-4 border-t-2 border-emerald-100 dark:border-emerald-900/30 bg-gradient-to-r from-emerald-50/50 to-green-50/30 dark:from-emerald-950/30 dark:to-gray-800`}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{
+              opacity: (isMobile || isSidebarOpen) ? 1 : 0,
+              y: (isMobile || isSidebarOpen) ? 0 : 20
+            }}
+            transition={{ duration: 0.3, delay: 0.15 }}
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center text-white font-bold shadow-lg">
+                <FontAwesomeIcon icon={faUserCircle} className="text-xl" />
+              </div>
+              {(isMobile || isSidebarOpen) && (
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                    {user.name}
+                  </p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                    {user.username}
+                  </p>
+                </div>
+              )}
+            </div>
+            {(isMobile || isSidebarOpen) && (
+              <motion.button
+                onClick={signOut}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-red-500 to-red-600 text-white text-sm font-medium hover:from-red-600 hover:to-red-700 shadow-md hover:shadow-lg transition-all"
+              >
+                <FontAwesomeIcon icon={faSignOutAlt} />
+                ออกจากระบบ
+              </motion.button>
+            )}
+          </motion.div>
+        )}
 
         <motion.footer
           className={`p-4 text-center text-[10px] text-gray-500 dark:text-gray-400 border-t-2 border-emerald-100 dark:border-emerald-900/30 bg-gradient-to-r from-emerald-50/30 to-green-50/20 dark:from-emerald-950/20 dark:to-gray-800`}

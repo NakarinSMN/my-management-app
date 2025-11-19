@@ -50,6 +50,7 @@ export default function AdjustCarpetPage() {
     return () => clearInterval(tid);
   }, []);
 
+  // Rate factors - constant values
   const rateFactors: Record<string, number> = {
     A: 645.21,
     B: 1182.35,
@@ -92,6 +93,7 @@ export default function AdjustCarpetPage() {
         setResultRates({});
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate, endDate, activeTab]);
 
   useEffect(() => {
@@ -116,6 +118,7 @@ export default function AdjustCarpetPage() {
         setDaysDiff(0);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customDays, activeTab]);
 
   const labelMap: Record<string, string> = {

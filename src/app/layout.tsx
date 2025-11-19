@@ -10,6 +10,7 @@ import { ThemeProvider } from 'next-themes';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { DialogProvider } from './contexts/DialogContext';
 import NotificationManager from './components/NotificationManager';
+import { Providers } from './providers';
 
 // กำหนดฟอนต์ Inter และให้เป็น CSS variable
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -38,18 +39,20 @@ export default function RootLayout({
   return (
     <html lang="th" suppressHydrationWarning>
       <body className={`${inter.variable} ${kanit.variable}`} suppressHydrationWarning={true}>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} forcedTheme="light" storageKey="theme">
-          <DialogProvider>
-            <NotificationProvider>
-              <Layout>
-                <PageTransition>
-                  {children}
-                </PageTransition>
-              </Layout>
-              <NotificationManager />
-            </NotificationProvider>
-          </DialogProvider>
-        </ThemeProvider>
+        <Providers>
+          <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} forcedTheme="light" storageKey="theme">
+            <DialogProvider>
+              <NotificationProvider>
+                <Layout>
+                  <PageTransition>
+                    {children}
+                  </PageTransition>
+                </Layout>
+                <NotificationManager />
+              </NotificationProvider>
+            </DialogProvider>
+          </ThemeProvider>
+        </Providers>
       </body>
     </html>
   );

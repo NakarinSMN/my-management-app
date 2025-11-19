@@ -22,6 +22,7 @@ export default function AnimatedNumber({ value }: { value: number }) {
     }, duration / steps);
 
     return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
   return (

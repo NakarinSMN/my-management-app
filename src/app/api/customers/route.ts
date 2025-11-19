@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Db } from 'mongodb';
 import { getDatabase } from '@/lib/mongodb';
+import { requireAuth } from '@/lib/api-auth';
 
 // Interface สำหรับ Counter Document
 interface CounterDocument {
@@ -160,6 +161,12 @@ export async function GET(request: NextRequest) {
 
 // POST: เพิ่มลูกค้าใหม่
 export async function POST(request: NextRequest) {
+  // Check authentication
+  const authSession = await requireAuth();
+  if (authSession instanceof NextResponse) {
+    return authSession; // Return error response
+  }
+
   try {
     const body = await request.json();
     console.log('📝 [Customers API] Adding new customer:', body);
@@ -257,6 +264,12 @@ export async function POST(request: NextRequest) {
 
 // PUT: อัปเดตข้อมูลลูกค้า
 export async function PUT(request: NextRequest) {
+  // Check authentication
+  const authSession = await requireAuth();
+  if (authSession instanceof NextResponse) {
+    return authSession; // Return error response
+  }
+
   try {
     const body = await request.json();
     console.log('🔄 [Customers API] Updating customer:', body);
@@ -357,6 +370,12 @@ export async function PUT(request: NextRequest) {
 
 // DELETE: ลบข้อมูลลูกค้า
 export async function DELETE(request: NextRequest) {
+  // Check authentication
+  const authSession = await requireAuth();
+  if (authSession instanceof NextResponse) {
+    return authSession; // Return error response
+  }
+
   try {
     const body = await request.json();
     const { licensePlate } = body;

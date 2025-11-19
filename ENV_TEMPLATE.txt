@@ -4,10 +4,18 @@
 MONGODB_URI=mongodb+srv://your-username:your-password@your-cluster.mongodb.net/?retryWrites=true&w=majority
 MONGODB_DATABASE=management_app
 
+# NextAuth Secret (ใช้สำหรับเข้ารหัส session)
+# สร้าง secret ได้ที่: https://generate-secret.vercel.app/32
+# หรือใช้คำสั่ง: openssl rand -base64 32
+NEXTAUTH_SECRET=your-nextauth-secret-here-minimum-32-characters
+NEXTAUTH_URL=http://localhost:3000
+
 # หมายเหตุ:
 # 1. ให้สร้างบัญชี MongoDB Atlas ที่ https://www.mongodb.com/cloud/atlas
 # 2. สร้าง Cluster ใหม่ (ฟรี)
 # 3. คัดลอก Connection String มาใส่ใน MONGODB_URI
 # 4. แทนที่ username และ password ด้วยข้อมูลจริงของคุณ
 # 5. ตั้งค่า Network Access ให้อนุญาตทุก IP (0.0.0.0/0) หรือ IP ของคุณ
+# 6. สร้าง NEXTAUTH_SECRET สำหรับเข้ารหัส session (ควรเป็น random string ยาวๆ)
+# 7. หลังจากตั้งค่าเสร็จ ให้รัน script: node scripts/create-admin-user.js เพื่อสร้าง admin user
 

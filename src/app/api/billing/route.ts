@@ -1,6 +1,7 @@
 // src/app/api/billing/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
+import { requireAuth } from '@/lib/api-auth';
 
 // GET: ดึงข้อมูลบิลทั้งหมด (เร็วขึ้น)
 export async function GET() {
@@ -91,6 +92,12 @@ export async function GET() {
 
 // POST: เพิ่มบิลใหม่
 export async function POST(request: NextRequest) {
+  // Check authentication
+  const authSession = await requireAuth();
+  if (authSession instanceof NextResponse) {
+    return authSession; // Return error response
+  }
+
   try {
     const body = await request.json();
     const db = await getDatabase();
@@ -132,6 +139,12 @@ export async function POST(request: NextRequest) {
 
 // PUT: อัปเดตข้อมูลบิล
 export async function PUT(request: NextRequest) {
+  // Check authentication
+  const authSession = await requireAuth();
+  if (authSession instanceof NextResponse) {
+    return authSession; // Return error response
+  }
+
   try {
     const body = await request.json();
     const db = await getDatabase();
@@ -185,6 +198,12 @@ export async function PUT(request: NextRequest) {
 
 // DELETE: ลบข้อมูลบิล
 export async function DELETE(request: NextRequest) {
+  // Check authentication
+  const authSession = await requireAuth();
+  if (authSession instanceof NextResponse) {
+    return authSession; // Return error response
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const billNumber = searchParams.get('billNumber');

@@ -813,7 +813,7 @@ export default function TaxExpiryNextYearPage() {
 
 ติดต่อสอบถามโทร 095-841-0423 หรือแอดไลน์ด้วยเบอร์โทรนี้
 ตรอ.บังรีท่าอิฐ`;
-  }, [formatDate]);
+  }, []);
 
   // ฟังก์ชันคัดลอกเบอร์โทร
   const copyPhoneToClipboard = useCallback(async (phone: string, licensePlate: string) => {
@@ -1029,7 +1029,7 @@ export default function TaxExpiryNextYearPage() {
         }
       }
     );
-  }, [showError]);
+  }, [showError, sendingLicensePlates, showConfirm]);
 
   // ฟังก์ชันรีเซ็ตสถานะการส่ง (เพื่อให้กลับมาแจ้งเตือนได้อีก)
   const resetNotificationStatus = (licensePlate: string) => {
@@ -1157,7 +1157,7 @@ export default function TaxExpiryNextYearPage() {
         return newSet;
       });
     }
-  }, [showError, saveNotificationStatus, notificationStatus]);
+  }, [showError, saveNotificationStatus, notificationStatus, sendingLicensePlates]);
 
   // รายการแจ้งเตือนที่แสดง - ใช้จาก dailySnapshotList (รายการของวันนี้)
   const notificationList = useMemo(() => {
