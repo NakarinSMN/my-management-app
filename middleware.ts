@@ -4,6 +4,12 @@ import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
 export async function middleware(request: NextRequest) {
+  // ปิดระบบล็อกอินชั่วคราว - อนุญาตให้เข้าถึงทุกหน้าได้โดยไม่ต้องล็อกอิน
+  // TODO: เปิดใช้งานอีกครั้งเมื่อแก้ไขระบบล็อกอินเสร็จ
+  return NextResponse.next();
+  
+  /* 
+  // โค้ดเดิม - เปิดใช้งานเมื่อต้องการเปิดระบบล็อกอินอีกครั้ง
   const { pathname } = request.nextUrl;
 
   // อนุญาตให้เข้าถึงหน้า login, register, API auth และ debug env ได้โดยไม่ต้องล็อกอิน
@@ -75,6 +81,7 @@ export async function middleware(request: NextRequest) {
 
   // ถ้ามี token ให้ผ่าน
   return NextResponse.next();
+  */
 }
 
 export const config = {
