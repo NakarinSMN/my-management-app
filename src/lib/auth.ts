@@ -96,16 +96,19 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async redirect({ url, baseUrl }) {
-      // If url is relative, make it absolute
+      // ใช้ production URL ถ้ามีการตั้งค่าไว้
+      const productionUrl = process.env.NEXTAUTH_URL || baseUrl;
+      
+      // If url is relative, make it absolute using production URL
       if (url.startsWith("/")) {
-        return `${baseUrl}${url}`;
+        return `${productionUrl}${url}`;
       }
       // If url is on same origin, allow it
-      if (new URL(url).origin === baseUrl) {
+      if (new URL(url).origin === productionUrl) {
         return url;
       }
-      // Default to dashboard
-      return `${baseUrl}/dashboard`;
+      // Default to dashboard on production URL
+      return `${productionUrl}/dashboard`;
     },
     async jwt({ token, user }) {
       if (user) {

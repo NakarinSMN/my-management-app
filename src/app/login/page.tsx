@@ -49,11 +49,18 @@ export default function LoginPage() {
       
       // Use NextAuth's built-in redirect mechanism
       // This will handle cookie setting and redirect automatically
+      // ถ้าเป็น production ให้ redirect ไปที่ production URL
+      const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+      const productionUrl = isProduction ? window.location.origin : '';
+      const finalCallbackUrl = isProduction && productionUrl 
+        ? `${productionUrl}/dashboard` 
+        : "/dashboard";
+      
       const result = await signIn("credentials", {
         username,
         password,
         redirect: true,
-        callbackUrl: "/dashboard"
+        callbackUrl: finalCallbackUrl
       });
 
       // If redirect is true, signIn will handle redirect automatically
