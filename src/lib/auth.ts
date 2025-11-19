@@ -15,7 +15,19 @@ export interface User {
   role: string;
 }
 
+// Normalize URL helper - ensure protocol is present
+const normalizeUrl = (value?: string | null): string => {
+  if (!value) return "";
+  const trimmed = value.trim().replace(/\/+$/, "");
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+  return `https://${trimmed}`;
+};
+
 export const authOptions: NextAuthOptions = {
+  // Normalize NEXTAUTH_URL before NextAuth uses it
+  url: process.env.NEXTAUTH_URL ? normalizeUrl(process.env.NEXTAUTH_URL) : undefined,
   providers: [
     CredentialsProvider({
       name: "Credentials",
