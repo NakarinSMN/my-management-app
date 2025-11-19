@@ -86,10 +86,11 @@ function isPaymentDayToday(paymentDay: number, startDate: string, paidDates?: { 
 }
 
 // Hook สำหรับนับจำนวนแจ้งเตือน
-export function useRenewalNotificationCount() {
-  const { data, isLoading } = useInstallmentInsuranceData();
+export function useRenewalNotificationCount(shouldFetch = true) {
+  const { data, isLoading } = useInstallmentInsuranceData(shouldFetch);
+  const dataset = shouldFetch ? data : [];
   
-  const count = data.filter(item => {
+  const count = dataset.filter(item => {
     // ตรวจสอบการแจ้งเตือน 2 ประเภท:
     
     // 1. ตรวจสอบว่าวันนี้เป็นวันที่ต้องผ่อนหรือไม่ (เฉพาะ status = 'กำลังผ่อน')
@@ -117,7 +118,7 @@ export function useRenewalNotificationCount() {
 
   return {
     count,
-    isLoading
+    isLoading: shouldFetch ? isLoading : false
   };
 }
 

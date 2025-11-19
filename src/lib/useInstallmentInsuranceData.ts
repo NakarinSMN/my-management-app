@@ -121,11 +121,11 @@ export function formatInstallmentInsuranceData(item: RawInstallmentInsuranceItem
 }
 
 // Custom Hook หลัก
-export function useInstallmentInsuranceData() {
+export function useInstallmentInsuranceData(shouldFetch = true) {
   const [formattedData, setFormattedData] = useState<InstallmentInsuranceData[]>([]);
-  
+
   const { data: swrData, error: swrError, mutate, isLoading } = useSWR(
-    MONGODB_INSTALLMENT_INSURANCE_API_URL,
+    shouldFetch ? MONGODB_INSTALLMENT_INSURANCE_API_URL : null,
     fetcher,
     {
       revalidateOnFocus: true,
@@ -154,8 +154,10 @@ export function useInstallmentInsuranceData() {
       });
       
       setFormattedData(sortedData);
+    } else if (!shouldFetch) {
+      setFormattedData([]);
     }
-  }, [swrData]);
+  }, [swrData, shouldFetch]);
 
   // ฟังก์ชันสำหรับ refresh ข้อมูล
   const refreshData = async () => {
@@ -166,7 +168,7 @@ export function useInstallmentInsuranceData() {
     data: formattedData,
     rawData: swrData,
     error: swrError,
-    isLoading,
+    isLoading: shouldFetch ? isLoading : false,
     mutate,
     refreshData,
   };

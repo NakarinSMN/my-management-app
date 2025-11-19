@@ -94,13 +94,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   // ตรวจสอบว่าอยู่ในหน้า login หรือ register หรือไม่
   const isAuthPage = pathname === "/login" || pathname === "/register";
   
+  const shouldLoadProtectedData = !isAuthPage;
   // ดึงจำนวนแจ้งเตือน
-  const { count: renewalNotificationCount } = useRenewalNotificationCount();
+  const { count: renewalNotificationCount } = useRenewalNotificationCount(shouldLoadProtectedData);
   
   // ดึงข้อมูล user และ auth functions
   // Note: useAuth must always be called (React hook rule)
   const auth = useAuth();
-  const user = isAuthPage ? null : auth.user;
+  const user = shouldLoadProtectedData ? auth.user : null;
   const signOut = auth.signOut;
 
   useEffect(() => {
