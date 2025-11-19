@@ -20,6 +20,29 @@ interface NotificationItem {
   note?: string;
 }
 
+// ฟังก์ชันตรวจสอบเบอร์โทรศัพท์ที่ถูกต้อง
+function isValidPhone(phone: string | undefined): boolean {
+  if (!phone) return false;
+  
+  const trimmedPhone = phone.trim();
+  
+  // ตรวจสอบว่าไม่ใช่ string ว่าง
+  if (trimmedPhone.length === 0) return false;
+  
+  // ตรวจสอบว่าไม่ใช่ "0" หรือชุดเลข 0 เท่านั้น (เช่น "00", "000", "0000")
+  if (/^0+$/.test(trimmedPhone)) return false;
+  
+  // ตรวจสอบว่าเป็นตัวเลขเท่านั้น (อนุญาตให้มี -, (), หรือช่องว่าง)
+  const digitsOnly = trimmedPhone.replace(/[\s\-\(\)]/g, '');
+  if (!/^\d+$/.test(digitsOnly)) return false;
+  
+  // ตรวจสอบความยาวของตัวเลข (เบอร์โทรควรมีอย่างน้อย 6 หลัก และไม่เกิน 15 หลัก)
+  // กรองเบอร์ที่สั้นเกินไปหรือยาวเกินไป
+  if (digitsOnly.length < 6 || digitsOnly.length > 15) return false;
+  
+  return true;
+}
+
 // ฟังก์ชันคำนวณจำนวนวันที่เหลือ
 function calculateDaysUntilExpiry(registerDate: string): number {
   if (!registerDate) return 999;
@@ -54,12 +77,15 @@ export default function NotiTodayPage() {
   // ใช้ข้อมูลจาก MongoDB แทน Google Sheets
   const { data: customerData, error, isLoading } = useCustomerData();
 
-  // กรองเฉพาะรายการที่กำลังจะครบกำหนด (0-90 วัน)
+  // กรองเฉพาะรายการที่กำลังจะครบกำหนด (0-90 วัน) และมีเบอร์โทรศัพท์
   const filteredNotifications = useMemo(() => {
     if (!customerData || customerData.length === 0) return [];
     
     return customerData
       .filter((item: CustomerData) => {
+        // ตรวจสอบว่าเบอร์โทรศัพท์ถูกต้อง (ไม่ใช่ "0" หรือรูปแบบไม่ถูกต้อง)
+        if (!isValidPhone(item.phone)) return false;
+        
         const daysLeft = calculateDaysUntilExpiry(item.registerDate);
         return daysLeft >= 0 && daysLeft <= 90;
       })
