@@ -96,15 +96,24 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async redirect({ url, baseUrl }) {
-      // ใช้ production URL ถ้ามีการตั้งค่าไว้
-      const productionUrl = process.env.NEXTAUTH_URL || baseUrl;
-      
+      // Ensure production URL always has protocol
+      const normalizeUrl = (value?: string | null) => {
+        if (!value) return "";
+        const trimmed = value.trim().replace(/\/+$/, "");
+        if (/^https?:\/\//i.test(trimmed)) {
+          return trimmed;
+        }
+        return `https://${trimmed}`;
+      };
+
+      const productionUrl = normalizeUrl(process.env.NEXTAUTH_URL) || normalizeUrl(baseUrl);
+
       // If url is relative, make it absolute using production URL
       if (url.startsWith("/")) {
         return `${productionUrl}${url}`;
       }
       // If url is on same origin, allow it
-      if (new URL(url).origin === productionUrl) {
+      if (new URL(url).origin === new URL(productionUrl).origin) {
         return url;
       }
       // Default to dashboard on production URL
