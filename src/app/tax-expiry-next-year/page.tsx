@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import React, { useState, useEffect, useMemo, memo } from 'react';
+import React, { useState, useEffect, useMemo, memo, useCallback } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 
@@ -24,7 +24,10 @@ import {
   faSync,
   faSpinner,
   faFilter,
-  faStar
+  faStar,
+  faTag,
+  faSquareCheck,
+  faSquare
 } from '@fortawesome/free-solid-svg-icons';
 
 // ⚡ ใช้ Custom Hook แทน useSWR
@@ -47,6 +50,7 @@ interface TaxExpiryData {
   status: string;
   brand?: string;
   vehicleType?: string;
+  tags?: string[];
 }
 
 // Interface สำหรับสถานะการส่งข้อความ
@@ -230,6 +234,215 @@ function getPageNumbers(currentPage: number, totalPages: number, maxPages = 5) {
   return pages;
 }
 
+// Component สำหรับแสดงรายการแจ้งเตือนใน modal
+const NotificationItemCard = memo(function NotificationItemCard({
+  item,
+  idx,
+  isSelectionMode,
+  isSelected,
+  isCopied,
+  hasCopied,
+  isSending,
+  copiedPhoneIds,
+  onToggleSelection,
+  onCopyPhone,
+  onCopyMessage,
+  onMarkAsSent,
+  onDelete,
+  formatDate
+}: {
+  item: TaxExpiryData;
+  idx: number;
+  isSelectionMode: boolean;
+  isSelected: boolean;
+  isCopied: boolean;
+  hasCopied: boolean;
+  isSending: boolean;
+  copiedPhoneIds: Set<string>;
+  onToggleSelection: (licensePlate: string) => void;
+  onCopyPhone: (phone: string, licensePlate: string) => void;
+  onCopyMessage: (item: TaxExpiryData) => void;
+  onMarkAsSent: (licensePlate: string) => void;
+  onDelete: (licensePlate: string) => void;
+  formatDate: (dateStr: string, useBuddhistYear?: boolean) => string;
+}) {
+  const isPhoneCopied = copiedPhoneIds.has(item.licensePlate);
+  
+  const checkboxStyle = useMemo(() => ({
+    backgroundColor: isSelected ? '#10b981' : 'transparent',
+    borderColor: isSelected ? '#10b981' : '#9ca3af'
+  }), [isSelected]);
+
+  return (
+    <div
+      key={item.licensePlate + idx}
+      className="border-2 rounded-xl p-5 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-xl hover:border-emerald-400 dark:hover:border-emerald-500 transition-all duration-300 transform hover:-translate-y-1"
+    >
+      <div className="flex items-start gap-4">
+        {/* Checkbox (แสดงเฉพาะเมื่ออยู่ในโหมดเลือก) และเลขลำดับ */}
+        <div className="flex-shrink-0 flex flex-col items-center gap-2">
+          {isSelectionMode && (
+            <button
+              onClick={() => onToggleSelection(item.licensePlate)}
+              className="w-6 h-6 flex items-center justify-center rounded border-2 transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+              style={checkboxStyle}
+              title={isSelected ? 'ยกเลิกเลือก' : 'เลือก'}
+            >
+              {isSelected && (
+                <FontAwesomeIcon icon={faCheck} className="text-white text-xs" />
+              )}
+            </button>
+          )}
+          <div className={`w-14 h-14 rounded-full bg-gradient-to-br from-emerald-500 to-green-500 text-white flex items-center justify-center font-bold text-sm shadow-lg ${isSelectionMode ? 'mt-0' : ''}`}>
+            {item.sequenceNumber ? String(item.sequenceNumber).padStart(6, '0') : String(idx + 1).padStart(6, '0')}
+          </div>
+        </div>
+        
+        {/* ข้อมูล */}
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-3">
+            <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm ${
+              item.daysUntilExpiry < 0
+                ? 'bg-gradient-to-r from-red-500 to-red-600 text-white'
+                : item.daysUntilExpiry === 0
+                ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white animate-pulse'
+                : item.daysUntilExpiry <= 30
+                ? 'bg-gradient-to-r from-yellow-400 to-orange-400 text-gray-900'
+                : 'bg-gradient-to-r from-emerald-500 to-green-500 text-white'
+            }`}>
+              {item.daysUntilExpiry < 0
+                ? `⚠️ เกินกำหนด ${Math.abs(item.daysUntilExpiry)} วัน`
+                : item.daysUntilExpiry === 0
+                ? '🔥 ครบกำหนดวันนี้'
+                : item.daysUntilExpiry <= 30
+                ? `⏰ เหลือ ${item.daysUntilExpiry} วัน`
+                : `📅 เหลือ ${item.daysUntilExpiry} วัน`
+              }
+            </span>
+          </div>
+          
+          <div className="space-y-2 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+              <p className="text-gray-900 dark:text-white">
+                <span className="font-semibold text-gray-600 dark:text-gray-400">ทะเบียน:</span> 
+                <span className="ml-2 font-bold">{item.licensePlate}</span>
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-500"></div>
+              <p className="text-gray-900 dark:text-white">
+                <span className="font-semibold text-gray-600 dark:text-gray-400">ชื่อ:</span> 
+                <span className="ml-2">{item.customerName}</span>
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+              <p className="text-gray-900 dark:text-white">
+                <span className="font-semibold text-gray-600 dark:text-gray-400">เบอร์:</span> 
+                <span className="ml-2">{item.phone}</span>
+              </p>
+              <button
+                onClick={() => onCopyPhone(item.phone, item.licensePlate)}
+                className="ml-1 px-2 py-1 rounded-md text-xs font-medium transition-all hover:scale-105 flex items-center justify-center bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/50"
+                title="คัดลอกเบอร์โทร"
+              >
+                <FontAwesomeIcon 
+                  icon={isPhoneCopied ? faCheck : faCopy} 
+                  className="text-xs" 
+                />
+              </button>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+              <p className="text-gray-900 dark:text-white">
+                <span className="font-semibold text-gray-600 dark:text-gray-400">ครบกำหนด:</span> 
+                <span className="ml-2 font-bold text-orange-600 dark:text-orange-400">{formatDate(item.expiryDate)}</span>
+              </p>
+            </div>
+            {item.tags && item.tags.length > 0 && (
+              <div className="flex items-start gap-2 mt-1">
+                <div className="w-2 h-2 rounded-full bg-purple-500 mt-1.5"></div>
+                <div className="flex flex-wrap gap-1.5">
+                  {item.tags.map((tag, tagIndex) => (
+                    <span 
+                      key={tagIndex}
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${
+                        tag === 'ภาษี' ? 'bg-blue-500 text-white' :
+                        tag === 'ตรอ.' ? 'bg-green-500 text-white' :
+                        tag === 'พรบ.' ? 'bg-orange-500 text-white' :
+                        'bg-gray-500 text-white'
+                      }`}
+                    >
+                      <FontAwesomeIcon icon={faTag} className="text-[9px]" />
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* ปุ่มต่างๆ */}
+        <div className="flex flex-col gap-3 flex-shrink-0">
+          {/* ปุ่มคัดลอก */}
+          <button
+            onClick={() => onCopyMessage(item)}
+            className={`px-6 py-3 rounded-xl transition-all flex items-center justify-center gap-2 text-sm font-semibold min-w-[140px] transform hover:scale-105 ${
+              isCopied
+                ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg shadow-green-500/50 animate-pulse'
+                : hasCopied
+                ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md'
+                : 'bg-gradient-to-r from-emerald-500 to-green-500 text-white hover:from-emerald-600 hover:to-green-600 shadow-md hover:shadow-lg'
+            }`}
+          >
+            <FontAwesomeIcon icon={isCopied || hasCopied ? faCheck : faCopy} className="text-lg" />
+            {isCopied ? 'คัดลอกแล้ว!' : hasCopied ? 'คัดลอกแล้ว' : 'คัดลอก'}
+          </button>
+          
+          {/* ปุ่มส่งแล้ว */}
+          <button
+            onClick={() => onMarkAsSent(item.licensePlate)}
+            disabled={!hasCopied || isSending}
+            className={`px-6 py-3 rounded-xl transition-all flex items-center justify-center gap-2 text-sm font-semibold min-w-[140px] transform ${
+              isSending
+                ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white cursor-wait'
+                : hasCopied
+                ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 shadow-md hover:shadow-lg hover:scale-105'
+                : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-500 cursor-not-allowed opacity-60'
+            }`}
+            title={
+              isSending 
+                ? 'กำลังบันทึก...' 
+                : !hasCopied 
+                ? 'กรุณาคัดลอกข้อความก่อน' 
+                : 'ทำเครื่องหมายว่าส่งแล้ว'
+            }
+          >
+            <FontAwesomeIcon 
+              icon={isSending ? faSpinner : faCheck} 
+              className={`text-lg ${isSending ? 'animate-spin' : ''}`} 
+            />
+            {isSending ? 'กำลังส่ง...' : 'ส่งแล้ว'}
+          </button>
+
+          {/* ปุ่มลบ */}
+          <button
+            onClick={() => onDelete(item.licensePlate)}
+            disabled={isSending}
+            className="px-6 py-3 rounded-xl transition-all flex items-center justify-center gap-2 text-sm font-semibold min-w-[140px] transform hover:scale-105 bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            title="ลบรายการนี้ออกจากรายการแจ้งเตือน"
+          >
+            <FontAwesomeIcon icon={faTrash} className="text-lg" />
+            ลบ
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+});
+
 const TaxExpiryRow = memo(function TaxExpiryRow({ 
   item,
   rowNumber,
@@ -323,6 +536,9 @@ export default function TaxExpiryNextYearPage() {
   const [notificationStatus, setNotificationStatus] = useState<NotificationStatus>({});
   const [copiedIds, setCopiedIds] = useState<Set<string>>(new Set());
   const [copiedId, setCopiedId] = useState<string>('');
+  const [copiedPhoneIds, setCopiedPhoneIds] = useState<Set<string>>(new Set());
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+  const [isSelectionMode, setIsSelectionMode] = useState<boolean>(false);
   const [dailySnapshotList, setDailySnapshotList] = useState<string[]>([]);
   const [isLoadingDaily, setIsLoadingDaily] = useState<boolean>(false);
   const [sendingLicensePlates, setSendingLicensePlates] = useState<Set<string>>(new Set());
@@ -556,7 +772,7 @@ export default function TaxExpiryNextYearPage() {
   }, [data.length]);
 
   // ฟังก์ชันบันทึกสถานะการส่งข้อความลง MongoDB
-  const saveNotificationStatus = async (licensePlate: string, sent: boolean, sentAt: string) => {
+  const saveNotificationStatus = useCallback(async (licensePlate: string, sent: boolean, sentAt: string) => {
     try {
       const response = await fetch('/api/notification-status', {
         method: 'POST',
@@ -577,10 +793,10 @@ export default function TaxExpiryNextYearPage() {
       console.error('❌ Error saving notification status:', error);
       throw error;
     }
-  };
+  }, []);
 
   // ฟังก์ชันสร้างข้อความแจ้งเตือน
-  const generateNotificationMessage = (item: TaxExpiryData): string => {
+  const generateNotificationMessage = useCallback((item: TaxExpiryData): string => {
     const messageType = item.daysUntilExpiry < 0 
       ? '🚨 เกินกำหนด! ภาษีรถหมดอายุแล้ว'
       : item.daysUntilExpiry === 0
@@ -597,10 +813,31 @@ export default function TaxExpiryNextYearPage() {
 
 ติดต่อสอบถามโทร 095-841-0423 หรือแอดไลน์ด้วยเบอร์โทรนี้
 ตรอ.บังรีท่าอิฐ`;
-  };
+  }, [formatDate]);
+
+  // ฟังก์ชันคัดลอกเบอร์โทร
+  const copyPhoneToClipboard = useCallback(async (phone: string, licensePlate: string) => {
+    try {
+      await navigator.clipboard.writeText(phone);
+      setCopiedPhoneIds(prev => new Set([...prev, licensePlate]));
+      setTimeout(() => {
+        setCopiedPhoneIds(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(licensePlate);
+          return newSet;
+        });
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to copy phone:', error);
+      showError(
+        'คัดลอกไม่สำเร็จ',
+        'ไม่สามารถคัดลอกเบอร์โทรได้ กรุณาลองใหม่อีกครั้ง'
+      );
+    }
+  }, [showError]);
 
   // ฟังก์ชันคัดลอกข้อความ
-  const copyToClipboard = async (item: TaxExpiryData) => {
+  const copyToClipboard = useCallback(async (item: TaxExpiryData) => {
     const message = generateNotificationMessage(item);
     try {
       await navigator.clipboard.writeText(message);
@@ -615,10 +852,122 @@ export default function TaxExpiryNextYearPage() {
         'ไม่สามารถคัดลอกข้อความได้ กรุณาลองใหม่อีกครั้ง'
       );
     }
+  }, [showError, generateNotificationMessage]);
+
+  // ฟังก์ชันเลือก/ยกเลิกเลือกรายการ
+  const toggleSelection = useCallback((licensePlate: string) => {
+    setSelectedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(licensePlate)) {
+        newSet.delete(licensePlate);
+      } else {
+        newSet.add(licensePlate);
+      }
+      return newSet;
+    });
+  }, []);
+
+  // ฟังก์ชันเริ่มโหมดเลือก
+  const startSelectionMode = () => {
+    setIsSelectionMode(true);
+    setSelectedItems(new Set());
+  };
+
+  // ฟังก์ชันยืนยันการเลือก
+  const confirmSelection = () => {
+    if (selectedItems.size === 0) {
+      showError(
+        'ไม่มีรายการที่เลือก',
+        'กรุณาเลือกรายการที่ต้องการลบก่อน'
+      );
+      return;
+    }
+    setIsSelectionMode(false);
+  };
+
+  // ฟังก์ชันยกเลิกการเลือก
+  const cancelSelection = () => {
+    setIsSelectionMode(false);
+    setSelectedItems(new Set());
+  };
+
+  // ฟังก์ชันเลือกทั้งหมด/ยกเลิกทั้งหมด
+  const toggleSelectAll = () => {
+    if (selectedItems.size === notificationList.length) {
+      setSelectedItems(new Set());
+    } else {
+      setSelectedItems(new Set(notificationList.map(item => item.licensePlate)));
+    }
+  };
+
+  // ฟังก์ชันลบหลายรายการพร้อมกัน
+  const deleteMultipleNotifications = async () => {
+    if (selectedItems.size === 0) {
+      showError(
+        'ไม่มีรายการที่เลือก',
+        'กรุณาเลือกรายการที่ต้องการลบก่อน'
+      );
+      return;
+    }
+
+    const selectedArray = Array.from(selectedItems);
+    showConfirm(
+      'ลบหลายรายการ',
+      `ต้องการลบ ${selectedItems.size} รายการออกจากรายการแจ้งเตือนใช่หรือไม่?\n\n${selectedArray.slice(0, 5).join(', ')}${selectedArray.length > 5 ? ` และอีก ${selectedArray.length - 5} รายการ` : ''}`,
+      async () => {
+        try {
+          // ลบแต่ละรายการจาก MongoDB
+          const deletePromises = selectedArray.map(async (licensePlate) => {
+            const response = await fetch('/api/daily-notifications', {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ licensePlate })
+            });
+            if (!response.ok) {
+              throw new Error(`Failed to delete ${licensePlate}`);
+            }
+          });
+
+          await Promise.all(deletePromises);
+          
+          // ลบออกจาก dailySnapshotList
+          setDailySnapshotList(prev => prev.filter(plate => !selectedItems.has(plate)));
+          
+          // ลบออกจาก copiedIds และ copiedPhoneIds
+          selectedArray.forEach(licensePlate => {
+            setCopiedIds(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(licensePlate);
+              return newSet;
+            });
+            setCopiedPhoneIds(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(licensePlate);
+              return newSet;
+            });
+          });
+          
+          // ล้าง selectedItems และออกจากโหมดเลือก
+          setSelectedItems(new Set());
+          setIsSelectionMode(false);
+          
+          showSuccess(
+            'ลบสำเร็จ',
+            `ลบ ${selectedArray.length} รายการเรียบร้อยแล้ว`
+          );
+        } catch (error) {
+          console.error('Error deleting multiple notifications:', error);
+          showError(
+            'เกิดข้อผิดพลาด',
+            'เกิดข้อผิดพลาดในการลบ กรุณาลองใหม่อีกครั้ง'
+          );
+        }
+      }
+    );
   };
 
   // ฟังก์ชันลบรายการออกจากรายการแจ้งเตือน (ไม่บันทึกว่าส่งแล้ว)
-  const deleteNotification = (licensePlate: string) => {
+  const deleteNotification = useCallback((licensePlate: string) => {
     // ป้องกันการลบซ้ำ
     if (sendingLicensePlates.has(licensePlate)) {
       return;
@@ -651,6 +1000,20 @@ export default function TaxExpiryNextYearPage() {
             newSet.delete(licensePlate);
             return newSet;
           });
+          
+          // ลบออกจาก copiedPhoneIds
+          setCopiedPhoneIds(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(licensePlate);
+            return newSet;
+          });
+          
+          // ลบออกจาก selectedItems ถ้ามี
+          setSelectedItems(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(licensePlate);
+            return newSet;
+          });
         } catch (error) {
           console.error('Error deleting notification:', error);
           showError(
@@ -666,7 +1029,7 @@ export default function TaxExpiryNextYearPage() {
         }
       }
     );
-  };
+  }, [showError]);
 
   // ฟังก์ชันรีเซ็ตสถานะการส่ง (เพื่อให้กลับมาแจ้งเตือนได้อีก)
   const resetNotificationStatus = (licensePlate: string) => {
@@ -713,7 +1076,7 @@ export default function TaxExpiryNextYearPage() {
   };
 
   // ฟังก์ชันทำเครื่องหมายว่าส่งแล้ว (จะลบออกจากรายการ)
-  const markAsSent = async (licensePlate: string) => {
+  const markAsSent = useCallback(async (licensePlate: string) => {
     // ป้องกันการส่งซ้ำ - ถ้ากำลังส่งอยู่ให้ return
     if (sendingLicensePlates.has(licensePlate)) {
       console.log('Already sending:', licensePlate);
@@ -755,6 +1118,13 @@ export default function TaxExpiryNextYearPage() {
         newSet.delete(licensePlate);
         return newSet;
       });
+      
+      // ลบออกจาก copiedPhoneIds
+      setCopiedPhoneIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(licensePlate);
+        return newSet;
+      });
     } catch (error) {
       console.error('Error marking as sent:', error);
       showError(
@@ -787,7 +1157,7 @@ export default function TaxExpiryNextYearPage() {
         return newSet;
       });
     }
-  };
+  }, [showError, saveNotificationStatus, notificationStatus]);
 
   // รายการแจ้งเตือนที่แสดง - ใช้จาก dailySnapshotList (รายการของวันนี้)
   const notificationList = useMemo(() => {
@@ -880,7 +1250,8 @@ export default function TaxExpiryNextYearPage() {
             daysUntilExpiry,
             status,
             brand: item.brand,
-            vehicleType: item.vehicleType
+            vehicleType: item.vehicleType,
+            tags: item.tags || []
           };
         })
         .filter((item): item is TaxExpiryData => item !== null);
@@ -1527,7 +1898,11 @@ export default function TaxExpiryNextYearPage() {
               backdropFilter: 'blur(8px)',
               WebkitBackdropFilter: 'blur(8px)'
             }}
-            onClick={() => setShowNotificationModal(false)}
+            onClick={() => {
+              setShowNotificationModal(false);
+              setSelectedItems(new Set()); // ล้างการเลือกเมื่อปิด modal
+              setIsSelectionMode(false); // ออกจากโหมดเลือก
+            }}
           >
             <div 
               className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col transform transition-all"
@@ -1582,7 +1957,11 @@ export default function TaxExpiryNextYearPage() {
                     </button>
                     {/* ปุ่มปิด */}
                     <button
-                      onClick={() => setShowNotificationModal(false)}
+                      onClick={() => {
+                        setShowNotificationModal(false);
+                        setSelectedItems(new Set()); // ล้างการเลือกเมื่อปิด modal
+                        setIsSelectionMode(false); // ออกจากโหมดเลือก
+                      }}
                       className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-3xl transition-all hover:rotate-90"
                       title="ปิด"
                     >
@@ -1606,137 +1985,109 @@ export default function TaxExpiryNextYearPage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {notificationList.map((item, idx) => {
-                      const isCopied = copiedId === item.licensePlate;
-                      const hasCopied = copiedIds.has(item.licensePlate);
-                      const isSending = sendingLicensePlates.has(item.licensePlate);
-                      
-                      return (
-                        <div
-                          key={item.licensePlate + idx}
-                          className="border-2 rounded-xl p-5 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-xl hover:border-emerald-400 dark:hover:border-emerald-500 transition-all duration-300 transform hover:-translate-y-1"
-                        >
-                          <div className="flex items-start gap-4">
-                            {/* เลขลำดับ */}
-                            <div className="flex-shrink-0">
-                              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-emerald-500 to-green-500 text-white flex items-center justify-center font-bold text-sm shadow-lg">
-                                {item.sequenceNumber ? String(item.sequenceNumber).padStart(6, '0') : String(idx + 1).padStart(6, '0')}
-                              </div>
-                            </div>
-                            
-                            {/* ข้อมูล */}
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-3">
-                                <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm ${
-                                  item.daysUntilExpiry < 0
-                                    ? 'bg-gradient-to-r from-red-500 to-red-600 text-white'
-                                    : item.daysUntilExpiry === 0
-                                    ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white animate-pulse'
-                                    : item.daysUntilExpiry <= 30
-                                    ? 'bg-gradient-to-r from-yellow-400 to-orange-400 text-gray-900'
-                                    : 'bg-gradient-to-r from-emerald-500 to-green-500 text-white'
-                                }`}>
-                                  {item.daysUntilExpiry < 0
-                                    ? `⚠️ เกินกำหนด ${Math.abs(item.daysUntilExpiry)} วัน`
-                                    : item.daysUntilExpiry === 0
-                                    ? '🔥 ครบกำหนดวันนี้'
-                                    : item.daysUntilExpiry <= 30
-                                    ? `⏰ เหลือ ${item.daysUntilExpiry} วัน`
-                                    : `📅 เหลือ ${item.daysUntilExpiry} วัน`
-                                  }
-                                </span>
-                              </div>
-                              
-                              <div className="space-y-2 text-sm">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                                  <p className="text-gray-900 dark:text-white">
-                                    <span className="font-semibold text-gray-600 dark:text-gray-400">ทะเบียน:</span> 
-                                    <span className="ml-2 font-bold">{item.licensePlate}</span>
-                                  </p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                                  <p className="text-gray-900 dark:text-white">
-                                    <span className="font-semibold text-gray-600 dark:text-gray-400">ชื่อ:</span> 
-                                    <span className="ml-2">{item.customerName}</span>
-                                  </p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                                  <p className="text-gray-900 dark:text-white">
-                                    <span className="font-semibold text-gray-600 dark:text-gray-400">เบอร์:</span> 
-                                    <span className="ml-2">{item.phone}</span>
-                                  </p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <div className="w-2 h-2 rounded-full bg-orange-500"></div>
-                                  <p className="text-gray-900 dark:text-white">
-                                    <span className="font-semibold text-gray-600 dark:text-gray-400">ครบกำหนด:</span> 
-                                    <span className="ml-2 font-bold text-orange-600 dark:text-orange-400">{formatDate(item.expiryDate)}</span>
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            {/* ปุ่มต่างๆ */}
-                            <div className="flex flex-col gap-3 flex-shrink-0">
-                              {/* ปุ่มคัดลอก */}
+                    {/* Toolbar สำหรับเลือกและลบหลายรายการ */}
+                    <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 mb-4">
+                      {!isSelectionMode ? (
+                        <>
+                          {selectedItems.size === 0 ? (
+                            <div className="flex items-center gap-3">
                               <button
-                                onClick={() => copyToClipboard(item)}
-                                className={`px-6 py-3 rounded-xl transition-all flex items-center justify-center gap-2 text-sm font-semibold min-w-[140px] transform hover:scale-105 ${
-                                  isCopied
-                                    ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg shadow-green-500/50 animate-pulse'
-                                    : hasCopied
-                                    ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md'
-                                    : 'bg-gradient-to-r from-emerald-500 to-green-500 text-white hover:from-emerald-600 hover:to-green-600 shadow-md hover:shadow-lg'
-                                }`}
+                                onClick={startSelectionMode}
+                                className="px-4 py-2 rounded-md text-sm font-semibold transition-all flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 shadow-md hover:shadow-lg"
+                                title="เลือกรายการเพื่อลบ"
                               >
-                                <FontAwesomeIcon icon={isCopied || hasCopied ? faCheck : faCopy} className="text-lg" />
-                                {isCopied ? 'คัดลอกแล้ว!' : hasCopied ? 'คัดลอกแล้ว' : 'คัดลอก'}
+                                <FontAwesomeIcon icon={faCheck} />
+                                เลือก
                               </button>
-                              
-                              {/* ปุ่มส่งแล้ว */}
+                              </div>
+                          ) : (
+                            <div className="flex items-center gap-3 flex-1">
+                              <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                                เลือกแล้ว {selectedItems.size} รายการ
+                                </span>
                               <button
-                                onClick={() => markAsSent(item.licensePlate)}
-                                disabled={!hasCopied || isSending}
-                                className={`px-6 py-3 rounded-xl transition-all flex items-center justify-center gap-2 text-sm font-semibold min-w-[140px] transform ${
-                                  isSending
-                                    ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white cursor-wait'
-                                    : hasCopied
-                                    ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 shadow-md hover:shadow-lg hover:scale-105'
-                                    : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-500 cursor-not-allowed opacity-60'
-                                }`}
-                                title={
-                                  isSending 
-                                    ? 'กำลังบันทึก...' 
-                                    : !hasCopied 
-                                    ? 'กรุณาคัดลอกข้อความก่อน' 
-                                    : 'ทำเครื่องหมายว่าส่งแล้ว'
-                                }
+                                onClick={startSelectionMode}
+                                className="px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                                title="เปลี่ยนรายการที่เลือก"
+                              >
+                                <FontAwesomeIcon icon={faFilter} />
+                                เปลี่ยน
+                              </button>
+                              </div>
+                          )}
+                          {selectedItems.size > 0 && (
+                              <button
+                              onClick={deleteMultipleNotifications}
+                              className="px-4 py-2 rounded-md text-sm font-semibold transition-all flex items-center gap-2 bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 shadow-md hover:shadow-lg"
+                              title={`ลบ ${selectedItems.size} รายการ`}
+                            >
+                              <FontAwesomeIcon icon={faTrash} />
+                              ลบที่เลือก ({selectedItems.size})
+                              </button>
+                          )}
+                        </>
+                      ) : (
+                        <div className="flex items-center justify-between w-full gap-3">
+                          <div className="flex items-center gap-3">
+                              <button
+                              onClick={toggleSelectAll}
+                              className="px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                              title={selectedItems.size === notificationList.length ? 'ยกเลิกเลือกทั้งหมด' : 'เลือกทั้งหมด'}
                               >
                                 <FontAwesomeIcon 
-                                  icon={isSending ? faSpinner : faCheck} 
-                                  className={`text-lg ${isSending ? 'animate-spin' : ''}`} 
+                                icon={selectedItems.size === notificationList.length ? faSquareCheck : faSquare} 
+                                className="text-sm"
                                 />
-                                {isSending ? 'กำลังส่ง...' : 'ส่งแล้ว'}
+                              {selectedItems.size === notificationList.length ? 'ยกเลิกเลือกทั้งหมด' : 'เลือกทั้งหมด'}
                               </button>
-
-                              {/* ปุ่มลบ */}
+                            {selectedItems.size > 0 && (
+                              <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                                เลือกแล้ว {selectedItems.size} รายการ
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
                               <button
-                                onClick={() => deleteNotification(item.licensePlate)}
-                                disabled={isSending}
-                                className="px-6 py-3 rounded-xl transition-all flex items-center justify-center gap-2 text-sm font-semibold min-w-[140px] transform hover:scale-105 bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                                title="ลบรายการนี้ออกจากรายการแจ้งเตือน"
-                              >
-                                <FontAwesomeIcon icon={faTrash} className="text-lg" />
-                                ลบ
+                              onClick={cancelSelection}
+                              className="px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                            >
+                              ยกเลิก
+                            </button>
+                            <button
+                              onClick={confirmSelection}
+                              className={`px-4 py-2 rounded-md text-sm font-semibold transition-all flex items-center gap-2 shadow-md hover:shadow-lg ${
+                                selectedItems.size === 0
+                                  ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed opacity-60'
+                                  : 'bg-gradient-to-r from-emerald-500 to-green-500 text-white hover:from-emerald-600 hover:to-green-600'
+                              }`}
+                              disabled={selectedItems.size === 0}
+                            >
+                              <FontAwesomeIcon icon={faCheck} />
+                              ยืนยัน ({selectedItems.size})
                               </button>
                             </div>
                           </div>
+                      )}
                         </div>
-                      );
-                    })}
+                    {notificationList.map((item, idx) => (
+                      <NotificationItemCard
+                        key={item.licensePlate + idx}
+                        item={item}
+                        idx={idx}
+                        isSelectionMode={isSelectionMode}
+                        isSelected={selectedItems.has(item.licensePlate)}
+                        isCopied={copiedId === item.licensePlate}
+                        hasCopied={copiedIds.has(item.licensePlate)}
+                        isSending={sendingLicensePlates.has(item.licensePlate)}
+                        copiedPhoneIds={copiedPhoneIds}
+                        onToggleSelection={toggleSelection}
+                        onCopyPhone={copyPhoneToClipboard}
+                        onCopyMessage={copyToClipboard}
+                        onMarkAsSent={markAsSent}
+                        onDelete={deleteNotification}
+                        formatDate={formatDate}
+                      />
+                    ))}
                   </div>
                 )}
               </div>
@@ -1778,7 +2129,11 @@ export default function TaxExpiryNextYearPage() {
                     </div>
                   </div>
                   <button
-                    onClick={() => setShowNotificationModal(false)}
+                    onClick={() => {
+                      setShowNotificationModal(false);
+                      setSelectedItems(new Set()); // ล้างการเลือกเมื่อปิด modal
+                      setIsSelectionMode(false); // ออกจากโหมดเลือก
+                    }}
                     className="px-8 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-xl hover:from-gray-700 hover:to-gray-800 transition-all font-semibold shadow-md hover:shadow-lg transform hover:scale-105"
                   >
                     ปิด

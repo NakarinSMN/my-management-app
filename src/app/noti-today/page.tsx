@@ -3,6 +3,8 @@
 
 import { motion } from "framer-motion";
 import React, { useMemo, memo } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTag } from '@fortawesome/free-solid-svg-icons';
 import AnimatedPage, { itemVariants } from '../components/AnimatedPage';
 import { useCustomerData, CustomerData } from '@/lib/useCustomerData';
 
@@ -18,6 +20,7 @@ interface NotificationItem {
   daysUntilExpiry: number;
   status: string;
   note?: string;
+  tags?: string[];
 }
 
 // ฟังก์ชันตรวจสอบเบอร์โทรศัพท์ที่ถูกต้อง
@@ -128,7 +131,8 @@ export default function NotiTodayPage() {
           expiryDate: expiryDate,
           daysUntilExpiry: daysLeft,
           status: item.status,
-          note: item.note
+          note: item.note,
+          tags: item.tags || []
         } as NotificationItem;
       })
       .sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry);
@@ -186,6 +190,24 @@ const NotificationCard = memo(function NotificationCard({ noti, rowNumber }: { n
           <motion.p variants={itemVariants} initial="hidden" animate="show" exit="exit" transition={{ duration: 0.5, ease: 'easeInOut' }} className="text-sm text-blue-700 dark:text-blue-300">ชื่อลูกค้า: {noti.customerName}</motion.p>
           <motion.p variants={itemVariants} initial="hidden" animate="show" exit="exit" transition={{ duration: 0.5, ease: 'easeInOut' }} className="text-sm text-blue-700 dark:text-blue-300">เบอร์ติดต่อ: {noti.phone}</motion.p>
           <motion.p variants={itemVariants} initial="hidden" animate="show" exit="exit" transition={{ duration: 0.5, ease: 'easeInOut' }} className="text-sm text-blue-700 dark:text-blue-300">วันที่ครบกำหนดภาษี: {noti.expiryDate} (เหลือ {noti.daysUntilExpiry} วัน)</motion.p>
+          {noti.tags && noti.tags.length > 0 && (
+            <motion.div variants={itemVariants} initial="hidden" animate="show" exit="exit" transition={{ duration: 0.5, ease: 'easeInOut' }} className="flex flex-wrap gap-1 my-2">
+              {noti.tags.map((tag, index) => (
+                <span 
+                  key={index}
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${
+                    tag === 'ภาษี' ? 'bg-blue-500 text-white' :
+                    tag === 'ตรอ.' ? 'bg-green-500 text-white' :
+                    tag === 'พรบ.' ? 'bg-orange-500 text-white' :
+                    'bg-gray-500 text-white'
+                  }`}
+                >
+                  <FontAwesomeIcon icon={faTag} className="text-[9px]" />
+                  {tag}
+                </span>
+              ))}
+            </motion.div>
+          )}
           {noti.note && <motion.p variants={itemVariants} initial="hidden" animate="show" exit="exit" transition={{ duration: 0.5, ease: 'easeInOut' }} className="text-sm text-blue-700 dark:text-blue-300">หมายเหตุ: {noti.note}</motion.p>}
           <motion.p variants={itemVariants} initial="hidden" animate="show" exit="exit" transition={{ duration: 0.5, ease: 'easeInOut' }} className="text-xs text-blue-600 dark:text-blue-400 mt-1">สถานะ: {noti.status}</motion.p>
         </div>
