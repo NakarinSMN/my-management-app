@@ -25,9 +25,13 @@ const normalizeUrl = (value?: string | null): string => {
   return `https://${trimmed}`;
 };
 
+// Ensure process.env.NEXTAUTH_URL always has protocol (runtime + build)
+const normalizedNextAuthUrl = normalizeUrl(process.env.NEXTAUTH_URL);
+if (normalizedNextAuthUrl) {
+  process.env.NEXTAUTH_URL = normalizedNextAuthUrl;
+}
+
 export const authOptions: NextAuthOptions = {
-  // Normalize NEXTAUTH_URL before NextAuth uses it
-  url: process.env.NEXTAUTH_URL ? normalizeUrl(process.env.NEXTAUTH_URL) : undefined,
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -118,7 +122,7 @@ export const authOptions: NextAuthOptions = {
         return `https://${trimmed}`;
       };
 
-      const productionUrl = normalizeUrl(process.env.NEXTAUTH_URL) || normalizeUrl(baseUrl);
+      const productionUrl = normalizedNextAuthUrl || normalizeUrl(baseUrl);
 
       // If url is relative, make it absolute using production URL
       if (url.startsWith("/")) {
