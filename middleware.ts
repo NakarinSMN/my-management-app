@@ -6,8 +6,13 @@ import { getToken } from "next-auth/jwt";
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // อนุญาตให้เข้าถึงหน้า login, register และ API auth ได้โดยไม่ต้องล็อกอิน
-  if (pathname === "/login" || pathname === "/register" || pathname.startsWith("/api/auth")) {
+  // อนุญาตให้เข้าถึงหน้า login, register, API auth และ debug env ได้โดยไม่ต้องล็อกอิน
+  if (
+    pathname === "/login" ||
+    pathname === "/register" ||
+    pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/api/env")
+  ) {
     return NextResponse.next();
   }
 
