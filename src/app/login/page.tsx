@@ -109,19 +109,18 @@ export default function LoginPage() {
         console.log("[LOGIN DEBUG] signIn completed successfully");
       } catch (signInError: unknown) {
         console.error("[LOGIN DEBUG] signIn threw an error:", signInError);
-        // Even if signIn throws an error, it might have succeeded
-        // Check if we can still proceed
+        // ถ้าเกิด error แต่ login อาจสำเร็จแล้ว ให้ redirect ไปเลย (วิธีขั้นสุด)
         const errorMessage = signInError instanceof Error ? signInError.message : String(signInError);
         if (errorMessage.includes("URL") || errorMessage.includes("Invalid")) {
-          console.log("[LOGIN DEBUG] URL-related error, but login might have succeeded. Checking session...");
-          // Wait and check session, then redirect
-          setTimeout(() => {
-            console.log("[LOGIN DEBUG] Redirecting despite error to:", callbackUrl);
-            window.location.href = callbackUrl;
-          }, 500);
+          console.log("[LOGIN DEBUG] URL error detected, redirecting anyway to:", callbackUrl);
+          // Redirect ทันที - ไม่ต้องรอ
+          window.location.href = callbackUrl;
           return;
         }
-        throw signInError;
+        // ถ้า error อื่นๆ ให้แสดง error
+        setError("เกิดข้อผิดพลาดในการเข้าสู่ระบบ");
+        setIsLoading(false);
+        return;
       }
 
       console.log("[LOGIN DEBUG] signIn result:", result);
@@ -133,43 +132,41 @@ export default function LoginPage() {
         keys: result ? Object.keys(result) : null
       });
 
-      // Check result and redirect manually
+      // Check result and redirect manually - วิธีขั้นสุด
       if (result?.error) {
         console.error("[LOGIN DEBUG] Login failed with error:", result.error);
         setError("Username หรือ Password ไม่ถูกต้อง");
         setIsLoading(false);
-      } else if (result?.ok || result?.status === 200 || !result?.error) {
-        console.log("[LOGIN DEBUG] Login successful! Waiting for session update...");
-        // In production, wait a bit longer for session cookie to be set
-        const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
-        const waitTime = isProduction ? 800 : 500;
-        
-        // Force session update before redirect
-        setTimeout(async () => {
-          console.log("[LOGIN DEBUG] Checking session before redirect...");
-          // Trigger session refresh
-          const { update } = await import("next-auth/react");
-          await update();
-          
-          // Wait a bit more for session to be ready
-          setTimeout(() => {
-            console.log("[LOGIN DEBUG] Redirecting to:", callbackUrl);
-            // Use window.location.replace to avoid back button issues
-            window.location.replace(callbackUrl);
-          }, 200);
-        }, waitTime);
       } else {
-        console.warn("[LOGIN DEBUG] Unknown result state:", result);
-        // Try to check session status
-        console.log("[LOGIN DEBUG] Checking session status...");
-        const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
-        const waitTime = isProduction ? 800 : 500;
+        // Login สำเร็จ - redirect ทันที (วิธีขั้นสุด)
+        // ใช้ result.url ถ้ามี หรือใช้ callbackUrl
+        const redirectUrl = result?.url || callbackUrl;
+        console.log("[LOGIN DEBUG] Login successful! Redirecting immediately to:", redirectUrl);
         
+        // ใช้วิธีที่แน่นอนที่สุด - สร้าง absolute URL
+        const absoluteUrl = redirectUrl.startsWith("/") 
+          ? `${window.location.origin}${redirectUrl}`
+          : redirectUrl;
+        
+        console.log("[LOGIN DEBUG] Absolute redirect URL:", absoluteUrl);
+        
+        // Redirect ทันที - ใช้หลายวิธีเพื่อให้แน่ใจว่า redirect ทำงาน
+        try {
+          // วิธีที่ 1: ใช้ replace (แนะนำ)
+          window.location.replace(absoluteUrl);
+        } catch (e) {
+          console.error("[LOGIN DEBUG] Replace failed, trying href:", e);
+          // วิธีที่ 2: ใช้ href (fallback)
+          window.location.href = absoluteUrl;
+        }
+        
+        // วิธีที่ 3: ถ้ายังไม่ redirect ให้ force redirect อีกครั้ง
         setTimeout(() => {
-          // Force redirect after checking
-          console.log("[LOGIN DEBUG] Force redirecting to:", callbackUrl);
-          window.location.replace(callbackUrl);
-        }, waitTime);
+          if (window.location.pathname === "/login") {
+            console.log("[LOGIN DEBUG] Still on login page, forcing redirect...");
+            window.location.href = absoluteUrl;
+          }
+        }, 1000);
       }
     } catch (error: unknown) {
       console.error("[LOGIN DEBUG] Login error:", error);
@@ -180,17 +177,13 @@ export default function LoginPage() {
         name: errorObj.name
       });
       
-      // If it's a URL error but login might have succeeded, try redirecting anyway
+      // ถ้าเกิด error แต่ login อาจสำเร็จแล้ว ให้ redirect ไปเลย (วิธีขั้นสุด)
       if (errorObj.message.includes("URL") || errorObj.message.includes("Invalid")) {
-        console.log("[LOGIN DEBUG] URL error detected, but attempting redirect anyway...");
-        const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
-        const waitTime = isProduction ? 800 : 500;
-        
-        setTimeout(() => {
-          const callbackUrl = new URLSearchParams(window.location.search).get("callbackUrl") || "/dashboard";
-          console.log("[LOGIN DEBUG] Attempting redirect to:", callbackUrl);
-          window.location.replace(callbackUrl);
-        }, waitTime);
+        console.log("[LOGIN DEBUG] URL error detected, redirecting anyway...");
+        const callbackUrl = new URLSearchParams(window.location.search).get("callbackUrl") || "/dashboard";
+        console.log("[LOGIN DEBUG] Redirecting to:", callbackUrl);
+        // Redirect ทันที - ไม่ต้องรอ
+        window.location.href = callbackUrl;
       } else {
         setError("เกิดข้อผิดพลาดในการเข้าสู่ระบบ");
         setIsLoading(false);
