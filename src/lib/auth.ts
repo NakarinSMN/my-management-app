@@ -124,6 +124,7 @@ export const authOptions: NextAuthOptions = {
     async redirect({ url, baseUrl }) {
       console.log("[AUTH DEBUG] Redirect callback called:", { url, baseUrl, urlType: typeof url, baseUrlType: typeof baseUrl });
       
+      // Always return relative path to avoid URL construction issues
       // Handle empty or invalid url
       if (!url || typeof url !== 'string' || url.trim() === '') {
         console.log("[AUTH DEBUG] Empty or invalid URL, defaulting to /dashboard");
@@ -136,35 +137,30 @@ export const authOptions: NextAuthOptions = {
         return "/dashboard";
       }
 
-      // If url is relative, return it as is
+      // If url is relative, return it as is (safest option)
       if (url.startsWith("/")) {
         console.log("[AUTH DEBUG] Relative URL, returning:", url);
         return url;
       }
       
-      // If url is absolute, check if same origin
+      // If url is absolute, try to extract pathname without constructing URL object
+      // This avoids the "Failed to construct URL" error
       try {
-        // Validate baseUrl before using it
-        if (!baseUrl || typeof baseUrl !== 'string') {
-          console.log("[AUTH DEBUG] Invalid baseUrl, using /dashboard");
-          return "/dashboard";
+        // Try to extract pathname manually from string
+        const match = url.match(/^https?:\/\/[^\/]+(\/.*)$/);
+        if (match && match[1]) {
+          const pathname = match[1];
+          console.log("[AUTH DEBUG] Extracted pathname from absolute URL:", pathname);
+          // Validate the pathname
+          if (pathname.startsWith("/") && !pathname.includes("/login") && !pathname.includes("/register")) {
+            return pathname;
+          }
         }
-        
-        const urlObj = new URL(url);
-        const baseUrlObj = new URL(baseUrl);
-        if (urlObj.origin === baseUrlObj.origin) {
-          // Same origin - return relative path
-          const relativePath = urlObj.pathname + urlObj.search;
-          console.log("[AUTH DEBUG] Same origin, returning relative path:", relativePath);
-          return relativePath;
-        }
-        console.log("[AUTH DEBUG] Different origin, using default");
       } catch (error) {
-        console.error("[AUTH DEBUG] Error parsing URL:", error, { url, baseUrl });
-        // Invalid URL, use default
+        console.error("[AUTH DEBUG] Error extracting pathname:", error);
       }
       
-      // Default to dashboard
+      // Default to dashboard (always return relative path)
       console.log("[AUTH DEBUG] Default redirect to /dashboard");
       return "/dashboard";
     },

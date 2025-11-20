@@ -91,11 +91,29 @@ export default function LoginPage() {
       
       // Use redirect: false to handle redirect manually
       // Don't pass callbackUrl to signIn to avoid NextAuth redirect callback issues
-      const result = await signIn("credentials", {
-        username,
-        password,
-        redirect: false
-      });
+      let result;
+      try {
+        result = await signIn("credentials", {
+          username,
+          password,
+          redirect: false
+        });
+        console.log("[LOGIN DEBUG] signIn completed successfully");
+      } catch (signInError: any) {
+        console.error("[LOGIN DEBUG] signIn threw an error:", signInError);
+        // Even if signIn throws an error, it might have succeeded
+        // Check if we can still proceed
+        if (signInError?.message?.includes("URL") || signInError?.message?.includes("Invalid")) {
+          console.log("[LOGIN DEBUG] URL-related error, but login might have succeeded. Checking session...");
+          // Wait and check session, then redirect
+          setTimeout(() => {
+            console.log("[LOGIN DEBUG] Redirecting despite error to:", callbackUrl);
+            window.location.href = callbackUrl;
+          }, 500);
+          return;
+        }
+        throw signInError;
+      }
 
       console.log("[LOGIN DEBUG] signIn result:", result);
       console.log("[LOGIN DEBUG] Result details:", {
@@ -111,7 +129,7 @@ export default function LoginPage() {
         console.error("[LOGIN DEBUG] Login failed with error:", result.error);
         setError("Username หรือ Password ไม่ถูกต้อง");
         setIsLoading(false);
-      } else if (result?.ok || result?.status === 200) {
+      } else if (result?.ok || result?.status === 200 || !result?.error) {
         console.log("[LOGIN DEBUG] Login successful! Waiting for session update...");
         // Wait a bit for session to be set, then redirect
         setTimeout(() => {
@@ -128,10 +146,26 @@ export default function LoginPage() {
           window.location.href = callbackUrl;
         }, 500);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("[LOGIN DEBUG] Login error:", error);
-      setError("เกิดข้อผิดพลาดในการเข้าสู่ระบบ");
-      setIsLoading(false);
+      console.error("[LOGIN DEBUG] Error details:", {
+        message: error?.message,
+        stack: error?.stack,
+        name: error?.name
+      });
+      
+      // If it's a URL error but login might have succeeded, try redirecting anyway
+      if (error?.message?.includes("URL") || error?.message?.includes("Invalid")) {
+        console.log("[LOGIN DEBUG] URL error detected, but attempting redirect anyway...");
+        setTimeout(() => {
+          const callbackUrl = new URLSearchParams(window.location.search).get("callbackUrl") || "/dashboard";
+          console.log("[LOGIN DEBUG] Attempting redirect to:", callbackUrl);
+          window.location.href = callbackUrl;
+        }, 500);
+      } else {
+        setError("เกิดข้อผิดพลาดในการเข้าสู่ระบบ");
+        setIsLoading(false);
+      }
     }
   };
 
