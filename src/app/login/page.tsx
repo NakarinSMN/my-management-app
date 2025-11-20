@@ -87,36 +87,46 @@ export default function LoginPage() {
       }
       
       console.log("[LOGIN DEBUG] Final callbackUrl:", callbackUrl);
-      console.log("[LOGIN DEBUG] Calling signIn with:", { username, hasPassword: !!password, callbackUrl });
+      console.log("[LOGIN DEBUG] Calling signIn with:", { username, hasPassword: !!password });
       
       // Use redirect: false to handle redirect manually
+      // Don't pass callbackUrl to signIn to avoid NextAuth redirect callback issues
       const result = await signIn("credentials", {
         username,
         password,
-        redirect: false,
-        callbackUrl: callbackUrl
+        redirect: false
       });
 
       console.log("[LOGIN DEBUG] signIn result:", result);
+      console.log("[LOGIN DEBUG] Result details:", {
+        ok: result?.ok,
+        error: result?.error,
+        status: result?.status,
+        url: result?.url,
+        keys: result ? Object.keys(result) : null
+      });
 
       // Check result and redirect manually
       if (result?.error) {
         console.error("[LOGIN DEBUG] Login failed with error:", result.error);
         setError("Username หรือ Password ไม่ถูกต้อง");
         setIsLoading(false);
-      } else if (result?.ok) {
-        console.log("[LOGIN DEBUG] Login successful! Redirecting to:", callbackUrl);
-        // Login successful - redirect manually
-        window.location.href = callbackUrl;
+      } else if (result?.ok || result?.status === 200) {
+        console.log("[LOGIN DEBUG] Login successful! Waiting for session update...");
+        // Wait a bit for session to be set, then redirect
+        setTimeout(() => {
+          console.log("[LOGIN DEBUG] Redirecting to:", callbackUrl);
+          window.location.href = callbackUrl;
+        }, 300);
       } else {
         console.warn("[LOGIN DEBUG] Unknown result state:", result);
-        console.log("[LOGIN DEBUG] Result keys:", result ? Object.keys(result) : "null");
-        // Unknown state - try to redirect anyway
-        setIsLoading(false);
+        // Try to check session status
+        console.log("[LOGIN DEBUG] Checking session status...");
         setTimeout(() => {
-          console.log("[LOGIN DEBUG] Attempting redirect after timeout to:", callbackUrl);
+          // Force redirect after checking
+          console.log("[LOGIN DEBUG] Force redirecting to:", callbackUrl);
           window.location.href = callbackUrl;
-        }, 100);
+        }, 500);
       }
     } catch (error) {
       console.error("[LOGIN DEBUG] Login error:", error);

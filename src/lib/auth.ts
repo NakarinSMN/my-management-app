@@ -122,7 +122,13 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async redirect({ url, baseUrl }) {
-      console.log("[AUTH DEBUG] Redirect callback called:", { url, baseUrl });
+      console.log("[AUTH DEBUG] Redirect callback called:", { url, baseUrl, urlType: typeof url, baseUrlType: typeof baseUrl });
+      
+      // Handle empty or invalid url
+      if (!url || typeof url !== 'string' || url.trim() === '') {
+        console.log("[AUTH DEBUG] Empty or invalid URL, defaulting to /dashboard");
+        return "/dashboard";
+      }
       
       // Prevent redirect to login page
       if (url.includes("/login") || url.includes("/register")) {
@@ -138,6 +144,12 @@ export const authOptions: NextAuthOptions = {
       
       // If url is absolute, check if same origin
       try {
+        // Validate baseUrl before using it
+        if (!baseUrl || typeof baseUrl !== 'string') {
+          console.log("[AUTH DEBUG] Invalid baseUrl, using /dashboard");
+          return "/dashboard";
+        }
+        
         const urlObj = new URL(url);
         const baseUrlObj = new URL(baseUrl);
         if (urlObj.origin === baseUrlObj.origin) {
@@ -148,7 +160,7 @@ export const authOptions: NextAuthOptions = {
         }
         console.log("[AUTH DEBUG] Different origin, using default");
       } catch (error) {
-        console.error("[AUTH DEBUG] Error parsing URL:", error);
+        console.error("[AUTH DEBUG] Error parsing URL:", error, { url, baseUrl });
         // Invalid URL, use default
       }
       
