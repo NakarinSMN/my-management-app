@@ -25,26 +25,36 @@ export default function LoginPage() {
       console.log("[LOGIN DEBUG] User already authenticated, redirecting...");
       // Use window.location.search instead of useSearchParams to avoid SSR issues
       const params = new URLSearchParams(window.location.search);
-      const callbackUrl = params.get("callbackUrl") || "/dashboard";
+      let callbackUrl = params.get("callbackUrl") || "/dashboard";
       console.log("[LOGIN DEBUG] Callback URL from query:", callbackUrl);
       
       // Decode callbackUrl if needed
       try {
-        const decoded = decodeURIComponent(callbackUrl);
-        console.log("[LOGIN DEBUG] Decoded callback URL:", decoded);
-        if (decoded.startsWith("/") && decoded !== "/login" && decoded !== "/register") {
-          console.log("[LOGIN DEBUG] Redirecting to:", decoded);
-          router.push(decoded);
-        } else {
-          console.log("[LOGIN DEBUG] Invalid callback URL, redirecting to /dashboard");
-          router.push("/dashboard");
-        }
+        callbackUrl = decodeURIComponent(callbackUrl);
+        console.log("[LOGIN DEBUG] Decoded callback URL:", callbackUrl);
       } catch (error) {
         console.error("[LOGIN DEBUG] Error decoding callback URL:", error);
-        router.push("/dashboard");
+        callbackUrl = "/dashboard";
       }
+      
+      // Validate callbackUrl
+      if (
+        !callbackUrl || 
+        !callbackUrl.startsWith("/") ||
+        callbackUrl === "/login" || 
+        callbackUrl === "/register" || 
+        callbackUrl === "/" ||
+        callbackUrl.startsWith("/api/")
+      ) {
+        console.log("[LOGIN DEBUG] Invalid callback URL, using /dashboard");
+        callbackUrl = "/dashboard";
+      }
+      
+      console.log("[LOGIN DEBUG] Redirecting to:", callbackUrl);
+      // Use window.location.replace for production compatibility
+      window.location.replace(callbackUrl);
     }
-  }, [status, session, router]);
+  }, [status, session]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
