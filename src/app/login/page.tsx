@@ -132,20 +132,36 @@ export default function LoginPage() {
         setIsLoading(false);
       } else if (result?.ok || result?.status === 200 || !result?.error) {
         console.log("[LOGIN DEBUG] Login successful! Waiting for session update...");
-        // Wait a bit for session to be set, then redirect
-        setTimeout(() => {
-          console.log("[LOGIN DEBUG] Redirecting to:", callbackUrl);
-          window.location.href = callbackUrl;
-        }, 300);
+        // In production, wait a bit longer for session cookie to be set
+        const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+        const waitTime = isProduction ? 800 : 500;
+        
+        // Force session update before redirect
+        setTimeout(async () => {
+          console.log("[LOGIN DEBUG] Checking session before redirect...");
+          // Trigger session refresh
+          const { update } = await import("next-auth/react");
+          await update();
+          
+          // Wait a bit more for session to be ready
+          setTimeout(() => {
+            console.log("[LOGIN DEBUG] Redirecting to:", callbackUrl);
+            // Use window.location.replace to avoid back button issues
+            window.location.replace(callbackUrl);
+          }, 200);
+        }, waitTime);
       } else {
         console.warn("[LOGIN DEBUG] Unknown result state:", result);
         // Try to check session status
         console.log("[LOGIN DEBUG] Checking session status...");
+        const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+        const waitTime = isProduction ? 800 : 500;
+        
         setTimeout(() => {
           // Force redirect after checking
           console.log("[LOGIN DEBUG] Force redirecting to:", callbackUrl);
-          window.location.href = callbackUrl;
-        }, 500);
+          window.location.replace(callbackUrl);
+        }, waitTime);
       }
     } catch (error: unknown) {
       console.error("[LOGIN DEBUG] Login error:", error);
@@ -159,11 +175,14 @@ export default function LoginPage() {
       // If it's a URL error but login might have succeeded, try redirecting anyway
       if (errorObj.message.includes("URL") || errorObj.message.includes("Invalid")) {
         console.log("[LOGIN DEBUG] URL error detected, but attempting redirect anyway...");
+        const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+        const waitTime = isProduction ? 800 : 500;
+        
         setTimeout(() => {
           const callbackUrl = new URLSearchParams(window.location.search).get("callbackUrl") || "/dashboard";
           console.log("[LOGIN DEBUG] Attempting redirect to:", callbackUrl);
-          window.location.href = callbackUrl;
-        }, 500);
+          window.location.replace(callbackUrl);
+        }, waitTime);
       } else {
         setError("เกิดข้อผิดพลาดในการเข้าสู่ระบบ");
         setIsLoading(false);

@@ -31,6 +31,15 @@ export async function middleware(request: NextRequest) {
     secret: process.env.NEXTAUTH_SECRET
   });
 
+  // Debug logging (only in development or if needed)
+  if (process.env.NODE_ENV === "development") {
+    console.log("[MIDDLEWARE DEBUG]", {
+      pathname,
+      hasToken: !!token,
+      cookies: request.cookies.getAll().map(c => c.name)
+    });
+  }
+
   // ถ้าไม่มี token และไม่ใช่หน้า login ให้ redirect ไปหน้า login
   if (!token) {
     // Prevent redirect loop - don't redirect if already on login/register

@@ -112,10 +112,14 @@ export const authOptions: NextAuthOptions = {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: process.env.NODE_ENV === "production",
+        secure: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https://"),
+        // Don't set domain - let browser handle it automatically
+        // This ensures cookies work on Netlify subdomains
       },
     },
   },
+  trustHost: true, // Required for Netlify and other platforms
+  useSecureCookies: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https://"),
   pages: {
     signIn: "/login",
     error: "/login",
