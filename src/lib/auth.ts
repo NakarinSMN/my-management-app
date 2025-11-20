@@ -124,15 +124,28 @@ export const authOptions: NextAuthOptions = {
 
       const productionUrl = normalizedNextAuthUrl || normalizeUrl(baseUrl);
 
+      // Prevent redirect to login page
+      if (url.includes("/login") || url.includes("/register")) {
+        return `${productionUrl}/dashboard`;
+      }
+
       // If url is relative, make it absolute using production URL
       if (url.startsWith("/")) {
         return `${productionUrl}${url}`;
       }
-      // If url is on same origin, allow it
-      if (new URL(url).origin === new URL(productionUrl).origin) {
-        return url;
+      
+      // If url is absolute and on same origin, allow it
+      try {
+        const urlObj = new URL(url);
+        const baseUrlObj = new URL(productionUrl);
+        if (urlObj.origin === baseUrlObj.origin) {
+          return url;
+        }
+      } catch {
+        // Invalid URL, use default
       }
-      // Default to dashboard on production URL
+      
+      // Default to dashboard
       return `${productionUrl}/dashboard`;
     },
     async jwt({ token, user }) {

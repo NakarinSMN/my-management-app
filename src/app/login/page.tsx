@@ -1,8 +1,9 @@
 // src/app/login/page.tsx
 "use client";
 
-import React, { useState } from "react";
-import { signIn } from "next-auth/react";
+import React, { useState, useEffect } from "react";
+import { signIn, useSession } from "next-auth/react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -13,6 +14,27 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (status === "authenticated" && session) {
+      const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+      // Decode callbackUrl if needed
+      try {
+        const decoded = decodeURIComponent(callbackUrl);
+        if (decoded.startsWith("/") && decoded !== "/login" && decoded !== "/register") {
+          router.push(decoded);
+        } else {
+          router.push("/dashboard");
+        }
+      } catch {
+        router.push("/dashboard");
+      }
+    }
+  }, [status, session, router, searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,9 +42,10 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
+      // Get callbackUrl from query string
       let callbackUrl = new URLSearchParams(window.location.search).get("callbackUrl") || "/dashboard";
       
-      // Decode URL if encoded (e.g., %2Flogi -> /logi)
+      // Decode URL if encoded (e.g., %2Fdashboard -> /dashboard)
       if (callbackUrl) {
         try {
           callbackUrl = decodeURIComponent(callbackUrl);
@@ -47,30 +70,22 @@ export default function LoginPage() {
         callbackUrl = "/dashboard";
       }
       
-      // Use NextAuth's built-in redirect mechanism
-      // This will handle cookie setting and redirect automatically
-      // ถ้าเป็น production ให้ redirect ไปที่ production URL
-      const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
-      const productionUrl = isProduction ? window.location.origin : '';
-      const finalCallbackUrl = isProduction && productionUrl 
-        ? `${productionUrl}/dashboard` 
-        : "/dashboard";
-      
+      // Use the validated callbackUrl (relative path)
+      // Use redirect: true to let NextAuth handle the redirect
       const result = await signIn("credentials", {
         username,
         password,
         redirect: true,
-        callbackUrl: finalCallbackUrl
+        callbackUrl: callbackUrl
       });
 
-      // If redirect is true, signIn will handle redirect automatically
+      // If redirect is true, NextAuth will handle redirect automatically
       // This code will only execute if there's an error
       if (result?.error) {
         setError("Username หรือ Password ไม่ถูกต้อง");
         setIsLoading(false);
       }
       // If result?.ok is true, NextAuth will redirect automatically
-      // So we don't need to handle it here
     } catch (error) {
       console.error("Login error:", error);
       setError("เกิดข้อผิดพลาดในการเข้าสู่ระบบ");
