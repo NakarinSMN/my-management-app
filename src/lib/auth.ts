@@ -112,41 +112,30 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async redirect({ url, baseUrl }) {
-      // Ensure production URL always has protocol
-      const normalizeUrl = (value?: string | null) => {
-        if (!value) return "";
-        const trimmed = value.trim().replace(/\/+$/, "");
-        if (/^https?:\/\//i.test(trimmed)) {
-          return trimmed;
-        }
-        return `https://${trimmed}`;
-      };
-
-      const productionUrl = normalizedNextAuthUrl || normalizeUrl(baseUrl);
-
       // Prevent redirect to login page
       if (url.includes("/login") || url.includes("/register")) {
-        return `${productionUrl}/dashboard`;
+        return "/dashboard";
       }
 
-      // If url is relative, make it absolute using production URL
+      // If url is relative, return it as is
       if (url.startsWith("/")) {
-        return `${productionUrl}${url}`;
+        return url;
       }
       
-      // If url is absolute and on same origin, allow it
+      // If url is absolute, check if same origin
       try {
         const urlObj = new URL(url);
-        const baseUrlObj = new URL(productionUrl);
+        const baseUrlObj = new URL(baseUrl);
         if (urlObj.origin === baseUrlObj.origin) {
-          return url;
+          // Same origin - return relative path
+          return urlObj.pathname + urlObj.search;
         }
       } catch {
         // Invalid URL, use default
       }
       
       // Default to dashboard
-      return `${productionUrl}/dashboard`;
+      return "/dashboard";
     },
     async jwt({ token, user }) {
       if (user) {
@@ -214,4 +203,5 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET || "fallback-secret-key-for-development-only-change-in-production",
   debug: process.env.NODE_ENV === "development",
 };
+
 

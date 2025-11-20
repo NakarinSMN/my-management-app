@@ -71,22 +71,28 @@ export default function LoginPage() {
         callbackUrl = "/dashboard";
       }
       
-      // Use the validated callbackUrl (relative path)
-      // Use redirect: true to let NextAuth handle the redirect
+      // Use redirect: false to handle redirect manually
       const result = await signIn("credentials", {
         username,
         password,
-        redirect: true,
+        redirect: false,
         callbackUrl: callbackUrl
       });
 
-      // If redirect is true, NextAuth will handle redirect automatically
-      // This code will only execute if there's an error
+      // Check result and redirect manually
       if (result?.error) {
         setError("Username หรือ Password ไม่ถูกต้อง");
         setIsLoading(false);
+      } else if (result?.ok) {
+        // Login successful - redirect manually
+        window.location.href = callbackUrl;
+      } else {
+        // Unknown state - try to redirect anyway
+        setIsLoading(false);
+        setTimeout(() => {
+          window.location.href = callbackUrl;
+        }, 100);
       }
-      // If result?.ok is true, NextAuth will redirect automatically
     } catch (error) {
       console.error("Login error:", error);
       setError("เกิดข้อผิดพลาดในการเข้าสู่ระบบ");
