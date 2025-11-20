@@ -21,7 +21,7 @@ export default function LoginPage() {
   // Redirect if already logged in
   useEffect(() => {
     if (status === "authenticated" && session) {
-      const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+      const callbackUrl = searchParams?.get("callbackUrl") || "/dashboard";
       // Decode callbackUrl if needed
       try {
         const decoded = decodeURIComponent(callbackUrl);
