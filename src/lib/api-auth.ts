@@ -1,7 +1,6 @@
 // src/lib/api-auth.ts
 // Helper functions for API route authentication
 
-import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "./auth";
 
