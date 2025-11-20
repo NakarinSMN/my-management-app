@@ -118,8 +118,8 @@ export const authOptions: NextAuthOptions = {
       },
     },
   },
-  trustHost: true, // Required for Netlify and other platforms
-  useSecureCookies: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https://"),
+  // trustHost is handled via AUTH_TRUST_HOST environment variable in NextAuth v4
+  // useSecureCookies is handled automatically based on NEXTAUTH_URL
   pages: {
     signIn: "/login",
     error: "/login",
