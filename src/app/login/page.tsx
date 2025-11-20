@@ -19,19 +19,28 @@ export default function LoginPage() {
 
   // Redirect if already logged in
   useEffect(() => {
+    console.log("[LOGIN DEBUG] Session status changed:", { status, hasSession: !!session, session });
+    
     if (status === "authenticated" && session && typeof window !== "undefined") {
+      console.log("[LOGIN DEBUG] User already authenticated, redirecting...");
       // Use window.location.search instead of useSearchParams to avoid SSR issues
       const params = new URLSearchParams(window.location.search);
       const callbackUrl = params.get("callbackUrl") || "/dashboard";
+      console.log("[LOGIN DEBUG] Callback URL from query:", callbackUrl);
+      
       // Decode callbackUrl if needed
       try {
         const decoded = decodeURIComponent(callbackUrl);
+        console.log("[LOGIN DEBUG] Decoded callback URL:", decoded);
         if (decoded.startsWith("/") && decoded !== "/login" && decoded !== "/register") {
+          console.log("[LOGIN DEBUG] Redirecting to:", decoded);
           router.push(decoded);
         } else {
+          console.log("[LOGIN DEBUG] Invalid callback URL, redirecting to /dashboard");
           router.push("/dashboard");
         }
-      } catch {
+      } catch (error) {
+        console.error("[LOGIN DEBUG] Error decoding callback URL:", error);
         router.push("/dashboard");
       }
     }
@@ -42,15 +51,20 @@ export default function LoginPage() {
     setError("");
     setIsLoading(true);
 
+    console.log("[LOGIN DEBUG] Form submitted, starting login process...");
+
     try {
       // Get callbackUrl from query string
       let callbackUrl = new URLSearchParams(window.location.search).get("callbackUrl") || "/dashboard";
+      console.log("[LOGIN DEBUG] Initial callbackUrl from query:", callbackUrl);
       
       // Decode URL if encoded (e.g., %2Fdashboard -> /dashboard)
       if (callbackUrl) {
         try {
           callbackUrl = decodeURIComponent(callbackUrl);
-        } catch {
+          console.log("[LOGIN DEBUG] Decoded callbackUrl:", callbackUrl);
+        } catch (error) {
+          console.error("[LOGIN DEBUG] Error decoding callbackUrl:", error);
           // If decode fails, use default
           callbackUrl = "/dashboard";
         }
@@ -68,8 +82,12 @@ export default function LoginPage() {
         callbackUrl.includes("?") || // No query params
         callbackUrl.includes("#") // No hash
       ) {
+        console.log("[LOGIN DEBUG] Invalid callbackUrl, using /dashboard");
         callbackUrl = "/dashboard";
       }
+      
+      console.log("[LOGIN DEBUG] Final callbackUrl:", callbackUrl);
+      console.log("[LOGIN DEBUG] Calling signIn with:", { username, hasPassword: !!password, callbackUrl });
       
       // Use redirect: false to handle redirect manually
       const result = await signIn("credentials", {
@@ -79,22 +97,29 @@ export default function LoginPage() {
         callbackUrl: callbackUrl
       });
 
+      console.log("[LOGIN DEBUG] signIn result:", result);
+
       // Check result and redirect manually
       if (result?.error) {
+        console.error("[LOGIN DEBUG] Login failed with error:", result.error);
         setError("Username หรือ Password ไม่ถูกต้อง");
         setIsLoading(false);
       } else if (result?.ok) {
+        console.log("[LOGIN DEBUG] Login successful! Redirecting to:", callbackUrl);
         // Login successful - redirect manually
         window.location.href = callbackUrl;
       } else {
+        console.warn("[LOGIN DEBUG] Unknown result state:", result);
+        console.log("[LOGIN DEBUG] Result keys:", result ? Object.keys(result) : "null");
         // Unknown state - try to redirect anyway
         setIsLoading(false);
         setTimeout(() => {
+          console.log("[LOGIN DEBUG] Attempting redirect after timeout to:", callbackUrl);
           window.location.href = callbackUrl;
         }, 100);
       }
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("[LOGIN DEBUG] Login error:", error);
       setError("เกิดข้อผิดพลาดในการเข้าสู่ระบบ");
       setIsLoading(false);
     }

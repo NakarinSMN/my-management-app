@@ -40,7 +40,10 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
+        console.log("[AUTH DEBUG] Authorize called with username:", credentials?.username);
+        
         if (!credentials?.username || !credentials?.password) {
+          console.log("[AUTH DEBUG] Missing credentials");
           return null;
         }
 
@@ -49,6 +52,7 @@ export const authOptions: NextAuthOptions = {
           const users = db.collection("users");
           
           // ค้นหาผู้ใช้ด้วย username หรือ email
+          console.log("[AUTH DEBUG] Searching for user...");
           const user = await users.findOne({
             $or: [
               { username: credentials.username },
@@ -57,9 +61,11 @@ export const authOptions: NextAuthOptions = {
           });
 
           if (!user) {
+            console.log("[AUTH DEBUG] User not found");
             return null;
           }
 
+          console.log("[AUTH DEBUG] User found, checking password...");
           // ตรวจสอบรหัสผ่าน
           const isPasswordValid = await bcrypt.compare(
             credentials.password,
@@ -67,9 +73,11 @@ export const authOptions: NextAuthOptions = {
           );
 
           if (!isPasswordValid) {
+            console.log("[AUTH DEBUG] Invalid password");
             return null;
           }
 
+          console.log("[AUTH DEBUG] Password valid, updating lastLogin...");
           // อัปเดต lastLogin
           await users.updateOne(
             { _id: user._id },
@@ -77,15 +85,17 @@ export const authOptions: NextAuthOptions = {
           );
 
           // Return user object
-          return {
+          const userObj = {
             id: user._id.toString(),
             username: user.username,
             email: user.email,
             name: user.name || user.username,
             role: user.role || "user"
           };
+          console.log("[AUTH DEBUG] Authorization successful, returning user:", { ...userObj, password: "***" });
+          return userObj;
         } catch (error) {
-          console.error("Auth error:", error);
+          console.error("[AUTH DEBUG] Auth error:", error);
           return null;
         }
       }
@@ -112,13 +122,17 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async redirect({ url, baseUrl }) {
+      console.log("[AUTH DEBUG] Redirect callback called:", { url, baseUrl });
+      
       // Prevent redirect to login page
       if (url.includes("/login") || url.includes("/register")) {
+        console.log("[AUTH DEBUG] URL contains login/register, redirecting to /dashboard");
         return "/dashboard";
       }
 
       // If url is relative, return it as is
       if (url.startsWith("/")) {
+        console.log("[AUTH DEBUG] Relative URL, returning:", url);
         return url;
       }
       
@@ -128,13 +142,18 @@ export const authOptions: NextAuthOptions = {
         const baseUrlObj = new URL(baseUrl);
         if (urlObj.origin === baseUrlObj.origin) {
           // Same origin - return relative path
-          return urlObj.pathname + urlObj.search;
+          const relativePath = urlObj.pathname + urlObj.search;
+          console.log("[AUTH DEBUG] Same origin, returning relative path:", relativePath);
+          return relativePath;
         }
-      } catch {
+        console.log("[AUTH DEBUG] Different origin, using default");
+      } catch (error) {
+        console.error("[AUTH DEBUG] Error parsing URL:", error);
         // Invalid URL, use default
       }
       
       // Default to dashboard
+      console.log("[AUTH DEBUG] Default redirect to /dashboard");
       return "/dashboard";
     },
     async jwt({ token, user }) {
