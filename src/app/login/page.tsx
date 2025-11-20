@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from "react";
 import { signIn, useSession } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -16,12 +16,13 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const { data: session, status } = useSession();
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   // Redirect if already logged in
   useEffect(() => {
-    if (status === "authenticated" && session) {
-      const callbackUrl = searchParams?.get("callbackUrl") || "/dashboard";
+    if (status === "authenticated" && session && typeof window !== "undefined") {
+      // Use window.location.search instead of useSearchParams to avoid SSR issues
+      const params = new URLSearchParams(window.location.search);
+      const callbackUrl = params.get("callbackUrl") || "/dashboard";
       // Decode callbackUrl if needed
       try {
         const decoded = decodeURIComponent(callbackUrl);
@@ -34,7 +35,7 @@ export default function LoginPage() {
         router.push("/dashboard");
       }
     }
-  }, [status, session, router, searchParams]);
+  }, [status, session, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
