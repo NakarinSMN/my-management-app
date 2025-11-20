@@ -99,11 +99,12 @@ export default function LoginPage() {
           redirect: false
         });
         console.log("[LOGIN DEBUG] signIn completed successfully");
-      } catch (signInError: any) {
+      } catch (signInError: unknown) {
         console.error("[LOGIN DEBUG] signIn threw an error:", signInError);
         // Even if signIn throws an error, it might have succeeded
         // Check if we can still proceed
-        if (signInError?.message?.includes("URL") || signInError?.message?.includes("Invalid")) {
+        const errorMessage = signInError instanceof Error ? signInError.message : String(signInError);
+        if (errorMessage.includes("URL") || errorMessage.includes("Invalid")) {
           console.log("[LOGIN DEBUG] URL-related error, but login might have succeeded. Checking session...");
           // Wait and check session, then redirect
           setTimeout(() => {
@@ -146,16 +147,17 @@ export default function LoginPage() {
           window.location.href = callbackUrl;
         }, 500);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("[LOGIN DEBUG] Login error:", error);
+      const errorObj = error instanceof Error ? error : new Error(String(error));
       console.error("[LOGIN DEBUG] Error details:", {
-        message: error?.message,
-        stack: error?.stack,
-        name: error?.name
+        message: errorObj.message,
+        stack: errorObj.stack,
+        name: errorObj.name
       });
       
       // If it's a URL error but login might have succeeded, try redirecting anyway
-      if (error?.message?.includes("URL") || error?.message?.includes("Invalid")) {
+      if (errorObj.message.includes("URL") || errorObj.message.includes("Invalid")) {
         console.log("[LOGIN DEBUG] URL error detected, but attempting redirect anyway...");
         setTimeout(() => {
           const callbackUrl = new URLSearchParams(window.location.search).get("callbackUrl") || "/dashboard";
