@@ -14,13 +14,22 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const { data: session, status } = useSession();
+  const [hasRedirected, setHasRedirected] = useState(false);
 
-  // Redirect if already logged in
+  // Redirect if already logged in - ป้องกัน loop
   useEffect(() => {
-    console.log("[LOGIN DEBUG] Session status changed:", { status, hasSession: !!session, session });
+    console.log("[LOGIN DEBUG] Session status changed:", { status, hasSession: !!session, session, hasRedirected });
+    
+    // ป้องกัน redirect loop - ถ้า redirect ไปแล้วไม่ต้อง redirect อีก
+    if (hasRedirected) {
+      console.log("[LOGIN DEBUG] Already redirected, skipping...");
+      return;
+    }
     
     if (status === "authenticated" && session && typeof window !== "undefined") {
       console.log("[LOGIN DEBUG] User already authenticated, redirecting...");
+      setHasRedirected(true); // ตั้ง flag เพื่อป้องกัน loop
+      
       // Use window.location.search instead of useSearchParams to avoid SSR issues
       const params = new URLSearchParams(window.location.search);
       let callbackUrl = params.get("callbackUrl") || "/dashboard";
@@ -35,7 +44,7 @@ export default function LoginPage() {
         callbackUrl = "/dashboard";
       }
       
-      // Validate callbackUrl
+      // Validate callbackUrl - ป้องกัน redirect ไป login
       if (
         !callbackUrl || 
         !callbackUrl.startsWith("/") ||
@@ -49,10 +58,10 @@ export default function LoginPage() {
       }
       
       console.log("[LOGIN DEBUG] Redirecting to:", callbackUrl);
-      // Use window.location.replace for production compatibility
+      // ใช้ replace เพื่อไม่ให้ back button กลับมา login
       window.location.replace(callbackUrl);
     }
-  }, [status, session]);
+  }, [status, session, hasRedirected]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,9 +148,13 @@ export default function LoginPage() {
         setIsLoading(false);
       } else {
         // Login สำเร็จ - redirect ทันที (วิธีขั้นสุด)
-        // ใช้ result.url ถ้ามี หรือใช้ callbackUrl
-        const redirectUrl = result?.url || callbackUrl;
+        // ใช้ callbackUrl โดยตรง (ไม่ใช้ result.url เพราะอาจไม่มีเมื่อใช้ redirect: false)
+        const redirectUrl = callbackUrl;
         console.log("[LOGIN DEBUG] Login successful! Redirecting immediately to:", redirectUrl);
+        console.log("[LOGIN DEBUG] Current location:", window.location.href);
+        
+        // ป้องกัน redirect loop
+        setHasRedirected(true);
         
         // ใช้วิธีที่แน่นอนที่สุด - สร้าง absolute URL
         const absoluteUrl = redirectUrl.startsWith("/") 
@@ -150,23 +163,9 @@ export default function LoginPage() {
         
         console.log("[LOGIN DEBUG] Absolute redirect URL:", absoluteUrl);
         
-        // Redirect ทันที - ใช้หลายวิธีเพื่อให้แน่ใจว่า redirect ทำงาน
-        try {
-          // วิธีที่ 1: ใช้ replace (แนะนำ)
-          window.location.replace(absoluteUrl);
-        } catch (e) {
-          console.error("[LOGIN DEBUG] Replace failed, trying href:", e);
-          // วิธีที่ 2: ใช้ href (fallback)
-          window.location.href = absoluteUrl;
-        }
-        
-        // วิธีที่ 3: ถ้ายังไม่ redirect ให้ force redirect อีกครั้ง
-        setTimeout(() => {
-          if (window.location.pathname === "/login") {
-            console.log("[LOGIN DEBUG] Still on login page, forcing redirect...");
-            window.location.href = absoluteUrl;
-          }
-        }, 1000);
+        // Redirect ทันที - ใช้ window.location.replace เพื่อไม่ให้ back button กลับมา login
+        console.log("[LOGIN DEBUG] Executing redirect now...");
+        window.location.replace(absoluteUrl);
       }
     } catch (error: unknown) {
       console.error("[LOGIN DEBUG] Login error:", error);

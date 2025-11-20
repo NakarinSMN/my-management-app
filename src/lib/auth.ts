@@ -112,9 +112,10 @@ export const authOptions: NextAuthOptions = {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: process.env.NODE_ENV === "production" || process.env.NEXTAUTH_URL?.startsWith("https://"),
-        // Don't set domain - let browser handle it automatically
-        // This ensures cookies work on Netlify subdomains
+        // ใช้ secure cookies เฉพาะเมื่อเป็น HTTPS
+        secure: process.env.NEXTAUTH_URL?.startsWith("https://") ?? false,
+        // ไม่ตั้ง domain เพื่อให้ทำงานกับ subdomains ได้
+        // domain จะถูก set อัตโนมัติโดย browser
       },
     },
   },
