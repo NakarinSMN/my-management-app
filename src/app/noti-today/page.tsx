@@ -84,58 +84,62 @@ export default function NotiTodayPage() {
   const filteredNotifications = useMemo(() => {
     if (!customerData || customerData.length === 0) return [];
     
-    return customerData
-      .filter((item: CustomerData) => {
-        // ตรวจสอบว่าเบอร์โทรศัพท์ถูกต้อง (ไม่ใช่ "0" หรือรูปแบบไม่ถูกต้อง)
-        if (!isValidPhone(item.phone)) return false;
+    // ใช้ reduce เพื่อคำนวณทุกอย่างในครั้งเดียว (ป้องกันการคำนวณซ้ำ)
+    const notifications: NotificationItem[] = [];
+    
+    for (const item of customerData) {
+      // ตรวจสอบว่าเบอร์โทรศัพท์ถูกต้อง (ไม่ใช่ "0" หรือรูปแบบไม่ถูกต้อง)
+      if (!isValidPhone(item.phone)) continue;
+      
+      // คำนวณ daysLeft เพียงครั้งเดียว
+      const daysLeft = calculateDaysUntilExpiry(item.registerDate);
+      
+      // กรองเฉพาะรายการที่ 0-90 วัน
+      if (daysLeft < 0 || daysLeft > 90) continue;
+      
+      // คำนวณวันที่หมดอายุ
+      let expiryDate = '';
+      try {
+        let date: Date;
+        const registerDate = item.registerDate;
         
-        const daysLeft = calculateDaysUntilExpiry(item.registerDate);
-        return daysLeft >= 0 && daysLeft <= 90;
-      })
-      .map((item: CustomerData) => {
-        const daysLeft = calculateDaysUntilExpiry(item.registerDate);
-        
-        // คำนวณวันที่หมดอายุ
-        let expiryDate = '';
-        try {
-          let date: Date;
-          const registerDate = item.registerDate;
-          
-          if (/^\d{2}\/\d{2}\/\d{4}$/.test(registerDate)) {
-            const [day, month, year] = registerDate.split('/');
-            date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-          } else if (/^\d{4}-\d{2}-\d{2}$/.test(registerDate)) {
-            date = new Date(registerDate);
-          } else {
-            date = new Date(registerDate);
-          }
-          
-          const expiry = new Date(date);
-          expiry.setFullYear(expiry.getFullYear() + 1);
-          
-          const dd = String(expiry.getDate()).padStart(2, '0');
-          const mm = String(expiry.getMonth() + 1).padStart(2, '0');
-          const yyyy = expiry.getFullYear();
-          expiryDate = `${dd}/${mm}/${yyyy}`;
-        } catch {
-          expiryDate = '-';
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(registerDate)) {
+          const [day, month, year] = registerDate.split('/');
+          date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        } else if (/^\d{4}-\d{2}-\d{2}$/.test(registerDate)) {
+          date = new Date(registerDate);
+        } else {
+          date = new Date(registerDate);
         }
         
-        return {
-          sequenceNumber: item.sequenceNumber,
-          licensePlate: item.licensePlate,
-          brand: item.brand || '',
-          customerName: item.customerName,
-          phone: item.phone,
-          registerDate: item.registerDate,
-          expiryDate: expiryDate,
-          daysUntilExpiry: daysLeft,
-          status: item.status,
-          note: item.note,
-          tags: item.tags || []
-        } as NotificationItem;
-      })
-      .sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry);
+        const expiry = new Date(date);
+        expiry.setFullYear(expiry.getFullYear() + 1);
+        
+        const dd = String(expiry.getDate()).padStart(2, '0');
+        const mm = String(expiry.getMonth() + 1).padStart(2, '0');
+        const yyyy = expiry.getFullYear();
+        expiryDate = `${dd}/${mm}/${yyyy}`;
+      } catch {
+        expiryDate = '-';
+      }
+      
+      notifications.push({
+        sequenceNumber: item.sequenceNumber,
+        licensePlate: item.licensePlate,
+        brand: item.brand || '',
+        customerName: item.customerName,
+        phone: item.phone,
+        registerDate: item.registerDate,
+        expiryDate: expiryDate,
+        daysUntilExpiry: daysLeft,
+        status: item.status,
+        note: item.note,
+        tags: item.tags || []
+      } as NotificationItem);
+    }
+    
+    // เรียงตาม daysUntilExpiry จากน้อยไปมาก
+    return notifications.sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry);
   }, [customerData]);
 
   return (

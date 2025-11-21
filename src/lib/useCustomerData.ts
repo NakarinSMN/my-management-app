@@ -215,11 +215,11 @@ export function useCustomerData() {
     MONGODB_CUSTOMER_API_URL,
     fetcher,
     {
-      revalidateOnFocus: true,
+      revalidateOnFocus: false, // ปิดการ revalidate เมื่อ focus กลับมา (ป้องกันการโหลดซ้ำ)
       revalidateOnReconnect: true,
-      dedupingInterval: 0, // ไม่มี deduping
-      revalidateIfStale: true,
-      revalidateOnMount: true,
+      dedupingInterval: 2000, // dedupe requests ใน 2 วินาที (ป้องกันการโหลดซ้ำ)
+      revalidateIfStale: false, // ปิดการ revalidate หากข้อมูล stale (ใช้ cache)
+      revalidateOnMount: true, // revalidate เมื่อ mount ครั้งแรกเท่านั้น
       refreshInterval: 0, // ไม่ auto refresh
     }
   );
