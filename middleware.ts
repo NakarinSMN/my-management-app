@@ -4,15 +4,9 @@ import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
 export async function middleware(request: NextRequest) {
-  // ปิดการใช้งาน login ชั่วคราว - อนุญาตให้เข้าถึงทุกหน้าได้โดยไม่ต้องล็อกอิน
-  // TODO: เปิดใช้งานอีกครั้งเมื่อแก้ไขระบบล็อกอินเสร็จ
-  return NextResponse.next();
-  
-  /* 
-  // โค้ดเดิม - เปิดใช้งานเมื่อต้องการเปิดระบบล็อกอินอีกครั้ง
   const { pathname } = request.nextUrl;
 
-  // อนุญาตให้เข้าถึงหน้า login, register, API auth และ debug env ได้โดยไม่ต้องล็อกอิน
+  // อนุญาตให้เข้าถึงหน้า login, register, API auth ได้โดยไม่ต้องล็อกอิน
   if (
     pathname === "/login" ||
     pathname === "/register" ||
@@ -34,7 +28,7 @@ export async function middleware(request: NextRequest) {
   // getToken จะหา cookie อัตโนมัติตามที่ NextAuth config ไว้
   const token = await getToken({ 
     req: request,
-    secret: process.env.NEXTAUTH_SECRET
+    secret: "fallback-secret-key-for-development-only-change-in-production"
   });
 
   // Debug logging (only in development or if needed)
@@ -48,12 +42,12 @@ export async function middleware(request: NextRequest) {
 
   // ถ้าไม่มี token และไม่ใช่หน้า login ให้ redirect ไปหน้า login
   if (!token) {
-    // Prevent redirect loop - don't redirect if already on login/register
+    // ไม่ต้องเช็ค callbackUrl - redirect ตรงไปหน้า login
     if (pathname === "/login" || pathname === "/register") {
       return NextResponse.next();
     }
     
-    // Prevent redirect loop - don't redirect API routes to login (return 401 instead)
+    // API routes return 401
     if (pathname.startsWith("/api/")) {
       return NextResponse.json(
         { error: "Unauthorized - กรุณาเข้าสู่ระบบ" },
@@ -61,36 +55,13 @@ export async function middleware(request: NextRequest) {
       );
     }
     
-    // Prevent redirect loop - redirect root path to login without callbackUrl
-    if (pathname === "/") {
-      const loginUrl = new URL("/login", request.url);
-      // Don't set callbackUrl for root path to prevent loop
-      return NextResponse.redirect(loginUrl);
-    }
-    
-    // For other pages, redirect to login with callbackUrl
-    // แต่ถ้ามี callbackUrl อยู่แล้วใน query string ให้ใช้ค่านั้น
+    // Redirect ไปหน้า login โดยตรง
     const loginUrl = new URL("/login", request.url);
-    const existingCallbackUrl = request.nextUrl.searchParams.get("callbackUrl");
-    
-    if (existingCallbackUrl) {
-      // ถ้ามี callbackUrl อยู่แล้ว (เช่น redirect จาก NextAuth) ให้ใช้ค่านั้น
-      loginUrl.searchParams.set("callbackUrl", existingCallbackUrl);
-    } else if (
-      pathname !== "/login" && 
-      pathname !== "/register" && 
-      !pathname.startsWith("/api/") &&
-      pathname !== "/"
-    ) {
-      // ถ้าไม่มี callbackUrl ให้ใช้ pathname ปัจจุบัน
-      loginUrl.searchParams.set("callbackUrl", pathname);
-    }
     return NextResponse.redirect(loginUrl);
   }
 
   // ถ้ามี token ให้ผ่าน
   return NextResponse.next();
-  */
 }
 
 export const config = {

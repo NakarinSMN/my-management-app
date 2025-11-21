@@ -17,7 +17,6 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { motion } from 'framer-motion';
 import { useDialog } from '@/app/contexts/DialogContext';
-import { useAuth } from '@/app/contexts/AuthContext';
 
 interface User {
   id: string;
@@ -38,7 +37,6 @@ export default function UserManagementPage() {
   const [isEditing, setIsEditing] = useState<string | null>(null);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const { showConfirm, showSuccess, showError } = useDialog();
-  const { user: currentUser } = useAuth();
 
   // Form state
   const [formData, setFormData] = useState({
@@ -48,10 +46,6 @@ export default function UserManagementPage() {
     name: '',
     role: 'user',
   });
-
-  // ตรวจสอบ role
-  const allowedRoles = ['dev', 'superadmin', 'admin'];
-  const canAccess = currentUser && allowedRoles.includes(currentUser.role);
 
   // Fetch users
   const fetchUsers = async () => {
@@ -74,27 +68,9 @@ export default function UserManagementPage() {
   };
 
   useEffect(() => {
-    if (canAccess) {
-      fetchUsers();
-    }
+    fetchUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canAccess]);
-
-  // ถ้าไม่มีสิทธิ์เข้าถึง
-  if (!canAccess) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">
-            ไม่มีสิทธิ์เข้าถึง
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            คุณไม่มีสิทธิ์เข้าถึงหน้านี้
-          </p>
-        </div>
-      </div>
-    );
-  }
+  }, []);
 
   // Filter users
   const filteredUsers = users.filter(user => {
@@ -214,11 +190,6 @@ export default function UserManagementPage() {
 
   // Delete user
   const handleDelete = (user: User) => {
-    if (user.id === currentUser?.id) {
-      showError('ไม่สามารถลบได้', 'ไม่สามารถลบบัญชีของตัวเองได้');
-      return;
-    }
-
     showConfirm(
       'ยืนยันการลบ',
       `คุณต้องการลบ User "${user.username}" ใช่หรือไม่?\n\nการกระทำนี้ไม่สามารถยกเลิกได้`,
@@ -489,17 +460,15 @@ export default function UserManagementPage() {
                           >
                             <FontAwesomeIcon icon={faEdit} />
                           </motion.button>
-                          {user.id !== currentUser?.id && (
-                            <motion.button
-                              onClick={() => handleDelete(user)}
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                              className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                              title="ลบ"
-                            >
-                              <FontAwesomeIcon icon={faTrash} />
-                            </motion.button>
-                          )}
+                          <motion.button
+                            onClick={() => handleDelete(user)}
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                            title="ลบ"
+                          >
+                            <FontAwesomeIcon icon={faTrash} />
+                          </motion.button>
                         </div>
                       </td>
                     </motion.tr>

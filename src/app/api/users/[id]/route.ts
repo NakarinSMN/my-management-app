@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/mongodb";
 import bcrypt from "bcryptjs";
 import { ObjectId } from "mongodb";
-import { getAuthSession } from "@/lib/api-auth";
 
 interface UserDocument {
   _id: ObjectId;
@@ -32,24 +31,6 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getAuthSession();
-    
-    if (!session || !session.user) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized - กรุณาเข้าสู่ระบบ" },
-        { status: 401 }
-      );
-    }
-
-    // ตรวจสอบ role - อนุญาตเฉพาะ dev, superadmin, admin
-    const allowedRoles = ["dev", "superadmin", "admin"];
-    if (!allowedRoles.includes(session.user.role)) {
-      return NextResponse.json(
-        { success: false, error: "Forbidden - ไม่มีสิทธิ์เข้าถึง" },
-        { status: 403 }
-      );
-    }
-
     const { id } = await params;
     const body = await request.json();
     const { username, email, password, name, role } = body;
@@ -161,37 +142,11 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getAuthSession();
-    
-    if (!session || !session.user) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized - กรุณาเข้าสู่ระบบ" },
-        { status: 401 }
-      );
-    }
-
-    // ตรวจสอบ role - อนุญาตเฉพาะ dev, superadmin, admin
-    const allowedRoles = ["dev", "superadmin", "admin"];
-    if (!allowedRoles.includes(session.user.role)) {
-      return NextResponse.json(
-        { success: false, error: "Forbidden - ไม่มีสิทธิ์เข้าถึง" },
-        { status: 403 }
-      );
-    }
-
     const { id } = await params;
 
     if (!ObjectId.isValid(id)) {
       return NextResponse.json(
         { success: false, error: "Invalid user ID" },
-        { status: 400 }
-      );
-    }
-
-    // ตรวจสอบว่าไม่ลบตัวเอง
-    if (session.user.id === id) {
-      return NextResponse.json(
-        { success: false, error: "ไม่สามารถลบบัญชีของตัวเองได้" },
         { status: 400 }
       );
     }

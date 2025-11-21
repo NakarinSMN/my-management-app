@@ -1,14 +1,13 @@
 // src/app/devtool/page.tsx
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTools, faDatabase, faCode, faCheckCircle, faTimesCircle, faSpinner, faBell, faTrash, faSync, faUser, faEdit, faEnvelope, faUserTag, faLock, faSearch, faUsers } from '@fortawesome/free-solid-svg-icons';
+import { faTools, faDatabase, faCode, faCheckCircle, faTimesCircle, faSpinner, faBell, faTrash, faSync, faLock } from '@fortawesome/free-solid-svg-icons';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 import { useDialog } from '../contexts/DialogContext';
-import { useAuth } from '../contexts/AuthContext';
 
 interface DevTool {
   id: string;
@@ -20,6 +19,12 @@ interface DevTool {
 }
 
 export default function DevToolPage() {
+  const [devtoolPin, setDevtoolPin] = useState(["", "", "", "", "", ""]);
+  const [isPinVerified, setIsPinVerified] = useState(false);
+  const [pinError, setPinError] = useState("");
+  const [isCheckingPin, setIsCheckingPin] = useState(false);
+  const pinInputRefs = React.useRef<(HTMLInputElement | null)[]>([]);
+  
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshResult, setRefreshResult] = useState<string>('');
   const [isDeleting, setIsDeleting] = useState(false);
@@ -29,169 +34,85 @@ export default function DevToolPage() {
   const [importText, setImportText] = useState<string>('');
   const [isImporting, setIsImporting] = useState(false);
   const [importResult, setImportResult] = useState<string>('');
-  
-  // User Management states
-  interface UserData {
-    id: string;
-    username: string;
-    email?: string;
-    name: string;
-    role: string;
-    createdAt?: string;
-    updatedAt?: string;
-    lastLogin?: string;
-  }
-
-  const [users, setUsers] = useState<UserData[]>([]);
-  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
-  const [userSearchTerm, setUserSearchTerm] = useState('');
-  const [isEditingUser, setIsEditingUser] = useState<string | null>(null);
-  const [editingUser, setEditingUser] = useState<UserData | null>(null);
-  const [userFormData, setUserFormData] = useState({
-    username: '',
-    email: '',
-    password: '',
-    name: '',
-    role: 'user',
-  });
 
   // ⚡ ใช้ Dialog Hook
   const { showConfirm, showSuccess, showError } = useDialog();
-  const { user } = useAuth();
 
-  // ตรวจสอบ role - อนุญาตเฉพาะ dev, superadmin, admin
-  const allowedRoles = ['dev', 'superadmin', 'admin'];
-  const canAccess = user && allowedRoles.includes(user.role);
+  // ตรวจสอบ PIN สำหรับ DevTool (ใช้ PIN แยก)
+  const DEVTOOL_PIN = "240444";
 
-  // Fetch users
-  const fetchUsers = async () => {
-    try {
-      setIsLoadingUsers(true);
-      const response = await fetch('/api/users');
-      const result = await response.json();
+  // ตรวจสอบว่าได้ verify PIN แล้วหรือยัง (ไม่เก็บใน sessionStorage - ให้ใส่ PIN ทุกครั้ง)
+  // ให้ใส่ PIN ทุกครั้งที่เข้าหน้า devtool
+  // useEffect(() => {
+  //   // ไม่ใช้ sessionStorage - ให้ใส่ PIN ทุกครั้ง
+  // }, []);
 
-      if (result.success) {
-        setUsers(result.data || []);
-      } else {
-        showError('เกิดข้อผิดพลาด', result.error || 'ไม่สามารถโหลดข้อมูล users ได้');
+  // Handle PIN input change
+  const handlePinChange = (index: number, value: string) => {
+    if (value && !/^\d$/.test(value)) {
+      return;
+    }
+    const newPin = [...devtoolPin];
+    newPin[index] = value;
+    setDevtoolPin(newPin);
+    setPinError("");
+
+    if (value && index < 5) {
+      pinInputRefs.current[index + 1]?.focus();
+    }
+
+    // Auto verify เมื่อกรอกครบ 6 หลัก
+    if (value && index === 5) {
+      const pinString = newPin.join("");
+      if (pinString.length === 6) {
+        setTimeout(() => {
+          handleVerifyPin();
+        }, 100);
       }
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      showError('เกิดข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูล users ได้');
-    } finally {
-      setIsLoadingUsers(false);
     }
   };
 
-  useEffect(() => {
-    if (canAccess) {
-      fetchUsers();
+  // Handle backspace
+  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !devtoolPin[index] && index > 0) {
+      pinInputRefs.current[index - 1]?.focus();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canAccess]);
-
-  // Filter users
-  const filteredUsers = users.filter((u: UserData) => {
-    const searchLower = userSearchTerm.toLowerCase();
-    return (
-      u.username.toLowerCase().includes(searchLower) ||
-      u.name.toLowerCase().includes(searchLower) ||
-      (u.email && u.email.toLowerCase().includes(searchLower)) ||
-      u.role.toLowerCase().includes(searchLower)
-    );
-  });
-
-  // Reset user form
-  const resetUserForm = () => {
-    setUserFormData({
-      username: '',
-      email: '',
-      password: '',
-      name: '',
-      role: 'user',
-    });
-    setIsEditingUser(null);
-    setEditingUser(null);
   };
 
-  // Edit user
-  const handleEditUser = (userData: UserData) => {
-    setEditingUser(userData);
-    setUserFormData({
-      username: userData.username,
-      email: userData.email || '',
-      password: '', // ไม่แสดง password เดิม
-      name: userData.name,
-      role: userData.role,
-    });
-    setIsEditingUser(userData.id);
+  // Handle paste
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData("text").slice(0, 6);
+    const digits = pastedData.match(/\d/g) || [];
+    
+    if (digits.length === 6) {
+      setDevtoolPin(digits as string[]);
+      pinInputRefs.current[5]?.focus();
+    }
   };
 
-  // Update user
-  const handleUpdateUser = async () => {
-    if (!editingUser) return;
-
-    if (!userFormData.username) {
-      showError('ข้อมูลไม่ครบ', 'กรุณากรอก Username');
+  // Verify DevTool PIN - เช็คแบบเป๊ะๆ
+  const handleVerifyPin = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    
+    const pinString = devtoolPin.join("");
+    if (pinString.length !== 6) {
       return;
     }
 
-    try {
-      const updateData: {
-        username: string;
-        email: string | null;
-        name: string;
-        role: string;
-        password?: string;
-      } = {
-        username: userFormData.username,
-        email: userFormData.email || null,
-        name: userFormData.name,
-        role: userFormData.role,
-      };
-
-      // ถ้ามี password ใหม่ ให้เพิ่มเข้าไป
-      if (userFormData.password) {
-        if (userFormData.password.length < 6) {
-          showError('ข้อมูลไม่ถูกต้อง', 'Password ต้องมีอย่างน้อย 6 ตัวอักษร');
-          return;
-        }
-        updateData.password = userFormData.password;
-      }
-
-      const response = await fetch(`/api/users/${editingUser.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updateData),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        showSuccess('อัปเดต User สำเร็จ', `อัปเดต User "${userFormData.username}" สำเร็จแล้ว`);
-        resetUserForm();
-        fetchUsers();
-      } else {
-        showError('เกิดข้อผิดพลาด', result.error || 'ไม่สามารถอัปเดต User ได้');
-      }
-    } catch (error) {
-      console.error('Error updating user:', error);
-      showError('เกิดข้อผิดพลาด', 'ไม่สามารถอัปเดต User ได้');
+    setIsCheckingPin(true);
+    
+    // เช็ค PIN แบบตรงๆ
+    if (pinString === DEVTOOL_PIN) {
+      setIsPinVerified(true);
+      setDevtoolPin(["", "", "", "", "", ""]);
+    } else {
+      setPinError("PIN ไม่ถูกต้อง");
+      setDevtoolPin(["", "", "", "", "", ""]);
+      setTimeout(() => pinInputRefs.current[0]?.focus(), 100);
     }
-  };
-
-  // Get role badge color
-  const getRoleBadgeColor = (role: string) => {
-    switch (role) {
-      case 'dev':
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';
-      case 'superadmin':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
-      case 'admin':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
-    }
+    
+    setIsCheckingPin(false);
   };
 
   // ฟังก์ชัน Import รายการที่ส่งแล้ว
@@ -373,14 +294,6 @@ export default function DevToolPage() {
 
   const devTools: DevTool[] = [
     {
-      id: 'user-management',
-      name: 'User Management',
-      description: 'จัดการ users ทั้งหมดในระบบ (สร้าง, แก้ไข, ลบ)',
-      icon: faUser,
-      path: '/devtool/user-management',
-      status: 'active'
-    },
-    {
       id: 'mongodb-debug',
       name: 'MongoDB Debug',
       description: 'ตรวจสอบและแก้ไขปัญหา MongoDB Atlas Connection',
@@ -444,18 +357,100 @@ export default function DevToolPage() {
     }
   };
 
-  // ถ้าไม่มีสิทธิ์เข้าถึง
-  if (!canAccess) {
+  // ถ้ายังไม่ได้ verify DevTool PIN ให้แสดงหน้า PIN
+  if (!isPinVerified) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">
-            ไม่มีสิทธิ์เข้าถึง
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            คุณไม่มีสิทธิ์เข้าถึงหน้านี้
-          </p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-green-50 to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="max-w-md w-full space-y-8 bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl"
+        >
+          <div className="text-center">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: "spring" }}
+              className="mx-auto h-16 w-16 bg-gradient-to-br from-emerald-500 to-green-500 rounded-full flex items-center justify-center mb-4"
+            >
+              <FontAwesomeIcon icon={faLock} className="text-white text-2xl" />
+            </motion.div>
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+              DevTool Access
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              กรุณากรอก PIN 6 หลักเพื่อเข้าถึง DevTool
+            </p>
+          </div>
+
+          <form className="mt-8 space-y-6" onSubmit={handleVerifyPin}>
+            {pinError && (
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg text-sm text-center"
+              >
+                {pinError}
+              </motion.div>
+            )}
+
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">
+                  PIN 6 หลัก
+                </label>
+                <div className="flex justify-center gap-3">
+                  {devtoolPin.map((digit, index) => (
+                    <input
+                      key={index}
+                      ref={(el) => {
+                        pinInputRefs.current[index] = el;
+                      }}
+                      type="password"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => handlePinChange(index, e.target.value)}
+                      onKeyDown={(e) => handleKeyDown(index, e)}
+                      onPaste={index === 0 ? handlePaste : undefined}
+                      disabled={isCheckingPin}
+                      className="w-12 h-14 text-center text-3xl font-bold border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-emerald-600 dark:text-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                      style={{
+                        fontFamily: 'monospace',
+                        letterSpacing: '0.1em'
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div>
+            <div>
+              <motion.button
+                type="submit"
+                disabled={isCheckingPin || devtoolPin.join("").length !== 6}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                {isCheckingPin ? (
+                  <>
+                    <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+                    กำลังตรวจสอบ...
+                  </>
+                ) : (
+                  <>
+                    <FontAwesomeIcon icon={faLock} />
+                    ตรวจสอบ PIN
+                  </>
+                )}
+              </motion.button>
+            </div>
+            </div>
+          </form>
+        </motion.div>
       </div>
     );
   }
@@ -757,233 +752,6 @@ export default function DevToolPage() {
                 📋 <strong>รูปแบบข้อมูล:</strong> ต้องมีคอลัมน์ที่ 8 เป็น &quot;ส่งแล้ว&quot; และบรรทัดถัดไปเป็นวันเวลา (DD/MM HH:MM)
               </p>
             </div>
-          </div>
-        </motion.div>
-
-        {/* User Management */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.75 }}
-          className="mt-8 p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              <FontAwesomeIcon icon={faUsers} className="mr-2 text-blue-600" />
-              จัดการ Users
-            </h3>
-            <Link href="/devtool/user-management">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm flex items-center gap-2"
-              >
-                <FontAwesomeIcon icon={faUser} />
-                ไปที่หน้า User Management
-              </motion.button>
-            </Link>
-          </div>
-
-          {/* Search */}
-          <div className="mb-4">
-            <div className="relative">
-              <FontAwesomeIcon
-                icon={faSearch}
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-              />
-              <input
-                type="text"
-                placeholder="ค้นหา username, name, email, role..."
-                value={userSearchTerm}
-                onChange={(e) => setUserSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
-          {/* Edit Form */}
-          {isEditingUser && editingUser && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800"
-            >
-              <h4 className="text-md font-semibold text-gray-900 dark:text-white mb-3">
-                แก้ไข User: {editingUser.username}
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    <FontAwesomeIcon icon={faUser} className="mr-1" />
-                    Username *
-                  </label>
-                  <input
-                    type="text"
-                    value={userFormData.username}
-                    onChange={(e) => setUserFormData({ ...userFormData, username: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    <FontAwesomeIcon icon={faEnvelope} className="mr-1" />
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={userFormData.email}
-                    onChange={(e) => setUserFormData({ ...userFormData, email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    <FontAwesomeIcon icon={faLock} className="mr-1" />
-                    Password (เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยน)
-                  </label>
-                  <input
-                    type="password"
-                    value={userFormData.password}
-                    onChange={(e) => setUserFormData({ ...userFormData, password: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    <FontAwesomeIcon icon={faUser} className="mr-1" />
-                    Name
-                  </label>
-                  <input
-                    type="text"
-                    value={userFormData.name}
-                    onChange={(e) => setUserFormData({ ...userFormData, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    <FontAwesomeIcon icon={faUserTag} className="mr-1" />
-                    Role
-                  </label>
-                  <select
-                    value={userFormData.role}
-                    onChange={(e) => setUserFormData({ ...userFormData, role: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  >
-                    <option value="user">User</option>
-                    <option value="admin">Admin</option>
-                    <option value="dev">Dev</option>
-                    <option value="superadmin">SuperAdmin</option>
-                  </select>
-                </div>
-              </div>
-              <div className="mt-3 flex gap-2">
-                <motion.button
-                  onClick={handleUpdateUser}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
-                >
-                  <FontAwesomeIcon icon={faEdit} className="mr-2" />
-                  บันทึก
-                </motion.button>
-                <motion.button
-                  onClick={resetUserForm}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
-                >
-                  ยกเลิก
-                </motion.button>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Users List */}
-          <div className="bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-            {isLoadingUsers ? (
-              <div className="p-8 text-center">
-                <FontAwesomeIcon icon={faSpinner} className="animate-spin text-2xl text-blue-600" />
-                <p className="mt-4 text-gray-600 dark:text-gray-400">กำลังโหลดข้อมูล...</p>
-              </div>
-            ) : filteredUsers.length === 0 ? (
-              <div className="p-8 text-center">
-                <p className="text-gray-600 dark:text-gray-400">ไม่พบข้อมูล</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-100 dark:bg-gray-700">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Username
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Name
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Email
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Role
-                      </th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {filteredUsers.map((u: UserData, index: number) => (
-                      <motion.tr
-                        key={u.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.02 }}
-                        className="hover:bg-gray-50 dark:hover:bg-gray-700"
-                      >
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            {u.username}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <div className="text-sm text-gray-900 dark:text-white">
-                            {u.name}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <div className="text-sm text-gray-900 dark:text-white">
-                            {u.email || '-'}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getRoleBadgeColor(u.role)}`}>
-                            {u.role}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
-                          <motion.button
-                            onClick={() => handleEditUser(u)}
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                            title="แก้ไข"
-                          >
-                            <FontAwesomeIcon icon={faEdit} />
-                          </motion.button>
-                        </td>
-                      </motion.tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-
-          {/* Summary */}
-          <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-            แสดง {filteredUsers.length} จาก {users.length} users
           </div>
         </motion.div>
 

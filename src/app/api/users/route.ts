@@ -2,7 +2,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/mongodb";
 import bcrypt from "bcryptjs";
-import { getAuthSession } from "@/lib/api-auth";
 
 interface UserDocument {
   _id: { toString(): string };
@@ -27,27 +26,9 @@ interface UserResponse {
   lastLogin?: Date | null;
 }
 
-// GET: ดึงข้อมูล users ทั้งหมด (เฉพาะ dev, superadmin, admin)
+// GET: ดึงข้อมูล users ทั้งหมด
 export async function GET() {
   try {
-    const session = await getAuthSession();
-    
-    if (!session || !session.user) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized - กรุณาเข้าสู่ระบบ" },
-        { status: 401 }
-      );
-    }
-
-    // ตรวจสอบ role - อนุญาตเฉพาะ dev, superadmin, admin
-    const allowedRoles = ["dev", "superadmin", "admin"];
-    if (!allowedRoles.includes(session.user.role)) {
-      return NextResponse.json(
-        { success: false, error: "Forbidden - ไม่มีสิทธิ์เข้าถึง" },
-        { status: 403 }
-      );
-    }
-
     const db = await getDatabase();
     const users = db.collection("users");
 
@@ -85,24 +66,6 @@ export async function GET() {
 // POST: สร้าง user ใหม่
 export async function POST(request: NextRequest) {
   try {
-    const session = await getAuthSession();
-    
-    if (!session || !session.user) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized - กรุณาเข้าสู่ระบบ" },
-        { status: 401 }
-      );
-    }
-
-    // ตรวจสอบ role - อนุญาตเฉพาะ dev, superadmin, admin
-    const allowedRoles = ["dev", "superadmin", "admin"];
-    if (!allowedRoles.includes(session.user.role)) {
-      return NextResponse.json(
-        { success: false, error: "Forbidden - ไม่มีสิทธิ์เข้าถึง" },
-        { status: 403 }
-      );
-    }
-
     const body = await request.json();
     const { username, email, password, name, role } = body;
 

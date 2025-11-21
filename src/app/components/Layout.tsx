@@ -23,7 +23,6 @@ import {
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { useRenewalNotificationCount } from "@/lib/useRenewalNotificationCount";
 import { useAuth } from "@/app/contexts/AuthContext";
-import { faSignOutAlt } from "@fortawesome/free-solid-svg-icons";
 
 interface MenuItemProps {
   href: string;
@@ -35,7 +34,14 @@ interface MenuItemProps {
 
 const SidebarMenuItem: React.FC<MenuItemProps> = ({ href, icon, text, notificationCount = 0 }) => {
   const pathname = usePathname();
-  const isActive = pathname !== null && pathname.startsWith(href) && (pathname.length === href.length || pathname.charAt(href.length) === '/');
+  const [isMounted, setIsMounted] = useState(false);
+  
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // ใช้ค่า default เพื่อป้องกัน hydration error
+  const isActive = isMounted && pathname !== null && pathname.startsWith(href) && (pathname.length === href.length || pathname.charAt(href.length) === '/');
   const hasNotification = notificationCount > 0;
 
   return (
@@ -48,6 +54,7 @@ const SidebarMenuItem: React.FC<MenuItemProps> = ({ href, icon, text, notificati
         }
         justify-start`}
       title={text}
+      suppressHydrationWarning
     >
       <motion.div 
         whileHover={{ scale: 1.03, x: 3 }} 
@@ -90,6 +97,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true); // sidebar state (mobile เท่านั้น)
   const [isMobile, setIsMobile] = useState(false); // Mobile state
   const [sidebarWidth, setSidebarWidth] = useState(300); // default 300px
+  const [isMounted, setIsMounted] = useState(false); // ป้องกัน hydration error
   
   // ตรวจสอบว่าอยู่ในหน้า login หรือ register หรือไม่
   const isAuthPage = pathname === "/login" || pathname === "/register";
@@ -102,9 +110,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   // Note: useAuth must always be called (React hook rule)
   const auth = useAuth();
   const user = shouldLoadProtectedData ? auth.user : null;
-  const signOut = auth.signOut;
 
   useEffect(() => {
+    setIsMounted(true); // ตั้งค่า mounted state เมื่อ component mount แล้ว
     const handleResize = () => {
       const isMobileView = window.innerWidth < 1024;
       setIsMobile(isMobileView);
@@ -327,27 +335,27 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             {/* Divider */}
             <div className="my-5 mx-3 border-t-2 border-emerald-100 dark:border-emerald-900/30"></div>
             
-            {/* แสดง DevTool เฉพาะ dev, superadmin, admin */}
-            {user && (user.role === 'dev' || user.role === 'superadmin' || user.role === 'admin') && (
-              <>
-                <motion.h3
-                  className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mt-6 mb-3 px-3"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{
-                    opacity: (isMobile || isSidebarOpen) ? 1 : 0,
-                    x: (isMobile || isSidebarOpen) ? 0 : -20
-                  }}
-                  transition={{ duration: 0.3, delay: 0.1 }}
-                >
-                  {(isMobile || isSidebarOpen) ? "Admin Menu" : ""}
-                </motion.h3>
-                <SidebarMenuItem
-                  href="/devtool"
-                  icon={faFileAlt}
-                  text="DevMenu"
-                  isSidebarOpen={isMobile || isSidebarOpen}
-                />
-              </>
+            {/* แสดง DevTool - ทุกคนเห็น แต่ต้องล็อกอิน (PIN) เพื่อเข้า */}
+            {isMounted && (
+              <motion.h3
+                className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mt-6 mb-3 px-3"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{
+                  opacity: (isMobile || isSidebarOpen) ? 1 : 0,
+                  x: (isMobile || isSidebarOpen) ? 0 : -20
+                }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+              >
+                {(isMobile || isSidebarOpen) ? "Admin Menu" : ""}
+              </motion.h3>
+            )}
+            {isMounted && (
+              <SidebarMenuItem
+                href="/devtool"
+                icon={faFileAlt}
+                text="DevMenu"
+                isSidebarOpen={isMobile || isSidebarOpen}
+              />
             )}
           </ul>
         </nav>
@@ -378,17 +386,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 </div>
               )}
             </div>
-            {(isMobile || isSidebarOpen) && (
-              <motion.button
-                onClick={signOut}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-red-500 to-red-600 text-white text-sm font-medium hover:from-red-600 hover:to-red-700 shadow-md hover:shadow-lg transition-all"
-              >
-                <FontAwesomeIcon icon={faSignOutAlt} />
-                ออกจากระบบ
-              </motion.button>
-            )}
           </motion.div>
         )}
 

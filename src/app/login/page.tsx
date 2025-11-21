@@ -1,208 +1,95 @@
 // src/app/login/page.tsx
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { signIn, useSession } from "next-auth/react";
-import Link from "next/link";
+import React, { useState, useRef } from "react";
+import { signIn } from "next-auth/react";
 import { motion } from "framer-motion";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUser, faLock, faSignInAlt, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faLock, faSignInAlt, faSpinner } from "@fortawesome/free-solid-svg-icons";
 
 export default function LoginPage() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [pin, setPin] = useState(["", "", "", "", "", ""]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const { data: session, status } = useSession();
-  const hasRedirectedRef = useRef(false); // ใช้ useRef เพื่อไม่ trigger re-render
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Redirect if already logged in - ป้องกัน loop แบบขั้นสุด
-  useEffect(() => {
-    // ป้องกัน redirect loop - ตรวจสอบหลายเงื่อนไข
-    if (hasRedirectedRef.current) {
-      console.log("[LOGIN DEBUG] Already redirected, skipping...");
+  // Handle PIN input change
+  const handlePinChange = (index: number, value: string) => {
+    // อนุญาตเฉพาะตัวเลข
+    if (value && !/^\d$/.test(value)) {
       return;
     }
-    
-    // ตรวจสอบว่ายังอยู่ที่หน้า login หรือไม่
-    if (typeof window === "undefined" || window.location.pathname !== "/login") {
-      return;
-    }
-    
-    console.log("[LOGIN DEBUG] Session status changed:", { status, hasSession: !!session });
-    
-    if (status === "authenticated" && session) {
-      console.log("[LOGIN DEBUG] User already authenticated, redirecting...");
-      hasRedirectedRef.current = true; // ตั้ง flag ทันทีเพื่อป้องกัน loop
-      
-      // Use window.location.search instead of useSearchParams to avoid SSR issues
-      const params = new URLSearchParams(window.location.search);
-      let callbackUrl = params.get("callbackUrl") || "/dashboard";
-      console.log("[LOGIN DEBUG] Callback URL from query:", callbackUrl);
-      
-      // Decode callbackUrl if needed
-      try {
-        callbackUrl = decodeURIComponent(callbackUrl);
-        console.log("[LOGIN DEBUG] Decoded callback URL:", callbackUrl);
-      } catch (error) {
-        console.error("[LOGIN DEBUG] Error decoding callback URL:", error);
-        callbackUrl = "/dashboard";
-      }
-      
-      // Validate callbackUrl - ป้องกัน redirect ไป login
-      if (
-        !callbackUrl || 
-        !callbackUrl.startsWith("/") ||
-        callbackUrl === "/login" || 
-        callbackUrl === "/register" || 
-        callbackUrl === "/" ||
-        callbackUrl.startsWith("/api/")
-      ) {
-        console.log("[LOGIN DEBUG] Invalid callback URL, using /dashboard");
-        callbackUrl = "/dashboard";
-      }
-      
-      console.log("[LOGIN DEBUG] Redirecting to:", callbackUrl);
-      
-      // ใช้ setTimeout เพื่อให้แน่ใจว่า redirect ทำงานแค่ครั้งเดียว
-      setTimeout(() => {
-        if (window.location.pathname === "/login" && hasRedirectedRef.current) {
-          console.log("[LOGIN DEBUG] Executing redirect...");
-          window.location.replace(callbackUrl);
-        }
-      }, 100);
-    }
-  }, [status, session]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    const newPin = [...pin];
+    newPin[index] = value;
+    setPin(newPin);
     setError("");
+
+    // Auto focus to next input
+    if (value && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+
+    // Auto submit เมื่อกรอกครบ 6 หลัก
+    if (value && index === 5) {
+      const pinString = newPin.join("");
+      if (pinString.length === 6) {
+        setTimeout(() => {
+          const event = new Event('submit', { bubbles: true, cancelable: true }) as unknown as React.FormEvent;
+          handleSubmit(event);
+        }, 100);
+      }
+    }
+  };
+
+  // Handle backspace
+  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !pin[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  // Handle paste
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData("text").slice(0, 6);
+    const digits = pastedData.match(/\d/g) || [];
+    
+    if (digits.length === 6) {
+      setPin(digits as string[]);
+      inputRefs.current[5]?.focus();
+    }
+  };
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setError("");
+    
+    const pinString = pin.join("");
+    if (pinString.length !== 6) {
+      return;
+    }
+
     setIsLoading(true);
 
-    console.log("[LOGIN DEBUG] Form submitted, starting login process...");
-
     try {
-      // Get callbackUrl from query string
-      let callbackUrl = new URLSearchParams(window.location.search).get("callbackUrl") || "/dashboard";
-      console.log("[LOGIN DEBUG] Initial callbackUrl from query:", callbackUrl);
-      
-      // Decode URL if encoded (e.g., %2Fdashboard -> /dashboard)
-      if (callbackUrl) {
-        try {
-          callbackUrl = decodeURIComponent(callbackUrl);
-          console.log("[LOGIN DEBUG] Decoded callbackUrl:", callbackUrl);
-        } catch (error) {
-          console.error("[LOGIN DEBUG] Error decoding callbackUrl:", error);
-          // If decode fails, use default
-          callbackUrl = "/dashboard";
-        }
-      }
-      
-      // Prevent redirect loop - ensure callbackUrl is valid
-      // Must be a valid page path (starts with /, not empty, not login/register/api)
-      if (
-        !callbackUrl || 
-        !callbackUrl.startsWith("/") ||
-        callbackUrl === "/login" || 
-        callbackUrl === "/register" || 
-        callbackUrl === "/" ||
-        callbackUrl.startsWith("/api/") ||
-        callbackUrl.includes("?") || // No query params
-        callbackUrl.includes("#") // No hash
-      ) {
-        console.log("[LOGIN DEBUG] Invalid callbackUrl, using /dashboard");
-        callbackUrl = "/dashboard";
-      }
-      
-      console.log("[LOGIN DEBUG] Final callbackUrl:", callbackUrl);
-      console.log("[LOGIN DEBUG] Calling signIn with:", { username, hasPassword: !!password });
-      
-      // Use redirect: false to handle redirect manually
-      // Don't pass callbackUrl to signIn to avoid NextAuth redirect callback issues
-      let result;
-      try {
-        result = await signIn("credentials", {
-          username,
-          password,
-          redirect: false
-        });
-        console.log("[LOGIN DEBUG] signIn completed successfully");
-      } catch (signInError: unknown) {
-        console.error("[LOGIN DEBUG] signIn threw an error:", signInError);
-        // ถ้าเกิด error แต่ login อาจสำเร็จแล้ว ให้ redirect ไปเลย (วิธีขั้นสุด)
-        const errorMessage = signInError instanceof Error ? signInError.message : String(signInError);
-        if (errorMessage.includes("URL") || errorMessage.includes("Invalid")) {
-          console.log("[LOGIN DEBUG] URL error detected, redirecting anyway to:", callbackUrl);
-          // Redirect ทันที - ไม่ต้องรอ
-          window.location.href = callbackUrl;
-          return;
-        }
-        // ถ้า error อื่นๆ ให้แสดง error
-        setError("เกิดข้อผิดพลาดในการเข้าสู่ระบบ");
-        setIsLoading(false);
-        return;
-      }
-
-      console.log("[LOGIN DEBUG] signIn result:", result);
-      console.log("[LOGIN DEBUG] Result details:", {
-        ok: result?.ok,
-        error: result?.error,
-        status: result?.status,
-        url: result?.url,
-        keys: result ? Object.keys(result) : null
+      const result = await signIn("credentials", {
+        pin: pinString,
+        redirect: true,
+        callbackUrl: "/dashboard"
       });
 
-      // Check result and redirect manually - วิธีขั้นสุด
       if (result?.error) {
-        console.error("[LOGIN DEBUG] Login failed with error:", result.error);
-        setError("Username หรือ Password ไม่ถูกต้อง");
+        setError("PIN ไม่ถูกต้อง");
         setIsLoading(false);
-      } else {
-        // Login สำเร็จ - redirect ทันที (วิธีขั้นสุด)
-        // ใช้ callbackUrl โดยตรง (ไม่ใช้ result.url เพราะอาจไม่มีเมื่อใช้ redirect: false)
-        const redirectUrl = callbackUrl;
-        console.log("[LOGIN DEBUG] Login successful! Redirecting immediately to:", redirectUrl);
-        console.log("[LOGIN DEBUG] Current location:", window.location.href);
-        
-        // ป้องกัน redirect loop - ตั้ง flag ทันที
-        hasRedirectedRef.current = true;
-        
-        // ใช้วิธีที่แน่นอนที่สุด - สร้าง absolute URL
-        const absoluteUrl = redirectUrl.startsWith("/") 
-          ? `${window.location.origin}${redirectUrl}`
-          : redirectUrl;
-        
-        console.log("[LOGIN DEBUG] Absolute redirect URL:", absoluteUrl);
-        
-        // Redirect ทันที - ใช้ window.location.replace เพื่อไม่ให้ back button กลับมา login
-        console.log("[LOGIN DEBUG] Executing redirect now...");
-        // ใช้ setTimeout เพื่อให้แน่ใจว่า redirect ทำงานแค่ครั้งเดียว
-        setTimeout(() => {
-          if (hasRedirectedRef.current) {
-            window.location.replace(absoluteUrl);
-          }
-        }, 50);
+        setPin(["", "", "", "", "", ""]);
+        inputRefs.current[0]?.focus();
       }
-    } catch (error: unknown) {
-      console.error("[LOGIN DEBUG] Login error:", error);
-      const errorObj = error instanceof Error ? error : new Error(String(error));
-      console.error("[LOGIN DEBUG] Error details:", {
-        message: errorObj.message,
-        stack: errorObj.stack,
-        name: errorObj.name
-      });
-      
-      // ถ้าเกิด error แต่ login อาจสำเร็จแล้ว ให้ redirect ไปเลย (วิธีขั้นสุด)
-      if (errorObj.message.includes("URL") || errorObj.message.includes("Invalid")) {
-        console.log("[LOGIN DEBUG] URL error detected, redirecting anyway...");
-        const callbackUrl = new URLSearchParams(window.location.search).get("callbackUrl") || "/dashboard";
-        console.log("[LOGIN DEBUG] Redirecting to:", callbackUrl);
-        // Redirect ทันที - ไม่ต้องรอ
-        window.location.href = callbackUrl;
-      } else {
-        setError("เกิดข้อผิดพลาดในการเข้าสู่ระบบ");
-        setIsLoading(false);
-      }
+    } catch {
+      setError("PIN ไม่ถูกต้อง");
+      setIsLoading(false);
+      setPin(["", "", "", "", "", ""]);
+      inputRefs.current[0]?.focus();
     }
   };
 
@@ -221,13 +108,13 @@ export default function LoginPage() {
             transition={{ delay: 0.2, type: "spring" }}
             className="mx-auto h-16 w-16 bg-gradient-to-br from-emerald-500 to-green-500 rounded-full flex items-center justify-center mb-4"
           >
-            <FontAwesomeIcon icon={faUser} className="text-white text-2xl" />
+            <FontAwesomeIcon icon={faLock} className="text-white text-2xl" />
           </motion.div>
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
             เข้าสู่ระบบ
           </h2>
           <p className="text-gray-600 dark:text-gray-400">
-            ระบบจัดการงานบริการ ตรอ.บังรีท่าอิฐ
+            กรุณากรอก PIN 6 หลัก
           </p>
         </div>
 
@@ -236,54 +123,39 @@ export default function LoginPage() {
             <motion.div
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
-              className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg text-sm"
+              className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg text-sm text-center"
             >
               {error}
             </motion.div>
           )}
 
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Username หรือ Email
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">
+                PIN 6 หลัก
               </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FontAwesomeIcon icon={faUser} className="text-gray-400" />
-                </div>
-                <input
-                  id="username"
-                  name="username"
-                  type="text"
-                  required
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-                  placeholder="กรอก Username หรือ Email"
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FontAwesomeIcon icon={faLock} className="text-gray-400" />
-                </div>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-                  placeholder="กรอก Password"
-                  disabled={isLoading}
-                />
+              <div className="flex justify-center gap-3">
+                {pin.map((digit, index) => (
+                  <input
+                    key={index}
+                    ref={(el) => {
+                      inputRefs.current[index] = el;
+                    }}
+                    type="password"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handlePinChange(index, e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(index, e)}
+                    onPaste={index === 0 ? handlePaste : undefined}
+                    disabled={isLoading}
+                    className="w-12 h-14 text-center text-3xl font-bold border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-emerald-600 dark:text-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                    style={{
+                      fontFamily: 'monospace',
+                      letterSpacing: '0.1em'
+                    }}
+                  />
+                ))}
               </div>
             </div>
           </div>
@@ -291,7 +163,7 @@ export default function LoginPage() {
           <div>
             <motion.button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || pin.join("").length !== 6}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
@@ -310,18 +182,6 @@ export default function LoginPage() {
             </motion.button>
           </div>
         </form>
-
-        <div className="text-center text-sm text-gray-500 dark:text-gray-400">
-          <p>
-            ยังไม่มีบัญชี?{" "}
-            <Link
-              href="/register"
-              className="font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 dark:hover:text-emerald-300 transition-colors"
-            >
-              สมัครสมาชิก
-            </Link>
-          </p>
-        </div>
       </motion.div>
     </div>
   );
