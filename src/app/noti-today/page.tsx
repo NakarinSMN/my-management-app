@@ -6,7 +6,7 @@ import React, { useMemo, memo, useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTag } from '@fortawesome/free-solid-svg-icons';
 import AnimatedPage, { itemVariants } from '../components/AnimatedPage';
-import { useCustomerData, CustomerData } from '@/lib/useCustomerData';
+import { useCustomerData } from '@/lib/useCustomerData';
 
 // Interface สำหรับสถานะการแจ้งเตือน
 interface NotificationStatus {
