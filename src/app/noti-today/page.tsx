@@ -2,11 +2,19 @@
 "use client"; // This is a client component
 
 import { motion } from "framer-motion";
-import React, { useMemo, memo } from 'react';
+import React, { useMemo, memo, useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTag } from '@fortawesome/free-solid-svg-icons';
 import AnimatedPage, { itemVariants } from '../components/AnimatedPage';
 import { useCustomerData, CustomerData } from '@/lib/useCustomerData';
+
+// Interface สำหรับสถานะการแจ้งเตือน
+interface NotificationStatus {
+  [licensePlate: string]: {
+    sent: boolean;
+    sentAt: string;
+  };
+}
 
 // Interface สำหรับแสดงผลแจ้งเตือน
 interface NotificationItem {
@@ -79,23 +87,66 @@ function calculateDaysUntilExpiry(registerDate: string): number {
 export default function NotiTodayPage() {
   // ใช้ข้อมูลจาก MongoDB แทน Google Sheets
   const { data: customerData, error, isLoading } = useCustomerData();
+  
+  // สถานะการแจ้งเตือน (ส่งแล้วหรือยัง)
+  const [notificationStatus, setNotificationStatus] = useState<NotificationStatus>({});
 
-  // กรองเฉพาะรายการที่กำลังจะครบกำหนด (0-90 วัน) และมีเบอร์โทรศัพท์
+  // โหลดสถานะการแจ้งเตือน
+  useEffect(() => {
+    const loadNotificationStatus = async () => {
+      try {
+        const response = await fetch('/api/notification-status');
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.data) {
+            setNotificationStatus(result.data);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading notification status:', error);
+      }
+    };
+    
+    loadNotificationStatus();
+  }, []);
+
+  // กรองเฉพาะรายการที่กำลังจะครบกำหนด (0-90 วัน) และมีเบอร์โทรศัพท์ และยังไม่ส่ง
   const filteredNotifications = useMemo(() => {
     if (!customerData || customerData.length === 0) return [];
     
-    // ใช้ reduce เพื่อคำนวณทุกอย่างในครั้งเดียว (ป้องกันการคำนวณซ้ำ)
     const notifications: NotificationItem[] = [];
     
     for (const item of customerData) {
-      // ตรวจสอบว่าเบอร์โทรศัพท์ถูกต้อง (ไม่ใช่ "0" หรือรูปแบบไม่ถูกต้อง)
-      if (!isValidPhone(item.phone)) continue;
+      // 1. ตรวจสอบว่ามีทะเบียนรถหรือไม่ - ถ้าไม่มีให้ข้าม
+      if (!item.licensePlate || item.licensePlate.trim() === '') {
+        continue;
+      }
       
-      // คำนวณ daysLeft เพียงครั้งเดียว
+      // 2. ตรวจสอบว่ามีเบอร์โทรศัพท์และรูปแบบถูกต้อง - ถ้าไม่มีหรือไม่ถูกต้องให้ข้าม
+      if (!isValidPhone(item.phone)) {
+        continue;
+      }
+      
+      // 3. ตรวจสอบว่ามีวันที่ชำระภาษีหรือไม่ - ถ้าไม่มีให้ข้าม
+      if (!item.registerDate || item.registerDate.trim() === '') {
+        continue;
+      }
+      
+      // 4. ตรวจสอบว่ารายการนี้ส่งแล้วหรือยัง - ถ้าส่งแล้วให้ข้าม
+      if (notificationStatus[item.licensePlate]?.sent) {
+        continue;
+      }
+      
+      // 5. คำนวณจำนวนวันที่เหลือ (ถ้า return 999 แสดงว่าไม่สามารถคำนวณได้)
       const daysLeft = calculateDaysUntilExpiry(item.registerDate);
       
-      // กรองเฉพาะรายการที่ 0-90 วัน
-      if (daysLeft < 0 || daysLeft > 90) continue;
+      // 6. กรองเฉพาะรายการที่ 0-90 วันเท่านั้น (นอกเหนือจากนี้ไม่เอา)
+      // - daysLeft < 0 = เกินกำหนดแล้ว
+      // - daysLeft > 90 = ยังอีกนานเกิน 90 วัน
+      // - daysLeft === 999 = ไม่สามารถคำนวณได้
+      if (daysLeft < 0 || daysLeft > 90 || daysLeft === 999) {
+        continue;
+      }
       
       // คำนวณวันที่หมดอายุ
       let expiryDate = '';
@@ -140,7 +191,7 @@ export default function NotiTodayPage() {
     
     // เรียงตาม daysUntilExpiry จากน้อยไปมาก
     return notifications.sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry);
-  }, [customerData]);
+  }, [customerData, notificationStatus]);
 
   return (
     <AnimatedPage>
