@@ -5,14 +5,26 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 export default function HomePage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
 
   useEffect(() => {
-    // Redirect ไปหน้า login ทันทีเมื่อโหลดหน้าแรก
-    router.replace("/login");
-  }, [router]);
+    // รอให้เช็ค session เสร็จก่อน
+    if (status === "loading") {
+      return;
+    }
+
+    // ถ้า login แล้วให้ redirect ไปหน้า dashboard
+    if (status === "authenticated" && session) {
+      router.replace("/dashboard");
+    } else {
+      // ถ้ายังไม่ login ให้ redirect ไปหน้า login
+      router.replace("/login");
+    }
+  }, [router, status, session]);
 
   // แสดง loading หรือ blank screen ขณะ redirect
   return (
