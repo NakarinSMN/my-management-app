@@ -26,17 +26,45 @@ export async function middleware(request: NextRequest) {
 
   // ตรวจสอบ token
   // getToken จะหา cookie อัตโนมัติตามที่ NextAuth config ไว้
-  const token = await getToken({ 
+  let token = await getToken({ 
     req: request,
     secret: "fallback-secret-key-for-development-only-change-in-production"
   });
 
+  // ถ้าไม่พบ token ลองอ่าน cookie โดยตรง (fallback)
+  if (!token) {
+    const allCookies = request.cookies.getAll();
+    const sessionCookieNames = [
+      "next-auth.session-token",
+      "__Secure-next-auth.session-token",
+      "__Host-next-auth.session-token"
+    ];
+    
+    // ลองอ่านจาก cookie names ที่เป็นไปได้
+    for (const cookieName of sessionCookieNames) {
+      const cookie = allCookies.find(c => c.name === cookieName);
+      if (cookie) {
+        // ลองใช้ getToken อีกครั้งด้วย cookie name ที่เจอ
+        token = await getToken({
+          req: request,
+          secret: "fallback-secret-key-for-development-only-change-in-production",
+          cookieName: cookieName
+        });
+        if (token) break;
+      }
+    }
+  }
+
   // Debug logging (only in development or if needed)
   if (process.env.NODE_ENV === "development") {
+    const allCookies = request.cookies.getAll().map(c => c.name);
     console.log("[MIDDLEWARE DEBUG]", {
       pathname,
       hasToken: !!token,
-      cookies: request.cookies.getAll().map(c => c.name)
+      cookies: allCookies,
+      sessionCookieExists: allCookies.some(name => 
+        name.includes("next-auth.session-token")
+      )
     });
   }
 
