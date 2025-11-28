@@ -134,8 +134,35 @@ interface RenewalNotification {
   amount?: number; // จำนวนเงินที่ต้องผ่อน
 }
 
+// Type สำหรับ paidDates ที่รองรับทั้ง number และ string key
+type PaidDates = { [key: number]: string } | { [key: string]: string } | Record<string | number, string>;
+
+// ฟังก์ชันช่วยในการเข้าถึง paidDates
+function getPaidDate(paidDates: PaidDates | undefined, key: number | string): string | undefined {
+  if (!paidDates) return undefined;
+  return (paidDates as Record<string | number, string>)[key] || (paidDates as Record<string | number, string>)[String(key)];
+}
+
+// ฟังก์ชันตรวจสอบว่าผ่อนครบแล้วหรือไม่
+function isFullyPaid(paidDates?: PaidDates, installmentCount?: number): boolean {
+  if (!installmentCount || installmentCount <= 0 || !paidDates) {
+    return false;
+  }
+  
+  // ตรวจสอบว่ามี paidDates ครบทุกงวดหรือไม่
+  // รองรับทั้ง key เป็น number และ string
+  for (let i = 1; i <= installmentCount; i++) {
+    const paidDate = getPaidDate(paidDates, i);
+    if (!paidDate || paidDate.trim() === '') {
+      return false; // ยังมีงวดที่ยังไม่จ่าย
+    }
+  }
+  
+  return true; // จ่ายครบทุกงวดแล้ว
+}
+
 // ฟังก์ชันตรวจสอบว่าวันนี้เป็นวันที่ต้องผ่อนหรือไม่
-function isPaymentDayToday(paymentDay: number, startDate: string, paidDates?: { [key: number]: string }): { isToday: boolean; installmentNumber?: number; amount?: number; insurancePremium: number; installmentCount: number } {
+function isPaymentDayToday(paymentDay: number, startDate: string, paidDates?: PaidDates, installmentCount?: number): { isToday: boolean; installmentNumber?: number; amount?: number; insurancePremium: number; installmentCount: number } {
   if (!paymentDay || !startDate) {
     return { isToday: false, insurancePremium: 0, installmentCount: 0 };
   }
@@ -172,8 +199,18 @@ function isPaymentDayToday(paymentDay: number, startDate: string, paidDates?: { 
     // งวดที่ควรจะผ่อน = monthsDiff + 1 (เริ่มจากงวดที่ 1)
     const expectedInstallment = monthsDiff + 1;
     
-    // ตรวจสอบว่าจ่ายงวดนี้ไปแล้วหรือยัง
-    const isPaid = paidDates && paidDates[expectedInstallment];
+    // ตรวจสอบว่าผ่อนครบแล้วหรือยัง (ถ้า expectedInstallment > installmentCount แสดงว่าผ่อนครบแล้ว)
+    if (installmentCount && expectedInstallment > installmentCount) {
+      return { isToday: false, insurancePremium: 0, installmentCount: 0 };
+    }
+    
+    // ตรวจสอบว่าผ่อนครบทุกงวดแล้วหรือไม่
+    if (installmentCount && isFullyPaid(paidDates, installmentCount)) {
+      return { isToday: false, insurancePremium: 0, installmentCount: 0 };
+    }
+    
+    // ตรวจสอบว่าจ่ายงวดนี้ไปแล้วหรือยัง (รองรับทั้ง key เป็น number และ string)
+    const isPaid = paidDates && getPaidDate(paidDates, expectedInstallment);
     
     if (!isPaid && expectedInstallment > 0) {
       return {
@@ -224,56 +261,52 @@ export default function InstallmentInsurancePage() {
     const notifications: RenewalNotification[] = [];
     
     data.forEach(item => {
-      // ตรวจสอบเฉพาะรายการที่ status เป็น 'กำลังผ่อน'
+      // ข้ามรายการที่ผ่อนครบแล้ว (status = 'ผ่อนครบแล้ว' หรือจ่ายครบทุกงวดแล้ว)
+      // ไม่แจ้งเตือนเลยถ้าผ่อนครบแล้ว
+      const fullyPaid = isFullyPaid(item.paidDates, item.installmentCount);
+      if (item.status === 'ผ่อนครบแล้ว' || fullyPaid) {
+        return; // ข้ามรายการนี้ ไม่ต้องแจ้งเตือนเลย
+      }
+      
+      // ตรวจสอบเฉพาะรายการที่ status เป็น 'กำลังผ่อน' และยังไม่ผ่อนครบ
       if (item.status === 'กำลังผ่อน') {
         // 1. ตรวจสอบว่าวันนี้เป็นวันที่ต้องผ่อนหรือไม่
         if (item.paymentDay && item.startDate) {
           const paymentCheck = isPaymentDayToday(
             item.paymentDay,
             item.startDate,
-            item.paidDates
+            item.paidDates,
+            item.installmentCount
           );
           
-          if (paymentCheck.isToday && paymentCheck.installmentNumber) {
-            // คำนวณจำนวนเงินที่ต้องผ่อน
-            const defaultAmount = item.insurancePremium / item.installmentCount;
-            const amount = item.installmentAmounts?.[paymentCheck.installmentNumber] || defaultAmount;
-            
-            notifications.push({
-              licensePlate: item.licensePlate,
-              customerName: item.customerName,
-              expiryDate: '',
-              daysUntilExpiry: 0,
-              insuranceCompany: item.insuranceCompany || '',
-              type: 'payment',
-              paymentDay: item.paymentDay,
-              installmentNumber: paymentCheck.installmentNumber,
-              amount: amount,
-            });
+          // ตรวจสอบอีกครั้งว่ายังไม่ผ่อนครบ (expectedInstallment <= installmentCount)
+          // และตรวจสอบอีกครั้งว่ายังไม่ผ่อนครบทุกงวด
+          if (paymentCheck.isToday && paymentCheck.installmentNumber && item.installmentCount) {
+            if (paymentCheck.installmentNumber <= item.installmentCount) {
+              // ตรวจสอบอีกครั้งว่ายังไม่ผ่อนครบทุกงวด
+              const isFullyPaidCheck = isFullyPaid(item.paidDates, item.installmentCount);
+              if (!isFullyPaidCheck) {
+                // คำนวณจำนวนเงินที่ต้องผ่อน
+                const defaultAmount = item.insurancePremium / item.installmentCount;
+                const amount = item.installmentAmounts?.[paymentCheck.installmentNumber] || defaultAmount;
+                
+                notifications.push({
+                  licensePlate: item.licensePlate,
+                  customerName: item.customerName,
+                  expiryDate: '',
+                  daysUntilExpiry: 0,
+                  insuranceCompany: item.insuranceCompany || '',
+                  type: 'payment',
+                  paymentDay: item.paymentDay,
+                  installmentNumber: paymentCheck.installmentNumber,
+                  amount: amount,
+                });
+              }
+            }
           }
         }
         
         // 2. ตรวจสอบกรมธรรม์ใกล้หมดอายุ (สำหรับรายการที่ผ่อนครบแล้วด้วย)
-        if (item.startDate && item.installmentCount) {
-          const expiryDate = calculateExpiryDate(item.startDate, item.installmentCount);
-          if (expiryDate) {
-            const daysUntilExpiry = calculateDaysUntilExpiry(expiryDate);
-            if (daysUntilExpiry !== null && daysUntilExpiry <= 5) {
-              notifications.push({
-                licensePlate: item.licensePlate,
-                customerName: item.customerName,
-                expiryDate: expiryDate,
-                daysUntilExpiry: daysUntilExpiry,
-                insuranceCompany: item.insuranceCompany || '',
-                type: 'renewal',
-              });
-            }
-          }
-        }
-      }
-      
-      // ตรวจสอบกรมธรรม์ใกล้หมดอายุสำหรับรายการที่ผ่อนครบแล้ว
-      if (item.status === 'ผ่อนครบแล้ว') {
         if (item.startDate && item.installmentCount) {
           const expiryDate = calculateExpiryDate(item.startDate, item.installmentCount);
           if (expiryDate) {

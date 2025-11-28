@@ -40,8 +40,35 @@ function calculateDaysUntilExpiry(expiryDateStr: string): number | null {
   }
 }
 
+// Type สำหรับ paidDates ที่รองรับทั้ง number และ string key
+type PaidDates = { [key: number]: string } | { [key: string]: string } | Record<string | number, string>;
+
+// ฟังก์ชันช่วยในการเข้าถึง paidDates
+function getPaidDate(paidDates: PaidDates | undefined, key: number | string): string | undefined {
+  if (!paidDates) return undefined;
+  return (paidDates as Record<string | number, string>)[key] || (paidDates as Record<string | number, string>)[String(key)];
+}
+
+// ฟังก์ชันตรวจสอบว่าผ่อนครบแล้วหรือไม่
+function isFullyPaid(paidDates?: PaidDates, installmentCount?: number): boolean {
+  if (!installmentCount || installmentCount <= 0 || !paidDates) {
+    return false;
+  }
+  
+  // ตรวจสอบว่ามี paidDates ครบทุกงวดหรือไม่
+  // รองรับทั้ง key เป็น number และ string
+  for (let i = 1; i <= installmentCount; i++) {
+    const paidDate = getPaidDate(paidDates, i);
+    if (!paidDate || paidDate.trim() === '') {
+      return false; // ยังมีงวดที่ยังไม่จ่าย
+    }
+  }
+  
+  return true; // จ่ายครบทุกงวดแล้ว
+}
+
 // ฟังก์ชันตรวจสอบว่าวันนี้เป็นวันที่ต้องผ่อนหรือไม่
-function isPaymentDayToday(paymentDay: number, startDate: string, paidDates?: { [key: number]: string }): boolean {
+function isPaymentDayToday(paymentDay: number, startDate: string, paidDates?: { [key: number]: string }, installmentCount?: number): boolean {
   if (!paymentDay || !startDate) {
     return false;
   }
@@ -77,8 +104,18 @@ function isPaymentDayToday(paymentDay: number, startDate: string, paidDates?: { 
     
     const expectedInstallment = monthsDiff + 1;
     
-    // ตรวจสอบว่าจ่ายงวดนี้ไปแล้วหรือยัง
-    const isPaid = paidDates && paidDates[expectedInstallment];
+    // ตรวจสอบว่าผ่อนครบแล้วหรือยัง (ถ้า expectedInstallment > installmentCount แสดงว่าผ่อนครบแล้ว)
+    if (installmentCount && expectedInstallment > installmentCount) {
+      return false;
+    }
+    
+    // ตรวจสอบว่าผ่อนครบทุกงวดแล้วหรือไม่
+    if (installmentCount && isFullyPaid(paidDates, installmentCount)) {
+      return false;
+    }
+    
+    // ตรวจสอบว่าจ่ายงวดนี้ไปแล้วหรือยัง (รองรับทั้ง key เป็น number และ string)
+    const isPaid = paidDates && getPaidDate(paidDates, expectedInstallment);
     return !isPaid && expectedInstallment > 0; // ถ้ายังไม่จ่าย = ต้องแจ้งเตือน
   } catch {
     return false;
@@ -91,17 +128,24 @@ export function useRenewalNotificationCount(shouldFetch = true) {
   const dataset = shouldFetch ? data : [];
   
   const count = dataset.filter(item => {
+    // ข้ามรายการที่ผ่อนครบแล้ว (status = 'ผ่อนครบแล้ว' หรือจ่ายครบทุกงวดแล้ว)
+    // ไม่แจ้งเตือนเลยถ้าผ่อนครบแล้ว
+    const fullyPaid = isFullyPaid(item.paidDates, item.installmentCount);
+    if (item.status === 'ผ่อนครบแล้ว' || fullyPaid) {
+      return false; // ไม่แจ้งเตือนเลยสำหรับรายการที่ผ่อนครบแล้ว
+    }
+    
     // ตรวจสอบการแจ้งเตือน 2 ประเภท:
     
-    // 1. ตรวจสอบว่าวันนี้เป็นวันที่ต้องผ่อนหรือไม่ (เฉพาะ status = 'กำลังผ่อน')
+    // 1. ตรวจสอบว่าวันนี้เป็นวันที่ต้องผ่อนหรือไม่ (เฉพาะ status = 'กำลังผ่อน' และยังไม่ผ่อนครบ)
     if (item.status === 'กำลังผ่อน' && item.paymentDay && item.startDate) {
-      if (isPaymentDayToday(item.paymentDay, item.startDate, item.paidDates)) {
+      if (isPaymentDayToday(item.paymentDay, item.startDate, item.paidDates, item.installmentCount)) {
         return true;
       }
     }
     
-    // 2. ตรวจสอบกรมธรรม์ใกล้หมดอายุ
-    if (item.status === 'กำลังผ่อน' || item.status === 'ผ่อนครบแล้ว') {
+    // 2. ตรวจสอบกรมธรรม์ใกล้หมดอายุ (สำหรับรายการที่กำลังผ่อน)
+    if (item.status === 'กำลังผ่อน') {
       if (item.startDate && item.installmentCount) {
         const expiryDate = calculateExpiryDate(item.startDate, item.installmentCount);
         if (expiryDate) {
