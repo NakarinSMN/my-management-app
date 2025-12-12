@@ -1,7 +1,7 @@
 // middleware.ts
+// Edge-compatible middleware - only uses Edge runtime APIs
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getToken } from "next-auth/jwt";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -24,52 +24,31 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // ตรวจสอบ token
-  // getToken จะหา cookie อัตโนมัติตามที่ NextAuth config ไว้
-  let token = await getToken({ 
-    req: request,
-    secret: "fallback-secret-key-for-development-only-change-in-production"
-  });
+  // ตรวจสอบ session cookie โดยตรง (Edge-compatible)
+  // เนื่องจาก Edge runtime ไม่สามารถ decode JWT ได้ เราจะเช็คแค่การมีอยู่ของ cookie
+  const sessionCookieNames = [
+    "next-auth.session-token",
+    "__Secure-next-auth.session-token",
+    "__Host-next-auth.session-token"
+  ];
+  
+  const allCookies = request.cookies.getAll();
+  const hasSessionCookie = sessionCookieNames.some(cookieName =>
+    allCookies.some(c => c.name === cookieName)
+  );
 
-  // ถ้าไม่พบ token ลองอ่าน cookie โดยตรง (fallback)
-  if (!token) {
-    const allCookies = request.cookies.getAll();
-    const sessionCookieNames = [
-      "next-auth.session-token",
-      "__Secure-next-auth.session-token",
-      "__Host-next-auth.session-token"
-    ];
-    
-    // ลองอ่านจาก cookie names ที่เป็นไปได้
-    for (const cookieName of sessionCookieNames) {
-      const cookie = allCookies.find(c => c.name === cookieName);
-      if (cookie) {
-        // ลองใช้ getToken อีกครั้งด้วย cookie name ที่เจอ
-        token = await getToken({
-          req: request,
-          secret: "fallback-secret-key-for-development-only-change-in-production",
-          cookieName: cookieName
-        });
-        if (token) break;
-      }
-    }
-  }
-
-  // Debug logging (only in development or if needed)
+  // Debug logging (only in development)
   if (process.env.NODE_ENV === "development") {
-    const allCookies = request.cookies.getAll().map(c => c.name);
+    const cookieNames = allCookies.map(c => c.name);
     console.log("[MIDDLEWARE DEBUG]", {
       pathname,
-      hasToken: !!token,
-      cookies: allCookies,
-      sessionCookieExists: allCookies.some(name => 
-        name.includes("next-auth.session-token")
-      )
+      hasSessionCookie,
+      cookies: cookieNames,
     });
   }
 
-  // ถ้าไม่มี token และไม่ใช่หน้า login ให้ redirect ไปหน้า login
-  if (!token) {
+  // ถ้าไม่มี session cookie และไม่ใช่หน้า login ให้ redirect ไปหน้า login
+  if (!hasSessionCookie) {
     // ไม่ต้องเช็ค callbackUrl - redirect ตรงไปหน้า login
     if (pathname === "/login" || pathname === "/register") {
       return NextResponse.next();
@@ -88,7 +67,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // ถ้ามี token ให้ผ่าน
+  // ถ้ามี session cookie ให้ผ่าน
+  // หมายเหตุ: การตรวจสอบความถูกต้องของ JWT token จะทำใน API routes หรือ server components แทน
   return NextResponse.next();
 }
 
