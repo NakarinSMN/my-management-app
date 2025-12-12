@@ -36,7 +36,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         // กำหนด PIN ที่ถูกต้อง
-        const correctPIN = "042323";
+        const correctPIN = "095841";
         
         // ตรวจสอบ PIN
         if (credentials.pin !== correctPIN) {
