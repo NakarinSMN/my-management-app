@@ -32,20 +32,10 @@ export default function middleware(request: NextRequest) {
     "__Host-next-auth.session-token"
   ];
   
-  const allCookies = request.cookies.getAll();
+  // ใช้ cookies.has() ที่รองรับ Edge runtime ดีกว่า getAll()
   const hasSessionCookie = sessionCookieNames.some(cookieName =>
-    allCookies.some(c => c.name === cookieName)
+    request.cookies.has(cookieName)
   );
-
-  // Debug logging (only in development)
-  if (process.env.NODE_ENV === "development") {
-    const cookieNames = allCookies.map(c => c.name);
-    console.log("[MIDDLEWARE DEBUG]", {
-      pathname,
-      hasSessionCookie,
-      cookies: cookieNames,
-    });
-  }
 
   // ถ้าไม่มี session cookie และไม่ใช่หน้า login ให้ redirect ไปหน้า login
   if (!hasSessionCookie) {
