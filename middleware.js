@@ -1,8 +1,8 @@
-// middleware.ts
+// middleware.js
 // Edge-compatible middleware - only uses Edge runtime APIs
 import { NextResponse } from "next/server";
 
-export default function middleware(request: any) {
+export default function middleware(request) {
   const { pathname } = request.nextUrl;
 
   // อนุญาตให้เข้าถึงหน้า login, register, API auth ได้โดยไม่ต้องล็อกอิน
@@ -32,7 +32,7 @@ export default function middleware(request: any) {
   ];
   
   // ใช้ cookies.has() ที่รองรับ Edge runtime
-  const hasSessionCookie = sessionCookieNames.some((cookieName: string) =>
+  const hasSessionCookie = sessionCookieNames.some((cookieName) =>
     request.cookies?.has?.(cookieName) || false
   );
 
@@ -74,4 +74,3 @@ export const config = {
     "/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
-
