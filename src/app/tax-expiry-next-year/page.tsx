@@ -1516,16 +1516,16 @@ export default function TaxExpiryNextYearPage() {
         </div>
 
         {/* Filters */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-2 mb-3 mx-3">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 mb-3 mx-3">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
               <div className="relative">
-                <FontAwesomeIcon icon={faSearch} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
+                <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
                 <input
                   type="text"
                   placeholder="ค้นหาเลขลำดับ, ทะเบียนรถ, ชื่อลูกค้า, เบอร์โทร"
                   value={search}
                   onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
-                  className="w-full pl-7 pr-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-xs"
+                  className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
                 />
               </div>
             
@@ -1566,7 +1566,7 @@ export default function TaxExpiryNextYearPage() {
             {/* Advanced Filter Button */}
             <button
               onClick={() => setShowAdvancedFilter(true)}
-              className="relative px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors w-full font-medium text-xs flex items-center justify-center gap-1.5"
+              className="relative px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors w-full font-medium text-sm flex items-center justify-center gap-2"
             >
               <FontAwesomeIcon icon={faFilter} />
               ตัวกรองขั้นสูง
@@ -1579,9 +1579,9 @@ export default function TaxExpiryNextYearPage() {
             
             <button
               onClick={resetAllFilters}
-              className="px-3 py-1.5 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors w-full font-medium text-xs"
+              className="px-3 py-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors w-full font-medium text-sm border border-emerald-100 dark:border-emerald-800"
             >
-              รีเซ็ตทั้งหมด
+              รีเซ็ตฟิลเตอร์
             </button>
           </div>
 

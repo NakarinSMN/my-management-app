@@ -2,22 +2,82 @@ import { NextResponse, NextRequest } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 
-// GET: ดึงข้อมูลราคางานบริการทั้งหมด
-export async function GET() {
+// GET: ดึงข้อมูลราคางานบริการ (รองรับการกรองและแบ่งหน้า)
+export async function GET(request: NextRequest) {
   try {
-    console.log('🔍 [Services API] Fetching all services...');
+    console.log('🔍 [Services API] Fetching services with filters...');
     
     const db = await getDatabase();
     const services = db.collection('pricing');
+
+    const { searchParams } = new URL(request.url);
+
+    const search = searchParams.get('search') || '';
+    const category = searchParams.get('category') || '';
+    const minPriceParam = searchParams.get('minPrice');
+    const maxPriceParam = searchParams.get('maxPrice');
+    const pageParam = searchParams.get('page');
+    const limitParam = searchParams.get('limit');
+
+    const page = Math.max(parseInt(pageParam || '1', 10) || 1, 1);
+    const limit = Math.min(
+      Math.max(parseInt(limitParam || '100', 10) || 100, 10),
+      500
+    ); // กันไม่ให้ดึงเยอะเกินไปในครั้งเดียว
+
+    const skip = (page - 1) * limit;
+
+    const filter: Record<string, unknown> = {};
+
+    if (category) {
+      filter.categoryName = category;
+    }
+
+    const priceFilter: Record<string, number> = {};
+    const minPrice = minPriceParam ? parseFloat(minPriceParam) : NaN;
+    const maxPrice = maxPriceParam ? parseFloat(maxPriceParam) : NaN;
+
+    if (!Number.isNaN(minPrice) && minPrice > 0) {
+      priceFilter.$gte = minPrice;
+    }
+
+    if (!Number.isNaN(maxPrice) && maxPrice > 0) {
+      priceFilter.$lte = maxPrice;
+    }
+
+    if (Object.keys(priceFilter).length > 0) {
+      filter.servicePrice = priceFilter;
+    }
+
+    if (search) {
+      const regex = new RegExp(search, 'i');
+      filter.$or = [
+        { serviceName: regex },
+        { serviceDetails: regex },
+        { categoryName: regex },
+      ];
+    }
+
+    const total = await services.countDocuments(filter);
     
-    const allServices = await services.find({}).toArray();
+    const allServices = await services
+      .find(filter)
+      .sort({ categoryName: 1, serviceName: 1 })
+      .skip(skip)
+      .limit(limit)
+      .toArray();
     
-    console.log(`✅ [Services API] Found ${allServices.length} services`);
+    console.log(
+      `✅ [Services API] Found ${allServices.length} services (total: ${total}) for page ${page} / limit ${limit}`,
+    );
     
     return NextResponse.json({ 
       success: true, 
       data: allServices,
-      count: allServices.length
+      count: allServices.length,
+      total,
+      page,
+      limit,
     });
   } catch (error) {
     console.error('❌ [Services API] Error fetching services:', error);

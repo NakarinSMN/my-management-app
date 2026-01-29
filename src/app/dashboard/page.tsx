@@ -15,6 +15,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 
 import { useCustomerData } from '@/lib/useCustomerData';
+import { useDashboardSummary } from '@/lib/useDashboardSummary';
 import FilterDropdown from '../components/FilterDropdown';
 
 export default function DashboardPage() {
@@ -38,88 +39,18 @@ export default function DashboardPage() {
   const [hoveredBar, setHoveredBar] = useState<{x: number, y: number, data: {label: string, count: number, details: Record<string, number>}} | null>(null);
 
   const { rawData: customerData } = useCustomerData();
+  const { data: summary, isLoading: isSummaryLoading } = useDashboardSummary();
 
-  // คำนวณสถิติ
+  // ดึงค่าสรุปจาก API dashboard-summary (เร็วกว่าและ payload เล็กกว่า)
   useEffect(() => {
-    if (customerData && customerData.data) {
-      const now = new Date();
-      const currentMonth = now.getMonth() + 1;
-      const currentYear = now.getFullYear();
-      
-      let monthCount = 0;
-      let upcomingCount = 0;
-      let overdueCountTemp = 0;
-      
-      customerData.data.forEach((item: Record<string, unknown>) => {
-        const lastTaxDate = String(item['registerDate'] || item['วันที่ชำระภาษีล่าสุด'] || '');
-        
-        if (lastTaxDate) {
-          let month = 0;
-          let year = 0;
-          
-          if (/^\d{2}\/\d{2}\/\d{4}$/.test(lastTaxDate)) {
-            const [, mm, yyyy] = lastTaxDate.split('/');
-            month = parseInt(mm);
-            year = parseInt(yyyy);
-          } else if (/^\d{4}-\d{2}-\d{2}$/.test(lastTaxDate)) {
-            const [yyyy, mm] = lastTaxDate.split('-');
-            month = parseInt(mm);
-            year = parseInt(yyyy);
-          } else if (lastTaxDate.includes('T')) {
-            const dateObj = new Date(lastTaxDate);
-            month = dateObj.getMonth() + 1;
-            year = dateObj.getFullYear();
-          }
-          
-          if (month === currentMonth && year === currentYear) {
-            monthCount++;
-          }
-        }
-        
-        const status = String(item['status'] || item['สถานะ'] || '');
-        if (status === 'กำลังจะครบกำหนด') {
-          upcomingCount++;
-        } else if (status === 'เกินกำหนด') {
-          overdueCountTemp++;
-        }
-      });
-      
-      setThisMonthRenewals(monthCount);
-      setUpcomingExpiry(upcomingCount);
-      setOverdueCount(overdueCountTemp);
+    if (summary) {
+      setTotalCustomers(summary.totalCustomers);
+      setThisMonthRenewals(summary.thisMonthRenewals);
+      setUpcomingExpiry(summary.upcomingExpiry);
+      setOverdueCount(summary.overdueCount);
+      setNextYearTax(summary.nextYearTax as unknown as Record<string, unknown>[]);
     }
-  }, [customerData]);
-
-  // คำนวณภาษีครั้งถัดไป
-  useEffect(() => {
-    if (customerData && customerData.data) {
-      const now = new Date();
-      const nextYear = now.getFullYear() + 1;
-      const filtered = customerData.data.filter((item: Record<string, unknown>) => {
-        const lastTaxDate = String(item['registerDate'] || item['วันที่ชำระภาษีล่าสุด'] || '');
-        
-        if (lastTaxDate) {
-          let year = 0;
-          
-          if (/^\d{2}\/\d{2}\/\d{4}$/.test(lastTaxDate)) {
-            const [, , yyyy] = lastTaxDate.split('/');
-            year = parseInt(yyyy);
-          } else if (/^\d{4}-\d{2}-\d{2}$/.test(lastTaxDate)) {
-            const [yyyy] = lastTaxDate.split('-');
-            year = parseInt(yyyy);
-          } else if (lastTaxDate.includes('T')) {
-            year = new Date(lastTaxDate).getFullYear();
-          }
-          
-          return year === nextYear;
-        }
-        return false;
-      });
-      
-      setTotalCustomers(customerData.data.length);
-      setNextYearTax(filtered.slice(0, 10));
-    }
-  }, [customerData]);
+  }, [summary]);
 
   // คำนวณข้อมูลรายเดือน (กรองเฉพาะที่มีแท็ก "ภาษี")
   useEffect(() => {
@@ -428,7 +359,7 @@ export default function DashboardPage() {
     { label: "กำลังจะครบกำหนด", value: upcomingExpiry.toString(), icon: faExclamationTriangle, description: "รถที่ใกล้ครบกำหนดต่อภาษี" },
     { label: "เกินกำหนด", value: overdueCount.toString(), icon: faExclamationCircle, description: "รถที่เกินกำหนดต่อภาษี" },
     { label: "ต้องต่อภาษีปีหน้า", value: nextYearTax.length.toString(), icon: faCalendarAlt, description: "รถที่ต้องต่อภาษีในปีถัดไป" },
-    { label: "ต่อภาษีแล้ว", value: (customerData?.data?.filter((item: Record<string, unknown>) => item.status === 'ต่อภาษีแล้ว').length || 0).toString(), icon: faCheckCircle, description: "รถที่ต่อภาษีเรียบร้อยแล้ว" },
+    { label: "ต่อภาษีแล้ว", value: (summary?.alreadyTaxed ?? 0).toString(), icon: faCheckCircle, description: "รถที่ต่อภาษีเรียบร้อยแล้ว" },
   ];
 
   return (

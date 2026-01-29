@@ -1,7 +1,7 @@
 // src/app/devtool/page.tsx
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTools, faDatabase, faCode, faCheckCircle, faTimesCircle, faSpinner, faBell, faTrash, faSync, faLock } from '@fortawesome/free-solid-svg-icons';
 import { motion } from 'framer-motion';
@@ -16,6 +16,16 @@ interface DevTool {
   icon: IconDefinition;
   path: string;
   status: 'active' | 'inactive';
+}
+
+interface DbUsage {
+  dbName: string;
+  collections: number;
+  objects: number;
+  dataSize: number;
+  storageSize: number;
+  indexSize: number;
+  avgObjSize: number;
 }
 
 export default function DevToolPage() {
@@ -34,6 +44,10 @@ export default function DevToolPage() {
   const [importText, setImportText] = useState<string>('');
   const [isImporting, setIsImporting] = useState(false);
   const [importResult, setImportResult] = useState<string>('');
+
+  const [dbUsage, setDbUsage] = useState<DbUsage | null>(null);
+  const [isLoadingDbUsage, setIsLoadingDbUsage] = useState(false);
+  const [dbUsageError, setDbUsageError] = useState<string | null>(null);
 
   // ⚡ ใช้ Dialog Hook
   const { showConfirm, showSuccess, showError } = useDialog();
@@ -292,6 +306,46 @@ export default function DevToolPage() {
     );
   };
 
+  const formatBytes = (bytes: number | null | undefined) => {
+    if (bytes === null || bytes === undefined) return '-';
+    if (bytes === 0) return '0 MB';
+    const mb = bytes / (1024 * 1024);
+    if (mb < 1024) {
+      return `${mb.toFixed(1)} MB`;
+    }
+    const gb = mb / 1024;
+    return `${gb.toFixed(2)} GB`;
+  };
+
+  useEffect(() => {
+    if (!isPinVerified) return;
+
+    const fetchDbUsage = async () => {
+      try {
+        setIsLoadingDbUsage(true);
+        setDbUsageError(null);
+
+        const res = await fetch('/api/db-usage');
+        const result = await res.json();
+
+        if (!res.ok || !result.success) {
+          throw new Error(result.error || 'ไม่สามารถดึงข้อมูลการใช้พื้นที่ฐานข้อมูลได้');
+        }
+
+        setDbUsage(result.data);
+      } catch (error) {
+        console.error('Error fetching DB usage:', error);
+        setDbUsageError(
+          error instanceof Error ? error.message : 'ไม่สามารถดึงข้อมูลการใช้พื้นที่ฐานข้อมูลได้',
+        );
+      } finally {
+        setIsLoadingDbUsage(false);
+      }
+    };
+
+    fetchDbUsage();
+  }, [isPinVerified]);
+
   const devTools: DevTool[] = [
     {
       id: 'mongodb-debug',
@@ -477,6 +531,92 @@ export default function DevToolPage() {
             เครื่องมือสำหรับพัฒนาและแก้ไขปัญหา
           </motion.p>
         </div>
+
+        {/* Database Usage */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="mb-6 p-4 rounded-lg border border-emerald-200 bg-emerald-50 dark:border-emerald-700 dark:bg-emerald-900/20"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <FontAwesomeIcon icon={faDatabase} className="text-emerald-600 dark:text-emerald-400" />
+                <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
+                  การใช้พื้นที่ฐานข้อมูล MongoDB (รวมทั้งโปรเจกต์)
+                </h2>
+              </div>
+              {isLoadingDbUsage && (
+                <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                  <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+                  กำลังโหลดข้อมูลการใช้พื้นที่...
+                </p>
+              )}
+              {dbUsageError && !isLoadingDbUsage && (
+                <p className="text-xs text-red-600 dark:text-red-400">
+                  {dbUsageError}
+                </p>
+              )}
+              {dbUsage && !isLoadingDbUsage && (
+                <div className="text-xs text-gray-800 dark:text-gray-200 space-y-2">
+                  {(() => {
+                    const CAPACITY_BYTES = 512 * 1024 * 1024; // 512 MB สำหรับ MongoDB Atlas Free Tier
+                    // ใช้ storageSize เป็นหลัก (พื้นที่ที่ใช้จริงในดิสก์)
+                    const usedBytes = Number(dbUsage.storageSize) || 0;
+                    const usedPercent = Math.min(
+                      100,
+                      CAPACITY_BYTES > 0 ? (usedBytes / CAPACITY_BYTES) * 100 : 0
+                    );
+                    
+                    // คำนวณค่าที่ใช้จริง (ให้แน่ใจว่าเป็นตัวเลข)
+                    const formattedUsed = formatBytes(usedBytes);
+                    const percentValue = usedPercent.toFixed(1);
+
+                    return (
+                      <>
+                        <p>
+                          <span className="font-medium">ฐานข้อมูล:</span> {dbUsage.dbName}
+                        </p>
+                        <p>
+                          ใช้ไป{' '}
+                          <span className="font-semibold">
+                            {formattedUsed}
+                          </span>{' '}
+                          จาก{' '}
+                          <span className="font-semibold">
+                            512 MB
+                          </span>{' '}
+                          ({percentValue}%)
+                        </p>
+
+                        {/* หลอดแสดงสัดส่วนการใช้พื้นที่จาก 512 MB */}
+                        <div className="mt-1 space-y-1">
+                          <div className="w-full h-3 rounded-full bg-emerald-100 dark:bg-emerald-900/40 overflow-hidden relative">
+                            <div
+                              className="h-full bg-emerald-500 dark:bg-emerald-400 transition-all duration-300"
+                              style={{ width: `${usedPercent}%`, minWidth: usedPercent > 0 ? '2px' : '0' }}
+                              title={`ใช้ไป ${formattedUsed} จาก 512 MB (${percentValue}%)`}
+                            />
+                          </div>
+                          <div className="flex justify-between text-[11px] text-gray-600 dark:text-gray-300">
+                            <span>0 MB</span>
+                            <span className="font-medium">{formattedUsed}</span>
+                            <span>512 MB</span>
+                          </div>
+                        </div>
+
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
+                          เอกสารทั้งหมดประมาณ {Number(dbUsage.objects || 0).toLocaleString('th-TH')} รายการ ใน {Number(dbUsage.collections || 0)} collections
+                        </p>
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+          </div>
+        </motion.div>
 
         {/* DevTools Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

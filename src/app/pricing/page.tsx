@@ -36,8 +36,26 @@ export default function PricingPage() {
   const [requireTyping, setRequireTyping] = useState(false);
   const [expectedText, setExpectedText] = useState('');
 
-  // ใช้ custom hook สำหรับข้อมูล MongoDB
-  const { rawData, error, isLoading, refreshData, addService, updateService, deleteService } = useServiceData();
+  // ใช้ custom hook สำหรับข้อมูล MongoDB (รองรับ filter + pagination)
+  const {
+    rawData,
+    error,
+    isLoading,
+    refreshData,
+    addService,
+    updateService,
+    deleteService,
+    total,
+    page,
+    pageSize,
+    setPage,
+  } = useServiceData({
+    searchTerm,
+    category: selectedCategory,
+    minPrice: priceRange.min || undefined,
+    maxPrice: priceRange.max || undefined,
+    pageSize: 100,
+  });
   const { data: categories, addCategory, updateCategory, deleteCategory, refreshData: refreshCategories } = useCategoryData();
   const { showSuccess, showError } = useNotification();
 
@@ -271,21 +289,10 @@ export default function PricingPage() {
 
 
   // ฟังก์ชันกรองข้อมูล
+  // ฟังก์ชันกรองข้อมูล (ตอนนี้ข้อมูลถูกกรองจาก API แล้ว การกรองฝั่ง client จะทำบนชุดข้อมูลที่ดึงมาในหน้านั้น ๆ เท่านั้น)
   const filteredData = useMemo(() => {
-    return displayData.filter(item => {
-      const matchesSearch = searchTerm === '' || 
-        item.serviceName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.serviceDetails.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.categoryName.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesCategory = selectedCategory === '' || item.categoryName === selectedCategory;
-      
-      const matchesPrice = (priceRange.min === 0 || item.servicePrice >= priceRange.min) &&
-                          (priceRange.max === 0 || item.servicePrice <= priceRange.max);
-      
-      return matchesSearch && matchesCategory && matchesPrice;
-    });
-  }, [displayData, searchTerm, selectedCategory, priceRange]);
+    return displayData;
+  }, [displayData]);
 
   // จัดกลุ่มข้อมูลตามหมวดหมู่
   const groupedData = useMemo(() => {
@@ -397,12 +404,12 @@ export default function PricingPage() {
               </div>
               
               {/* Reset Button */}
-              <div className="sm:col-span-2 lg:col-span-2">
+              <div className="sm:col-span-2 lg:col-span-2 flex items-stretch">
                 <button
                   onClick={handleFilterReset}
-                  className="w-full px-3 py-1.5 bg-gradient-to-r from-emerald-100 to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl hover:from-emerald-200 hover:to-teal-200 dark:hover:from-emerald-900/50 dark:hover:to-teal-900/50 transition-all duration-200 font-semibold text-xs shadow-sm hover:shadow-md"
+                  className="w-full px-3 py-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-all duration-200 font-medium text-sm border border-emerald-100 dark:border-emerald-800"
                 >
-                  รีเซ็ต
+                  รีเซ็ตฟิลเตอร์
                 </button>
               </div>
             </div>
@@ -436,7 +443,7 @@ export default function PricingPage() {
 
           {/* Data Display */}
           {!isLoading && !error && (
-            <div className="space-y-16">
+            <div className="space-y-10">
               {Object.keys(groupedData).length === 0 ? (
                 <div className="text-center py-24">
                   <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full mb-6">
@@ -562,6 +569,39 @@ export default function PricingPage() {
                     </div>
                   </div>
                 ))
+              )}
+
+              {/* Pagination */}
+              {total > pageSize && (
+                <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    แสดง{' '}
+                    {total === 0
+                      ? 0
+                      : (page - 1) * pageSize + 1}{' '}
+                    -{' '}
+                    {Math.min(page * pageSize, total)} จาก {total.toLocaleString('th-TH')} รายการ
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setPage(Math.max(page - 1, 1))}
+                      disabled={page === 1}
+                      className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    >
+                      ก่อนหน้า
+                    </button>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      หน้า {page} / {Math.ceil(total / pageSize) || 1}
+                    </span>
+                    <button
+                      onClick={() => setPage(page + 1)}
+                      disabled={page * pageSize >= total}
+                      className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    >
+                      ถัดไป
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           )}
