@@ -2,7 +2,7 @@
 // Edge-compatible middleware - only uses Edge runtime APIs
 import { NextResponse } from "next/server";
 
-export default function middleware(request) {
+function middleware(request) {
   const { pathname } = request.nextUrl;
 
   // อนุญาตให้เข้าถึงหน้า login, register, API auth ได้โดยไม่ต้องล็อกอิน
@@ -60,6 +60,8 @@ export default function middleware(request) {
   // หมายเหตุ: การตรวจสอบความถูกต้องของ JWT token จะทำใน API routes หรือ server components แทน
   return NextResponse.next();
 }
+
+export default middleware;
 
 export const config = {
   matcher: [
