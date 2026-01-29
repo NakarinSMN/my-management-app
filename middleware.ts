@@ -3,7 +3,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export async function middleware(request: NextRequest) {
+export default async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // อนุญาตให้เข้าถึงหน้า login, register, API auth ได้โดยไม่ต้องล็อกอิน
