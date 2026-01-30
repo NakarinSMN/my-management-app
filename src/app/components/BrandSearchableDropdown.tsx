@@ -8,7 +8,7 @@ import { faSearch, faChevronDown, faTimes } from '@fortawesome/free-solid-svg-ic
 export const CAR_BRANDS = [
   // ยี่ห้อรถยนต์ญี่ปุ่น
   'Acura', 'Daihatsu', 'Honda', 'Infiniti', 'Isuzu', 'Lexus', 'Mazda', 'Mitsubishi', 
-  'Nissan', 'Subaru', 'Suzuki', 'Toyota',
+  'Nissan', 'Subaru', 'Suzuki', 'Toyota', 'Yamaha',
   
   // ยี่ห้อรถยนต์เกาหลี
   'Genesis', 'Hyundai', 'Kia', 'SsangYong',
