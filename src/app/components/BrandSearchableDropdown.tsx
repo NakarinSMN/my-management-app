@@ -6,53 +6,54 @@ import { faSearch, faChevronDown, faTimes } from '@fortawesome/free-solid-svg-ic
 
 // รายการยี่ห้อรถยนต์ทั้งหมดในโลก (เรียงตาม A-Z)
 export const CAR_BRANDS = [
-  // ยี่ห้อรถยนต์ญี่ปุ่น
-  'Acura', 'Daihatsu', 'Honda', 'Infiniti', 'Isuzu', 'Lexus', 'Mazda', 'Mitsubishi', 
-  'Nissan', 'Subaru', 'Suzuki', 'Toyota', 'Yamaha',
-  
-  // ยี่ห้อรถยนต์เกาหลี
-  'Genesis', 'Hyundai', 'Kia', 'SsangYong',
-  
-  // ยี่ห้อรถยนต์จีน
-  'BYD', 'Changan', 'Chery', 'Dongfeng', 'FAW', 'Geely', 'Great Wall', 'Haval', 
-  'Hongqi', 'JAC', 'Lynk & Co', 'MG', 'Nio', 'Ora', 'Polestar', 'Xpeng',
-  
-  // ยี่ห้อรถยนต์อเมริกัน
-  'Buick', 'Cadillac', 'Chevrolet', 'Chrysler', 'Dodge', 'Ford', 'GMC', 'Jeep', 
-  'Lincoln', 'Ram', 'Tesla',
-  
-  // ยี่ห้อรถยนต์เยอรมัน
-  'Audi', 'BMW', 'Mercedes-Benz', 'Mini', 'Opel', 'Porsche', 'Smart', 'Volkswagen',
-  
-  // ยี่ห้อรถยนต์อิตาลี
-  'Alfa Romeo', 'Ferrari', 'Fiat', 'Lamborghini', 'Lancia', 'Maserati',
-  
-  // ยี่ห้อรถยนต์ฝรั่งเศส
-  'Citroën', 'DS', 'Peugeot', 'Renault',
-  
-  // ยี่ห้อรถยนต์อังกฤษ
-  'Aston Martin', 'Bentley', 'Jaguar', 'Land Rover', 'Lotus', 'McLaren', 'Rolls-Royce',
-  
-  // ยี่ห้อรถยนต์สวีเดน
-  'Volvo',
-  
-  // ยี่ห้อรถยนต์สเปน
-  'Cupra', 'Seat',
-  
-  // ยี่ห้อรถยนต์เช็ก
-  'Skoda',
-  
-  // ยี่ห้อรถยนต์อินเดีย
+  // --- Japan ---
+  'Acura', 'Daihatsu', 'Datsun', 'Hino', 'Honda', 'Infiniti', 'Isuzu', 'Lexus',
+  'Mazda', 'Mitsubishi', 'Mitsuoka', 'Nissan', 'Subaru', 'Suzuki', 'Toyota', 'Yamaha',
+
+  // --- Korea ---
+  'Genesis', 'Hyundai', 'Kia', 'KG Mobility', 'SsangYong',
+
+  // --- China (Including EV & Luxury) ---
+  'Aion', 'Avatr', 'BAIC', 'Baojun', 'BYD', 'Changan', 'Chery', 'Denza', 'Dongfeng',
+  'Exeed', 'FAW', 'Foton', 'GAC', 'Geely', 'Great Wall', 'Haval', 'HiPhi', 'Hongqi',
+  'JAC', 'Jaecoo', 'Jetour', 'JMC', 'Leapmotor', 'Li Auto', 'Lynk & Co', 'Maxus', 'MG',
+  'Neta', 'Nio', 'Ora', 'Polestar', 'Seres', 'Tank', 'Trumpchi', 'Voyah', 'Wuling',
+  'Xpeng', 'Yangwang', 'Zeekr',
+
+  // --- USA ---
+  'Buick', 'Cadillac', 'Chevrolet', 'Chrysler', 'Dodge', 'Fisker', 'Ford', 'GMC',
+  'Hennessey', 'Hummer', 'Jeep', 'Lincoln', 'Lucid', 'Ram', 'Rivian', 'Saleen',
+  'Shelby', 'Tesla',
+
+  // --- Germany ---
+  'Alpina', 'Audi', 'BMW', 'Gumpert', 'Maybach', 'Mercedes-Benz', 'Mini', 'Opel',
+  'Porsche', 'Ruf', 'Smart', 'Volkswagen', 'Wiesmann',
+
+  // --- Italy ---
+  'Abarth', 'Alfa Romeo', 'Ferrari', 'Fiat', 'Lamborghini', 'Lancia', 'Maserati',
+  'Pagani', 'Pininfarina',
+
+  // --- France ---
+  'Alpine', 'Bugatti', 'Citroën', 'DS', 'Peugeot', 'Renault',
+
+  // --- United Kingdom ---
+  'Aston Martin', 'Bentley', 'Caterham', 'Ineos', 'Jaguar', 'Land Rover', 'Lotus',
+  'McLaren', 'Morgan', 'Noble', 'Radical', 'Rolls-Royce', 'TVR', 'Vauxhall',
+
+  // --- Sweden ---
+  'Koenigsegg', 'Saab', 'Volvo',
+
+  // --- Other Europe (Spain, Czech, etc.) ---
+  'Cupra', 'Donkervoort', 'KTM', 'Rimac', 'Seat', 'Skoda', 'Spyker', 'Zenvo',
+
+  // --- India ---
   'Mahindra', 'Tata',
-  
-  // ยี่ห้อรถยนต์มาเลเซีย
-  'Proton',
-  
-  // ยี่ห้อรถยนต์รัสเซีย
-  'Lada',
-  
-  // ยี่ห้อรถยนต์อื่นๆ
-  'Alpine', 'Bugatti', 'Lucid', 'Rivian', 'Saab', 'Pagani', 'Koenigsegg'
+
+  // --- Southeast Asia ---
+  'Perodua', 'Proton', 'VinFast',
+
+  // --- Russia & Middle East ---
+  'Lada', 'Togg', 'W Motors'
 ].sort();
 
 interface BrandSearchableDropdownProps {
@@ -153,7 +154,7 @@ export default function BrandSearchableDropdown({
           placeholder={placeholder}
           autoComplete="off"
         />
-        
+
         {/* Search Icon */}
         <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
           <FontAwesomeIcon icon={faSearch} className="text-sm" />
@@ -176,9 +177,9 @@ export default function BrandSearchableDropdown({
             disabled={disabled}
             className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 disabled:opacity-50"
           >
-            <FontAwesomeIcon 
-              icon={faChevronDown} 
-              className={`text-xs transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+            <FontAwesomeIcon
+              icon={faChevronDown}
+              className={`text-xs transition-transform ${isOpen ? 'rotate-180' : ''}`}
             />
           </button>
         </div>
@@ -190,9 +191,9 @@ export default function BrandSearchableDropdown({
           {/* Search in dropdown */}
           <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-2">
             <div className="relative">
-              <FontAwesomeIcon 
-                icon={faSearch} 
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" 
+              <FontAwesomeIcon
+                icon={faSearch}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"
               />
               <input
                 type="text"
@@ -213,11 +214,10 @@ export default function BrandSearchableDropdown({
                   key={brand}
                   type="button"
                   onClick={() => handleBrandSelect(brand)}
-                  className={`w-full text-left px-4 py-2.5 text-sm hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors ${
-                    inputValue === brand
+                  className={`w-full text-left px-4 py-2.5 text-sm hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors ${inputValue === brand
                       ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 font-semibold'
                       : 'text-gray-700 dark:text-gray-300'
-                  }`}
+                    }`}
                 >
                   {brand}
                 </button>
