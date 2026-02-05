@@ -53,7 +53,9 @@ export const CAR_BRANDS = [
   'Perodua', 'Proton', 'VinFast',
 
   // --- Russia & Middle East ---
-  'Lada', 'Togg', 'W Motors'
+  'Lada', 'Togg', 'W Motors',
+  // --- other ---
+  'Lifan', 'Vespa', 'Harley-Davidson', 'Ducati'
 ].sort();
 
 interface BrandSearchableDropdownProps {
