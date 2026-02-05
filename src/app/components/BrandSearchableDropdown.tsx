@@ -6,56 +6,105 @@ import { faSearch, faChevronDown, faTimes } from '@fortawesome/free-solid-svg-ic
 
 // รายการยี่ห้อรถยนต์ทั้งหมดในโลก (เรียงตาม A-Z)
 export const CAR_BRANDS = [
-  // --- Japan ---
-  'Acura', 'Daihatsu', 'Datsun', 'Hino', 'Honda', 'Infiniti', 'Isuzu', 'Lexus',
-  'Mazda', 'Mitsubishi', 'Mitsuoka', 'Nissan', 'Subaru', 'Suzuki', 'Toyota', 'Yamaha',
+  // --- A ---
+  'Abarth', 'Acura', 'Aeolus', 'Aiways', 'Aion', 'AJS', 'Alfa Romeo', 'Alpine', 'Alpina', 'Alvis', 
+  'AMC', 'Amilcar', 'Amphicar', 'Apollo', 'Aprilia', 'Ariel', 'Asia Motors', 'Aston Martin', 
+  'Auburn', 'Audi', 'Aurus', 'Austin', 'Austin-Healey', 'Autobianchi', 'Auto Union', 'Autozam', 'Avatr',
 
-  // --- Korea ---
-  'Genesis', 'Hyundai', 'Kia', 'KG Mobility', 'SsangYong',
+  // --- B ---
+  'BAC', 'BAIC', 'Bajaj', 'Baojun', 'Benelli', 'Bentley', 'Bertone', 'Beta', 'Bimota', 'Bitter', 
+  'Bizzarrini', 'BMW', 'BMW Motorrad', 'Borgward', 'Boss Hoss', 'Bristol', 'BSA', 'Buell', 
+  'Bugatti', 'Buick', 'Bultaco', 'BYD',
 
-  // --- China (Including EV & Luxury) ---
-  'Aion', 'Avatr', 'BAIC', 'Baojun', 'BYD', 'Changan', 'Chery', 'Denza', 'Dongfeng',
-  'Exeed', 'FAW', 'Foton', 'GAC', 'Geely', 'Great Wall', 'Haval', 'HiPhi', 'Hongqi',
-  'JAC', 'Jaecoo', 'Jetour', 'JMC', 'Leapmotor', 'Li Auto', 'Lynk & Co', 'Maxus', 'MG',
-  'Neta', 'Nio', 'Ora', 'Polestar', 'Seres', 'Tank', 'Trumpchi', 'Voyah', 'Wuling',
-  'Xpeng', 'Yangwang', 'Zeekr',
+  // --- C ---
+  'Cadillac', 'Cagiva', 'Caterham', 'CCM', 'CFMoto', 'Chaika', 'Changan', 'Checker', 'Chery', 
+  'Chevrolet', 'Chrysler', 'Cisitalia', 'Citroën', 'Continental', 'Cord', 'Crocker', 'Crosley', 'Cupra',
 
-  // --- USA ---
-  'Buick', 'Cadillac', 'Chevrolet', 'Chrysler', 'Dodge', 'Fisker', 'Ford', 'GMC',
-  'Hennessey', 'Hummer', 'Jeep', 'Lincoln', 'Lucid', 'Ram', 'Rivian', 'Saleen',
-  'Shelby', 'Tesla',
+  // --- D ---
+  'Dacia', 'Daewoo', 'DAF', 'Daihatsu', 'Daimler', 'Datsun', 'De Tomaso', 'Deepal', 'DeLorean', 
+  'Denza', 'DeSoto', 'Dodge', 'Dongfeng', 'Donkervoort', 'DR Automobiles', 'DS Automobiles', 'Ducati', 'Duesenberg',
 
-  // --- Germany ---
-  'Alpina', 'Audi', 'BMW', 'Gumpert', 'Maybach', 'Mercedes-Benz', 'Mini', 'Opel',
-  'Porsche', 'Ruf', 'Smart', 'Volkswagen', 'Wiesmann',
+  // --- E ---
+  'Eagle', 'Edsel', 'Efini', 'Excelsior', 'Exeed',
 
-  // --- Italy ---
-  'Abarth', 'Alfa Romeo', 'Ferrari', 'Fiat', 'Lamborghini', 'Lancia', 'Maserati',
-  'Pagani', 'Pininfarina',
+  // --- F ---
+  'Facel Vega', 'Fang Cheng Bao', 'Fantic', 'Faraday Future', 'FAW', 'Ferrari', 'Fiat', 'Fisker', 
+  'Force Motors', 'Ford', 'Forthing', 'Foton', 'Frazer', 'Fuso',
 
-  // --- France ---
-  'Alpine', 'Bugatti', 'Citroën', 'DS', 'Peugeot', 'Renault',
+  // --- G ---
+  'GAC', 'GasGas', 'GAZ', 'Geely', 'Genesis', 'Geo', 'Gilera', 'Ginetta', 'GMC', 'Gordon Murray', 
+  'GPX', 'Great Wall', 'Gumpert',
 
-  // --- United Kingdom ---
-  'Aston Martin', 'Bentley', 'Caterham', 'Ineos', 'Jaguar', 'Land Rover', 'Lotus',
-  'McLaren', 'Morgan', 'Noble', 'Radical', 'Rolls-Royce', 'TVR', 'Vauxhall',
+  // --- H ---
+  'Harley-Davidson', 'Haval', 'Hennessey', 'Hero MotoCorp', 'Hillman', 'Hindustan', 'Hino', 
+  'HiPhi', 'Holden', 'Honda', 'Hongqi', 'Horch', 'Horex', 'HSV', 'Hudson', 'Hummer', 
+  'Humber', 'Husqvarna', 'Hyundai', 'Hyosung',
 
-  // --- Sweden ---
-  'Koenigsegg', 'Saab', 'Volvo',
+  // --- I ---
+  'iCar', 'Indian Motorcycle', 'Ineos', 'Infiniti', 'Innocenti', 'Intermeccanica', 'International Harvester', 
+  'Isdera', 'Iso', 'Isuzu', 'Italdesign', 'Italjet',
 
-  // --- Other Europe (Spain, Czech, etc.) ---
-  'Cupra', 'Donkervoort', 'KTM', 'Rimac', 'Seat', 'Skoda', 'Spyker', 'Zenvo',
+  // --- J ---
+  'JAC', 'Jaecoo', 'Jaguar', 'Janus', 'Jawa', 'Jeep', 'Jensen', 'Jetour', 'JMC', 'Jowett',
 
-  // --- India ---
-  'Mahindra', 'Tata',
+  // --- K ---
+  'Kaicene', 'Kaiser', 'Karma', 'Kawasaki', 'Keeway', 'KG Mobility', 'Kia', 'Koenigsegg', 'Kove', 'KTM', 'Kymco',
 
-  // --- Southeast Asia ---
-  'Perodua', 'Proton', 'VinFast',
+  // --- L ---
+  'Lada', 'Lagonda', 'Lamborghini', 'Lambretta', 'Lancia', 'Land Rover', 'Laverda', 'Leapmotor', 
+  'Lexus', 'Li Auto', 'Lifan', 'Ligier', 'Lincoln', 'Lotus', 'Lucid', 'Lynk & Co',
 
-  // --- Russia & Middle East ---
-  'Lada', 'Togg', 'W Motors',
-  // --- other ---
-  'Lifan', 'Vespa', 'Harley-Davidson', 'Ducati'
+  // --- M ---
+  'Mahindra', 'Malaguti', 'MAN', 'Marcos', 'Maruti Suzuki', 'Maserati', 'Matchless', 'Matra', 'Maxus', 
+  'Maybach', 'Mazda', 'Mazzanti', 'McLaren', 'Mercedes-Benz', 'Mercury', 'Merkur', 'Messerschmitt', 
+  'MG', 'Microcar', 'Mine Mobility', 'Mini', 'Mitsubishi', 'Mitsuoka', 'Montesa', 'Morgan', 'Morris', 
+  'Moskvitch', 'Moto Guzzi', 'Mutt', 'MV Agusta',
+
+  // --- N ---
+  'Nash', 'Neta', 'Neoplan', 'Nio', 'Nissan', 'Noble', 'Norton', 'NSU',
+
+  // --- O ---
+  'Oakland', 'Oldsmobile', 'Omoda', 'Opel', 'Ora', 'Osca',
+
+  // --- P ---
+  'Packard', 'Pagani', 'Panhard', 'Panoz', 'Perodua', 'Peugeot', 'Peugeot Motocycles', 'Piaggio', 
+  'Pierce-Arrow', 'Pininfarina', 'Plymouth', 'Poer', 'Polestar', 'Pontiac', 'Porsche', 'Prince', 'Proton',
+
+  // --- Q ---
+  'QJ Motor',
+
+  // --- R ---
+  'Radical', 'Ram', 'Rambler', 'Reliant', 'Renault', 'Renault Korea', 'Rieju', 'Riley', 'Rimac', 
+  'Rivian', 'Roewe', 'Rolls-Royce', 'Rossion', 'Rover', 'Royal Enfield', 'Ruf', 'Russo-Balt', 'Ryuka',
+
+  // --- S ---
+  'Saab', 'Saleen', 'Saturn', 'Scion', 'Scomadi', 'Seat', 'Seres', 'Shelby', 'Shineray', 'Siata', 
+  'Simca', 'Singer', 'Skoda', 'Smart', 'Solar', 'Spyker', 'SsangYong', 'SSC', 'Stallions', 'Studebaker', 
+  'Stutz', 'Subaru', 'Sunbeam', 'Suzuki', 'SYM',
+
+  // --- T ---
+  'Talbot', 'Tank', 'Tata', 'Tatra', 'Tesla', 'Thairung', 'Tiger', 'Togg', 'Tommykaira', 'Toyota', 
+  'Trabant', 'Traxxas', 'Triumph', 'Trumpchi', 'Tucker', 'TVR', 'TVS',
+
+  // --- U ---
+  'UAZ', 'UD Trucks',
+
+  // --- V ---
+  'Vanden Plas', 'Vauxhall', 'Velocette', 'Venturi', 'Vera', 'Vespa', 'Victory', 'VinFast', 'Vincent', 
+  'Voge', 'Voisin', 'Volga', 'Volkswagen', 'Volvo', 'Voyah',
+
+  // --- W ---
+  'W Motors', 'Wanderer', 'Wartburg', 'Weltmeister', 'Wey', 'Wiesmann', 'Willys', 'Wolseley', 'Wuling',
+
+  // --- X ---
+  'Xiaomi', 'Xpeng',
+
+  // --- Y ---
+  'Yamaha', 'Yangwang', 'Yezdi',
+
+  // --- Z ---
+  'Zagato', 'ZAZ', 'Zeekr', 'Zenvo', 'Zero Motorcycles', 'ZIL', 'Zongshen', 'Zontes', 'Zündapp'
+
 ].sort();
 
 interface BrandSearchableDropdownProps {
