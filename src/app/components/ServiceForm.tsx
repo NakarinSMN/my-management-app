@@ -92,120 +92,133 @@ export default function ServiceForm({ data, categoryName, onSuccess, onCancel, i
     }
   };
 
-  return (
-    <div className="bg-green-100/50 backdrop-blur-5xl shadow-xl border border-gray-100 dark:bg-gray-800 rounded-4xl p-8 max-w-xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+return (
+    <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-lg max-w-xl mx-auto overflow-hidden border border-gray-100 dark:border-gray-700 font-sans">
+      
+      {/* --- HEADER --- */}
+      <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-800">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">
+          <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100">
             {isEdit ? 'แก้ไขรายการบริการ' : 'เพิ่มรายการบริการ'}
           </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            หมวดหมู่: {categoryName}
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            ในหมวดหมู่: <span className="font-medium text-green-600 dark:text-green-400">{categoryName}</span>
           </p>
         </div>
         <button
           onClick={onCancel}
-          className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-200 transition-all duration-200"
         >
-          <FontAwesomeIcon icon={faTimes} className="text-xl" />
+          <FontAwesomeIcon icon={faTimes} />
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4 p-6 rounded-3xl shadow-xl border border-gray-100 bg-green-100/20 backdrop-blur-3xl">
-        {/* หมวดหมู่ */}
-        <div>
-          <label className="block text-sm text-gray-700 dark:text-gray-300 mb-2">
-            หมวดหมู่ *
-          </label>
-          <input
-            type="text"
-            value={formData.categoryName}
-            readOnly
-            className={`w-full text-[14px] px-4 py-3 border rounded-full bg-white/70 dark:bg-gray-600 text-gray-900 dark:text-white  focus:outline-none focus:ring-1 focus:ring-green-500 ${errors.categoryName
-                ? 'bordr-red-500 dark:border-red-400'
-                : 'border-gray-300 dark:border-gray-600'
-              }`}
-            placeholder="หมวดหมู่จะถูกตั้งค่าอัตโนมัติ"
-          />
-          {errors.categoryName && (
-            <p className="mt-1 text-sm text-red-500 dark:text-red-400">{errors.categoryName}</p>
-          )}
+      <form onSubmit={handleSubmit}>
+        
+        {/* --- BODY (FORM CONTENT) --- */}
+        <div className="p-6 space-y-5">
+          
+          {/* หมวดหมู่ (Read Only) */}
+          <div>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">
+              หมวดหมู่ <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={formData.categoryName}
+              readOnly
+              className="w-full text-sm px-4 py-2.5 border border-gray-200 rounded-full bg-gray-100 text-gray-500 cursor-not-allowed focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-gray-400"
+              placeholder="หมวดหมู่จะถูกตั้งค่าอัตโนมัติ"
+            />
+            {errors.categoryName && (
+              <p className="mt-1.5 text-xs text-red-500 dark:text-red-400">{errors.categoryName}</p>
+            )}
+          </div>
+
+          {/* ชื่อบริการ */}
+          <div>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">
+              ชื่อบริการ <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={formData.serviceName}
+              onChange={(e) => handleInputChange('serviceName', e.target.value)}
+              className={`w-full text-sm px-4 py-2.5 border rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-0 ${
+                errors.serviceName
+                  ? 'border-red-500 focus:ring-red-100 dark:border-red-400'
+                  : 'border-gray-200 focus:border-green-500 focus:ring-green-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:ring-green-900'
+              } bg-white dark:bg-gray-700 text-gray-900`}
+              placeholder="เช่น ตรวจสภาพรถยนต์, เปลี่ยนสีรถ"
+            />
+            {errors.serviceName && (
+              <p className="mt-1.5 text-xs text-red-500 dark:text-red-400">{errors.serviceName}</p>
+            )}
+          </div>
+
+          {/* ราคา */}
+          <div>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">
+              ราคา (บาท) <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              value={formData.servicePrice}
+              onChange={(e) => handleInputChange('servicePrice', parseFloat(e.target.value) || 0)}
+              min="0"
+              step="0.01"
+              className={`w-full text-sm px-4 py-2.5 border rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-0 ${
+                errors.servicePrice
+                  ? 'border-red-500 focus:ring-red-100 dark:border-red-400'
+                  : 'border-gray-200 focus:border-green-500 focus:ring-green-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:ring-green-900'
+              } bg-white dark:bg-gray-700 text-gray-900`}
+              placeholder="0.00"
+            />
+            {errors.servicePrice && (
+              <p className="mt-1.5 text-xs text-red-500 dark:text-red-400">{errors.servicePrice}</p>
+            )}
+          </div>
+
+          {/* รายละเอียด */}
+          <div>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">
+              รายละเอียดบริการ <span className="text-gray-400 font-normal">(ไม่บังคับ)</span>
+            </label>
+            <textarea
+              value={formData.serviceDetails}
+              onChange={(e) => handleInputChange('serviceDetails', e.target.value)}
+              rows={3}
+              className="w-full text-sm px-4 py-2.5 border border-gray-200 rounded-3xl transition-all duration-200 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:ring-green-900 bg-white resize-none"
+              placeholder="ระบุรายละเอียดเพิ่มเติม..."
+            />
+          </div>
         </div>
 
-        {/* ชื่อบริการ */}
-        <div>
-          <label className="block text-sm text-gray-700 dark:text-gray-300 mb-2">
-            ชื่อบริการ *
-          </label>
-          <input
-            type="text"
-            value={formData.serviceName}
-            onChange={(e) => handleInputChange('serviceName', e.target.value)}
-            className={`w-full text-[14px] px-4 py-3 border rounded-full bg-white/70 focus:outline-none focus:ring-1 focus:ring-green-500 ${errors.serviceName
-                ? 'border-red-500 dark:border-red-400'
-                : 'border-gray-300 dark:border-gray-600'
-              } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
-            placeholder="เช่น ตรวจสภาพรถยนต์, เปลี่ยนสีรถ"
-          />
-          {errors.serviceName && (
-            <p className="mt-1 text-sm text-red-500 dark:text-red-400">{errors.serviceName}</p>
-          )}
-        </div>
-
-        {/* ราคา */}
-        <div>
-          <label className="block text-sm text-gray-700 dark:text-gray-300 mb-2">
-            ราคา (บาท) *
-          </label>
-          <input
-            type="number"
-            value={formData.servicePrice}
-            onChange={(e) => handleInputChange('servicePrice', parseFloat(e.target.value) || 0)}
-            min="0"
-            step="0.01"
-            className={`w-full text-[14px] px-4 py-3 border rounded-full bg-white/70  focus:outline-none focus:ring-1 focus:ring-green-500 ${errors.servicePrice
-                ? 'border-red-500 dark:border-red-400'
-                : 'border-gray-300 dark:border-gray-600'
-              } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
-            placeholder="0"
-          />
-          {errors.servicePrice && (
-            <p className="mt-1 text-sm text-red-500 dark:text-red-400">{errors.servicePrice}</p>
-          )}
-        </div>
-
-        {/* รายละเอียด */}
-        <div>
-          <label className="block text-sm text-gray-700 dark:text-gray-300 mb-2">
-            รายละเอียดบริการ
-          </label>
-          <textarea
-            value={formData.serviceDetails}
-            onChange={(e) => handleInputChange('serviceDetails', e.target.value)}
-            rows={3}
-            className="w-full text-[14px] px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-1 focus:ring-green-500 bg-white/70 dark:bg-gray-700 text-gray-900 dark:text-white"
-            placeholder="รายละเอียดเพิ่มเติม (ไม่บังคับ)"
-          />
-        </div>
-
-        {/* ปุ่ม */}
-        <div className="justify-between flex mt-4">
+        {/* --- FOOTER (ACTIONS) --- */}
+        <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-100 dark:border-gray-700 flex gap-3">
           <button
             type="button"
             onClick={onCancel}
-            className=" cursor-pointer py-2 px-5 text-white dark:text-gray-300 rounded-full bg-gray-400 hover:bg-gray-500 dark:hover:bg-gray-700 transition-colors"
+            className="flex-1 px-4 py-2.5 rounded-full border border-gray-300 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50 hover:text-gray-900 transition-colors dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
           >
             ยกเลิก
           </button>
           <button
             type="submit"
             disabled={isLoading}
-            className="flex cursor-pointer py-2 px-5 bg-green-600 text-white rounded-full hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors items-center justify-center gap-2"
+            className="flex-1 px-4 py-2.5 rounded-full bg-green-600 text-white text-sm font-medium hover:bg-green-700 shadow-sm disabled:opacity-70 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
           >
-            <FontAwesomeIcon icon={isEdit ? faSave : faPlus} />
-            {isLoading ? 'กำลังบันทึก...' : (isEdit ? 'บันทึกการแก้ไข' : 'เพิ่มรายการ')}
+             {isLoading ? (
+               <span className="animate-pulse">กำลังบันทึก...</span>
+            ) : (
+              <>
+                <FontAwesomeIcon icon={isEdit ? faSave : faPlus} className="text-xs" />
+                {isEdit ? 'บันทึก' : 'เพิ่มรายการ'}
+              </>
+            )}
           </button>
         </div>
+
       </form>
     </div>
   );

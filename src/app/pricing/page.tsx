@@ -324,9 +324,9 @@ export default function PricingPage() {
 
   return (
     <AnimatedPage>
-      <main className="w-full max-w-screen-2xl mx-auto bg-gray-50 dark:bg-gray-900 py-0 min-h-screen">
+      <main className="w-full max-w-screen-2xl mx-auto py-0 min-h-screen">
         {/* Header */}
-        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 shadow-sm">
+        <div className="bg-white rounded-full dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 py-3 px-5 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-lg font-bold text-gray-900 dark:text-white tracking-tight">
@@ -335,7 +335,7 @@ export default function PricingPage() {
             </div>
             <button
               onClick={handleAddCategoryClick}
-              className="px-4 py-2 bg-emerald-500 text-white rounded-lg font-semibold hover:bg-emerald-600 transition-colors duration-200 flex items-center gap-2 text-sm"
+              className="px-4 py-2 bg-emerald-500 text-white rounded-full font-semibold hover:bg-emerald-600 transition-colors duration-200 flex items-center gap-2 text-sm"
             >
               <FontAwesomeIcon icon={faPlus} className="text-xs" />
               เพิ่มหมวดหมู่
@@ -346,7 +346,7 @@ export default function PricingPage() {
         {/* Content */}
         <div className="px-4 py-4">
           {/* ฟิลเตอร์ */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-3 mb-4 shadow-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-full border border-gray-200 dark:border-gray-700 p-3 mb-4 shadow-sm">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-2">
               {/* Search - เต็มแถวในมือถือ */}
               <div className="relative sm:col-span-2 lg:col-span-5">
@@ -356,7 +356,7 @@ export default function PricingPage() {
                   placeholder="ค้นหาบริการ..."
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder:text-gray-400 text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all"
+                  className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder:text-gray-400 text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all"
                 />
               </div>
               
@@ -407,7 +407,7 @@ export default function PricingPage() {
               <div className="sm:col-span-2 lg:col-span-2 flex items-stretch">
                 <button
                   onClick={handleFilterReset}
-                  className="w-full px-3 py-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-all duration-200 font-medium text-sm border border-emerald-100 dark:border-emerald-800"
+                  className="w-full px-3 py-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-all duration-200 font-medium text-sm border border-emerald-100 dark:border-emerald-800"
                 >
                   รีเซ็ตฟิลเตอร์
                 </button>
@@ -477,7 +477,7 @@ export default function PricingPage() {
                   .map(([categoryName, services]) => (
                   <div key={categoryName} className="space-y-3">
                     {/* Category Header */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-3">
+                    <div className="bg-white dark:bg-gray-800 rounded-full py-3 px-5 border border-gray-200 dark:border-gray-700 shadow-sm">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <h2 className="text-base font-bold text-gray-900 dark:text-white">
@@ -512,7 +512,7 @@ export default function PricingPage() {
                     </div>
                     
                     {/* Services Table */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                    <div className="bg-white dark:bg-gray-800 rounded-3xl overflow-hidden border border-gray-200 dark:border-gray-700">
                       <table className="w-full">
                         <thead className="bg-gray-50 dark:bg-gray-700">
                           <tr>
@@ -607,14 +607,14 @@ export default function PricingPage() {
           )}
 
           {/* Back to Home */}
-          <div className="mt-12 text-center">
+          {/* <div className="mt-12 text-center">
             <Link 
               href="/" 
               className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-orange-500 dark:hover:text-orange-400 font-medium transition-colors"
             >
               ← กลับหน้าหลัก
             </Link>
-          </div>
+          </div> */}
         </div>
 
         {/* Modals */}
