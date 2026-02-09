@@ -188,6 +188,8 @@ export default function BrandSearchableDropdown({
     }
   };
 
+
+  //HTML
   return (
     <div className="relative" ref={dropdownRef}>
       <div className="relative">
@@ -201,7 +203,7 @@ export default function BrandSearchableDropdown({
           onKeyDown={handleKeyDown}
           required={required}
           disabled={disabled}
-          className="w-full pl-10 pr-20 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full pl-10 pr-20 py-2 border border-gray-300 dark:border-gray-600 rounded-full bg-white/70 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           placeholder={placeholder}
           autoComplete="off"
         />
@@ -251,7 +253,7 @@ export default function BrandSearchableDropdown({
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="ค้นหายี่ห้อรถ..."
-                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
+                className="w-full pl-9 pr-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-full bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
                 autoFocus
               />
             </div>

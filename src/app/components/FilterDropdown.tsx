@@ -52,7 +52,7 @@ export default function FilterDropdown({
         className={`
           w-full flex items-center justify-between px-3 py-2
           border border-gray-300 dark:border-gray-600 
-          rounded-full bg-white dark:bg-gray-800 
+          rounded-full bg-white/70 dark:bg-gray-800 
           text-gray-900 dark:text-white text-sm
           hover:border-emerald-500 dark:hover:border-emerald-400
           focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent

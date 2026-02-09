@@ -162,9 +162,9 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
     setIsSubmitting(true);
     setMessage('');
     setError('');
-    console.log('DEBUG: formData', formData);
-    console.log('DEBUG: isUpdateMode', isUpdateMode);
-    console.log('DEBUG: originalData', originalData);
+    // console.log('DEBUG: formData', formData);
+    // console.log('DEBUG: isUpdateMode', isUpdateMode);
+    // console.log('DEBUG: originalData', originalData);
     
     try {
       // เลือกใช้ PUT (อัปเดต) หรือ POST (เพิ่มใหม่)
@@ -226,11 +226,11 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
     }
   };
 
-  return (
-    <form onSubmit={handleSubmit} className="bg-gray-50/50 dark:bg-gray-800 rounded-2xl shadow-2xl max-w-[700px] w-full mx-auto border border-gray-200 dark:border-gray-700 p-6 md:p-8">
+ return (
+    <form onSubmit={handleSubmit} className="bg-green-100/50 dark:bg-gray-800 rounded-2xl shadow-2xl max-w-[700px] w-full mx-auto border border-gray-100 dark:border-gray-700 p-6 md:p-8 backdrop-blur-4xl">
       {/* Header with gradient */}
       <div className="mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-teal-600 bg-clip-text text-transparent">
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-950 to-teal-600 bg-clip-text text-transparent">
           {isUpdateMode ? 'อัปเดตข้อมูลลูกค้า' : 'เพิ่มข้อมูลลูกค้า'}
         </h2>
         <p className="text-sm text-gray-700 dark:text-gray-400 mt-1">
@@ -241,7 +241,7 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 p-4 rounded-2xl mb-4 shadow-xl border border-white backdrop-blur-4xl bg-green-100/50">
         {/* ทะเบียน */}
         <div>
           <label className="block text-sm text-gray-700 dark:text-gray-300 mb-2">
@@ -255,7 +255,7 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
               onChange={handleChange}
               onBlur={handleLicensePlateBlur}
               required 
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all" 
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-full bg-white/70 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all" 
               placeholder="เช่น กก 1234"
             />
             {isCheckingPlate && (
@@ -291,7 +291,7 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
             value={formData.firstName || ''} 
             onChange={handleChange} 
             required 
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all" 
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-full bg-white/70 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all" 
             placeholder="ชื่อจริง"
           />
         </div>
@@ -307,7 +307,7 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
             value={formData.lastName || ''} 
             onChange={handleChange} 
             required 
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all" 
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-full bg-white/70 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all" 
             placeholder="นามสกุล"
           />
         </div>
@@ -323,7 +323,7 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
             value={formData.phone} 
             onChange={handleChange} 
             required 
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all" 
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-full bg-white/70 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all" 
             placeholder="0812345678"
           />
         </div>
@@ -352,7 +352,7 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
             name="registerDate" 
             value={formData.registerDate} 
             onChange={handleChange} 
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-full bg-white/70 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all"
           />
         </div>
 
@@ -366,7 +366,7 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
             name="inspectionDate" 
             value={formData.inspectionDate} 
             onChange={handleChange} 
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-full bg-white/70 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all"
           />
         </div>
 
@@ -375,17 +375,17 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
           <label className="block text-sm text-gray-700 dark:text-gray-300 mb-2">
             ประเภทบริการที่ต้องดูแล
           </label>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex bg-white/70 rounded-full p-2 border border-gray-300  gap-2">
             {availableTags.map((tag) => (
               <button
                 key={tag.value}
                 type="button"
                 onClick={() => handleTagToggle(tag.value)}
                 className={`
-                  px-3 py-2 rounded-full text-sm transition-all duration-200 flex items-center gap-2
+                  px-3 py-2  rounded-full text-sm transition-all duration-200 flex items-center gap-2
                   ${formData.tags.includes(tag.value)
                     ? `${tag.color} text-white shadow-md`
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }
                 `}
               >
