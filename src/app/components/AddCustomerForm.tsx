@@ -227,13 +227,13 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-[800px] w-full mx-auto border border-gray-200 dark:border-gray-700 p-6 md:p-8">
+    <form onSubmit={handleSubmit} className="bg-gray-50/50 dark:bg-gray-800 rounded-2xl shadow-2xl max-w-[700px] w-full mx-auto border border-gray-200 dark:border-gray-700 p-6 md:p-8">
       {/* Header with gradient */}
       <div className="mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-teal-600 bg-clip-text text-transparent">
           {isUpdateMode ? 'อัปเดตข้อมูลลูกค้า' : 'เพิ่มข้อมูลลูกค้า'}
         </h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+        <p className="text-sm text-gray-700 dark:text-gray-400 mt-1">
           {isUpdateMode 
             ? `กำลังอัปเดตเลขลำดับ ${originalData?.sequenceNumber ? String(originalData.sequenceNumber).padStart(6, '0') : ''}`
             : 'กรอกข้อมูลลูกค้าให้ครบถ้วน'
@@ -241,10 +241,10 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {/* ทะเบียน */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm text-gray-700 dark:text-gray-300 mb-2">
             ทะเบียนรถ <span className="text-red-500">*</span>
           </label>
           <div className="relative">
@@ -255,7 +255,7 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
               onChange={handleChange}
               onBlur={handleLicensePlateBlur}
               required 
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all" 
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all" 
               placeholder="เช่น กก 1234"
             />
             {isCheckingPlate && (
@@ -268,7 +268,7 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
 
         {/* ยี่ห้อ */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm text-gray-700 dark:text-gray-300 mb-2">
             ยี่ห้อ / รุ่น <span className="text-red-500">*</span>
           </label>
           <BrandSearchableDropdown
@@ -282,7 +282,7 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
 
         {/* ชื่อ */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm text-gray-700 dark:text-gray-300 mb-2">
             ชื่อ <span className="text-red-500">*</span>
           </label>
           <input 
@@ -291,14 +291,14 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
             value={formData.firstName || ''} 
             onChange={handleChange} 
             required 
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all" 
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all" 
             placeholder="ชื่อจริง"
           />
         </div>
 
         {/* นามสกุล */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm text-gray-700 dark:text-gray-300 mb-2">
             นามสกุล <span className="text-red-500">*</span>
           </label>
           <input 
@@ -307,14 +307,14 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
             value={formData.lastName || ''} 
             onChange={handleChange} 
             required 
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all" 
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all" 
             placeholder="นามสกุล"
           />
         </div>
 
         {/* เบอร์ */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm  text-gray-700 dark:text-gray-300 mb-2">
             เบอร์ติดต่อ <span className="text-red-500">*</span>
           </label>
           <input 
@@ -323,14 +323,14 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
             value={formData.phone} 
             onChange={handleChange} 
             required 
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all" 
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all" 
             placeholder="0812345678"
           />
         </div>
 
         {/* ประเภทรถ */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm  text-gray-700 dark:text-gray-300 mb-2">
             ประเภทรถ
           </label>
           <FilterDropdown
@@ -344,7 +344,7 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
 
         {/* วันที่ชำระภาษี */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm  text-gray-700 dark:text-gray-300 mb-2">
             วันที่ชำระภาษีล่าสุด
           </label>
           <input 
@@ -352,13 +352,13 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
             name="registerDate" 
             value={formData.registerDate} 
             onChange={handleChange} 
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all"
           />
         </div>
 
         {/* วันที่ตรวจ */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm  text-gray-700 dark:text-gray-300 mb-2">
             วันที่ตรวจ
           </label>
           <input 
@@ -366,13 +366,13 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
             name="inspectionDate" 
             value={formData.inspectionDate} 
             onChange={handleChange} 
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all"
           />
         </div>
 
         {/* แท็ก */}
         <div className="md:col-span-2">
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm text-gray-700 dark:text-gray-300 mb-2">
             ประเภทบริการที่ต้องดูแล
           </label>
           <div className="flex flex-wrap gap-2">
@@ -382,7 +382,7 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
                 type="button"
                 onClick={() => handleTagToggle(tag.value)}
                 className={`
-                  px-3 py-2 rounded-xl font-medium text-sm transition-all duration-200 flex items-center gap-2
+                  px-3 py-2 rounded-full text-sm transition-all duration-200 flex items-center gap-2
                   ${formData.tags.includes(tag.value)
                     ? `${tag.color} text-white shadow-md`
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -401,7 +401,7 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
 
         {/* หมายเหตุ */}
         <div className="md:col-span-2">
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm text-gray-700 dark:text-gray-300 mb-2">
             หมายเหตุ
           </label>
           <textarea 
@@ -434,14 +434,14 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
         <button 
           type="button" 
           onClick={onCancel} 
-          className="flex-1 flex items-center justify-center gap-2 px-5 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200 font-semibold text-sm"
+          className="flex-1 flex items-center justify-center gap-2 px-5 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200 text-sm"
         >
           <FaTimes /> ยกเลิก
         </button>
         <button 
           type="submit" 
           disabled={isSubmitting} 
-          className={`flex-1 flex items-center justify-center gap-2 px-6 py-2.5 text-white font-bold rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-lg ${
+          className={`flex-1 flex items-center justify-center gap-2 px-6 py-2.5 text-white rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-lg ${
             isUpdateMode 
               ? 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700'
               : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600'
@@ -463,19 +463,19 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
       {/* Modal แสดงข้อมูลทะเบียนซ้ำ */}
       {showDuplicateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-xl w-full max-h-[80vh] overflow-y-auto">
             {/* Header */}
             <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-orange-50 to-red-50 dark:from-gray-800 dark:to-gray-800">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center">
-                  <FaExclamationCircle className="text-white text-2xl" />
+                <div className="w-12 h-12rounded-full flex items-center justify-center">
+                  <FaExclamationCircle className="text-orange-600 text-4xl" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                    ⚠️ พบข้อมูลทะเบียนนี้อยู่แล้ว
+                  <h3 className="text-xl font-bold text-gray-800 dark:text-white">
+                    พบข้อมูลทะเบียนนี้อยู่แล้ว
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    ระบบพบทะเบียน <span className="font-bold text-orange-600">{formData.licensePlate}</span> มี {duplicateData.length} รายการ
+                    ระบบพบทะเบียน <span className="font-semibold px-3 bg-orange-200 rounded-full text-orange-700">{formData.licensePlate}</span> มี {duplicateData.length} รายการ
                   </p>
                 </div>
               </div>
@@ -485,15 +485,15 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
             <div className="p-6">
               <div className="space-y-4">
                 {duplicateData.map((item, idx) => (
-                  <div key={idx} className="border-2 border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:border-emerald-400 transition-all">
+                  <div key={idx} className="border-2 border-gray-200 dark:border-gray-700 rounded-xl p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-3">
-                          <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-lg text-xs font-bold">
+                        <div className="flex items-center gap-1 mb-2">
+                          <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full text-xs font-semibold ">
                             ลำดับ: {item.sequenceNumber ? String(item.sequenceNumber).padStart(6, '0') : '-'}
                           </span>
                           {item.vehicleType && (
-                            <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 rounded-lg text-xs font-bold">
+                            <span className="px-3 py-1 bg-emerald-100 font-semibold dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 rounded-full text-xs ">
                               {item.vehicleType}
                             </span>
                           )}
@@ -521,7 +521,7 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
                         <button
                           type="button"
                           onClick={() => handleUseExistingData(item)}
-                          className="mt-4 w-full px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl hover:from-emerald-600 hover:to-teal-600 transition-all font-semibold text-sm shadow-md"
+                          className="mt-4 w-full px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-full hover:from-emerald-600 hover:to-teal-600 transition-all text-sm shadow-md"
                         >
                           ✓ ใช้ข้อมูลนี้ (อัปเดต)
                         </button>
@@ -533,14 +533,14 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
 
               {/* ปุ่มด้านล่าง */}
               <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                {/* <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                   💡 <strong>คำแนะนำ:</strong> หากต้องการเพิ่มข้อมูลใหม่ (ต่างประเภทรถ) กรุณาระบุประเภทรถให้ต่างจากข้อมูลเดิม
-                </p>
+                </p> */}
                 <div className="flex gap-3">
                   <button
                     type="button"
                     onClick={handleAddNew}
-                    className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-all font-semibold"
+                    className="flex-1 px-4 py-2 bg-gray-600 text-white text-sm rounded-full hover:bg-gray-700 transition-all"
                   >
                     เพิ่มข้อมูลใหม่ (ต่างประเภท)
                   </button>
@@ -550,7 +550,7 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
                       setShowDuplicateModal(false);
                       setFormData(prev => ({ ...prev, licensePlate: '' }));
                     }}
-                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all font-semibold"
+                    className="flex-1 px-4 py-2 bg-red-600 text-white text-sm rounded-full hover:bg-red-700 transition-all"
                   >
                     ยกเลิก
                   </button>

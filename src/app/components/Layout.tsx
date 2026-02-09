@@ -191,7 +191,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       // **ปัญหาคือ div main content ไม่ได้ใช้ margin-left/padding-left ที่ถูกต้องและ dynamic**
       // ผมจะกลับไปใช้ lg:fixed เหมือนเดิมใน aside และแก้ไขที่ main content
       >
-        <div className="p-6 flex items-center justify-between border-b-2 border-emerald-100 dark:border-emerald-900/30 bg-gradient-to-r from-emerald-50/50 to-green-50/30 dark:from-emerald-950/30 dark:to-gray-800">
+        <div className="bg-white p-6 flex items-center justify-between border-b-2 border-emerald-100 dark:border-emerald-900/30 bg-gradient-to-r from-emerald-50/50 to-green-50/30 dark:from-emerald-950/30 dark:to-gray-800">
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -217,7 +217,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               className="text-lg font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent ml-3 flex-grow"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.4, delay: 0.1 }}
+              transition={{ duration: 0.2, delay: 0.1 }}
             >
               ตรอ.บังรีท่าอิฐ
             </motion.h2>
@@ -247,7 +247,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </motion.button> */}
         </div>
 
-        <nav className="flex-1 px-4 py-6 overflow-y-auto scrollbar-thin scrollbar-thumb-emerald-300 dark:scrollbar-thumb-emerald-700 scrollbar-track-transparent">
+        <nav className=" bg-white flex-1 px-4 py-6 overflow-y-auto scrollbar-thin scrollbar-thumb-emerald-300 dark:scrollbar-thumb-emerald-700 scrollbar-track-transparent">
           <ul className="space-y-2.5">
             <SidebarMenuItem
               href="/dashboard"
@@ -325,12 +325,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               isSidebarOpen={isMobile || isSidebarOpen}
             />
 
-            <SidebarMenuItem
+            {/* <SidebarMenuItem
               href="/ev-tax-calculator"
               icon={faClock}
               text="คำนวณภาษีรถไฟฟ้า"
               isSidebarOpen={isMobile || isSidebarOpen}
-            />
+            /> */}
 
             {/* Divider */}
             <div className="my-5 mx-3 border-t-2 border-emerald-100 dark:border-emerald-900/30"></div>
@@ -361,9 +361,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </nav>
 
         {/* User Info Section */}
-        {user && (
+        {/* {user && (
           <motion.div
-            className={`p-4 border-t-2 border-emerald-100 dark:border-emerald-900/30 bg-gradient-to-r from-emerald-50/50 to-green-50/30 dark:from-emerald-950/30 dark:to-gray-800`}
+            className={` bg-white p-4 border-t-2 border-emerald-100 dark:border-emerald-900/30 bg-gradient-to-r from-emerald-50/50 to-green-50/30 dark:from-emerald-950/30 dark:to-gray-800`}
             initial={{ opacity: 0, y: 20 }}
             animate={{
               opacity: (isMobile || isSidebarOpen) ? 1 : 0,
@@ -387,10 +387,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               )}
             </div>
           </motion.div>
-        )}
+        )} */}
 
         <motion.footer
-          className={`p-4 text-center text-[10px] text-gray-500 dark:text-gray-400 border-t-2 border-emerald-100 dark:border-emerald-900/30 bg-gradient-to-r from-emerald-50/30 to-green-50/20 dark:from-emerald-950/20 dark:to-gray-800`}
+          className={`bg-white p-4 text-center text-[10px] text-gray-500 dark:text-gray-400 border-t-2 border-emerald-100 dark:border-emerald-900/30 bg-gradient-to-r from-emerald-50/30 to-green-50/20 dark:from-emerald-950/20 dark:to-gray-800`}
           initial={{ opacity: 0, y: 20 }}
           animate={{
             opacity: (isMobile || isSidebarOpen) ? 1 : 0,

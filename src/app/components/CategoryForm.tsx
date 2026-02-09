@@ -75,9 +75,9 @@ export default function CategoryForm({ data, onSuccess, onCancel, isEdit = false
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl mx-auto">
+    <div className="bg-gray-50/70 shadow-xl dark:bg-gray-800 rounded-2xl p-6 max-w-md mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+        <h2 className="text-2xl font-semibold text-gray-700 dark:text-white">
           {isEdit ? 'แก้ไขหมวดหมู่' : 'เพิ่มหมวดหมู่ใหม่'}
         </h2>
         <button
@@ -91,14 +91,14 @@ export default function CategoryForm({ data, onSuccess, onCancel, isEdit = false
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* ชื่อหมวดหมู่ */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm font-medium text-gray-500 dark:text-gray-300 mb-2">
             ชื่อหมวดหมู่ *
           </label>
           <input
             type="text"
             value={formData.categoryName}
             onChange={(e) => handleInputChange('categoryName', e.target.value)}
-            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            className={`w-full text-[14px] px-4 py-2 border rounded-full focus:outline-none focus:ring-1 focus:ring-emerald-500 ${
               errors.categoryName 
                 ? 'border-red-500 dark:border-red-400' 
                 : 'border-gray-300 dark:border-gray-600'
@@ -112,14 +112,14 @@ export default function CategoryForm({ data, onSuccess, onCancel, isEdit = false
 
         {/* คำอธิบายหมวดหมู่ */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm font-medium text-gray-500 dark:text-gray-300 mb-2">
             คำอธิบายหมวดหมู่
           </label>
           <textarea
             value={formData.categoryDescription}
             onChange={(e) => handleInputChange('categoryDescription', e.target.value)}
             rows={3}
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            className="w-full text-[14px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             placeholder="คำอธิบายหมวดหมู่ (ไม่บังคับ)"
           />
         </div>
@@ -129,7 +129,7 @@ export default function CategoryForm({ data, onSuccess, onCancel, isEdit = false
           <button
             type="submit"
             disabled={isLoading}
-            className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+            className="flex-1 bg-blue-500 text-white py-2 px-4 rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
           >
             <FontAwesomeIcon icon={isEdit ? faSave : faPlus} />
             {isLoading ? 'กำลังบันทึก...' : (isEdit ? 'บันทึกการแก้ไข' : 'เพิ่มหมวดหมู่')}
@@ -137,7 +137,7 @@ export default function CategoryForm({ data, onSuccess, onCancel, isEdit = false
           <button
             type="button"
             onClick={onCancel}
-            className="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            className=" flex-1 px-6 py-2 rounded-full bg-gray-400 border-gray-300 dark:border-gray-600 text-white dark:text-gray-300 hover:bg-gray-700 dark:hover:bg-gray-700 transition-colors"
           >
             ยกเลิก
           </button>

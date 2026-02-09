@@ -50,9 +50,9 @@ export default function FilterDropdown({
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={`
-          w-full flex items-center justify-between px-3 py-2.5
+          w-full flex items-center justify-between px-3 py-2
           border border-gray-300 dark:border-gray-600 
-          rounded-lg bg-white dark:bg-gray-800 
+          rounded-full bg-white dark:bg-gray-800 
           text-gray-900 dark:text-white text-sm
           hover:border-emerald-500 dark:hover:border-emerald-400
           focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent
@@ -65,7 +65,7 @@ export default function FilterDropdown({
             icon={icon} 
             className="text-emerald-500 dark:text-emerald-400 text-sm" 
           />
-          <span className={`font-medium ${hasValue ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
+          <span className={` ${hasValue ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
             {selectedOption ? selectedOption.label : placeholder}
           </span>
         </div>
@@ -92,7 +92,7 @@ export default function FilterDropdown({
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-lg max-h-60 overflow-y-auto">
           {options.map((option, index) => (
             <button
               key={index}
@@ -103,9 +103,9 @@ export default function FilterDropdown({
               }}
               className={`
                 w-full flex items-center justify-between px-3 py-2.5 text-left
-                hover:bg-emerald-50 dark:hover:bg-emerald-900/20
+                hover:bg-gray-100 dark:hover:bg-emerald-900/20
                 transition-colors duration-150
-                ${option.value === value ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300' : 'text-gray-900 dark:text-white'}
+                ${option.value === value ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300' : 'text-gray-500  dark:text-white'}
                 ${index === 0 ? 'rounded-t-lg' : ''}
                 ${index === options.length - 1 ? 'rounded-b-lg' : ''}
               `}
