@@ -539,13 +539,6 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
                 <div className="flex gap-3">
                   <button
                     type="button"
-                    onClick={handleAddNew}
-                    className="flex-1 px-4 py-2 bg-gray-600 text-white text-sm rounded-full hover:bg-gray-700 transition-all"
-                  >
-                    เพิ่มข้อมูลใหม่ (ต่างประเภท)
-                  </button>
-                  <button
-                    type="button"
                     onClick={() => {
                       setShowDuplicateModal(false);
                       setFormData(prev => ({ ...prev, licensePlate: '' }));
@@ -553,6 +546,13 @@ export default function AddCustomerForm({ onSuccess, onCancel }: AddCustomerForm
                     className="flex-1 px-4 py-2 bg-red-600 text-white text-sm rounded-full hover:bg-red-700 transition-all"
                   >
                     ยกเลิก
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleAddNew}
+                    className="flex-1 px-4 py-2 bg-gray-600 text-white text-sm rounded-full hover:bg-gray-700 transition-all"
+                  >
+                    เพิ่มข้อมูลใหม่ (ต่างประเภท)
                   </button>
                 </div>
               </div>

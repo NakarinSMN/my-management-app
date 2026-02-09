@@ -62,7 +62,7 @@ export default function ServiceForm({ data, categoryName, onSuccess, onCancel, i
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -82,7 +82,7 @@ export default function ServiceForm({ data, categoryName, onSuccess, onCancel, i
       ...prev,
       [field]: value
     }));
-    
+
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({
@@ -93,10 +93,10 @@ export default function ServiceForm({ data, categoryName, onSuccess, onCancel, i
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl mx-auto">
+    <div className="bg-green-100/50 backdrop-blur-5xl shadow-xl border border-gray-100 dark:bg-gray-800 rounded-4xl p-8 max-w-xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">
             {isEdit ? 'แก้ไขรายการบริการ' : 'เพิ่มรายการบริการ'}
           </h2>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
@@ -111,21 +111,20 @@ export default function ServiceForm({ data, categoryName, onSuccess, onCancel, i
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4 p-6 rounded-3xl shadow-xl border border-gray-100 bg-green-100/20 backdrop-blur-3xl">
         {/* หมวดหมู่ */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm text-gray-700 dark:text-gray-300 mb-2">
             หมวดหมู่ *
           </label>
           <input
             type="text"
             value={formData.categoryName}
             readOnly
-            className={`w-full px-4 py-2 border rounded-lg bg-gray-50 dark:bg-gray-600 text-gray-900 dark:text-white ${
-              errors.categoryName 
-                ? 'border-red-500 dark:border-red-400' 
+            className={`w-full text-[14px] px-4 py-3 border rounded-full bg-white/70 dark:bg-gray-600 text-gray-900 dark:text-white  focus:outline-none focus:ring-1 focus:ring-green-500 ${errors.categoryName
+                ? 'bordr-red-500 dark:border-red-400'
                 : 'border-gray-300 dark:border-gray-600'
-            }`}
+              }`}
             placeholder="หมวดหมู่จะถูกตั้งค่าอัตโนมัติ"
           />
           {errors.categoryName && (
@@ -135,18 +134,17 @@ export default function ServiceForm({ data, categoryName, onSuccess, onCancel, i
 
         {/* ชื่อบริการ */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm text-gray-700 dark:text-gray-300 mb-2">
             ชื่อบริการ *
           </label>
           <input
             type="text"
             value={formData.serviceName}
             onChange={(e) => handleInputChange('serviceName', e.target.value)}
-            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              errors.serviceName 
-                ? 'border-red-500 dark:border-red-400' 
+            className={`w-full text-[14px] px-4 py-3 border rounded-full bg-white/70 focus:outline-none focus:ring-1 focus:ring-green-500 ${errors.serviceName
+                ? 'border-red-500 dark:border-red-400'
                 : 'border-gray-300 dark:border-gray-600'
-            } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
+              } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
             placeholder="เช่น ตรวจสภาพรถยนต์, เปลี่ยนสีรถ"
           />
           {errors.serviceName && (
@@ -156,7 +154,7 @@ export default function ServiceForm({ data, categoryName, onSuccess, onCancel, i
 
         {/* ราคา */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm text-gray-700 dark:text-gray-300 mb-2">
             ราคา (บาท) *
           </label>
           <input
@@ -165,11 +163,10 @@ export default function ServiceForm({ data, categoryName, onSuccess, onCancel, i
             onChange={(e) => handleInputChange('servicePrice', parseFloat(e.target.value) || 0)}
             min="0"
             step="0.01"
-            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              errors.servicePrice 
-                ? 'border-red-500 dark:border-red-400' 
+            className={`w-full text-[14px] px-4 py-3 border rounded-full bg-white/70  focus:outline-none focus:ring-1 focus:ring-green-500 ${errors.servicePrice
+                ? 'border-red-500 dark:border-red-400'
                 : 'border-gray-300 dark:border-gray-600'
-            } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
+              } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
             placeholder="0"
           />
           {errors.servicePrice && (
@@ -179,34 +176,34 @@ export default function ServiceForm({ data, categoryName, onSuccess, onCancel, i
 
         {/* รายละเอียด */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm text-gray-700 dark:text-gray-300 mb-2">
             รายละเอียดบริการ
           </label>
           <textarea
             value={formData.serviceDetails}
             onChange={(e) => handleInputChange('serviceDetails', e.target.value)}
             rows={3}
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            className="w-full text-[14px] px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-2xl focus:outline-none focus:ring-1 focus:ring-green-500 bg-white/70 dark:bg-gray-700 text-gray-900 dark:text-white"
             placeholder="รายละเอียดเพิ่มเติม (ไม่บังคับ)"
           />
         </div>
 
         {/* ปุ่ม */}
-        <div className="flex gap-3 pt-4">
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-          >
-            <FontAwesomeIcon icon={isEdit ? faSave : faPlus} />
-            {isLoading ? 'กำลังบันทึก...' : (isEdit ? 'บันทึกการแก้ไข' : 'เพิ่มรายการ')}
-          </button>
+        <div className="justify-between flex mt-4">
           <button
             type="button"
             onClick={onCancel}
-            className="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            className=" cursor-pointer py-2 px-5 text-white dark:text-gray-300 rounded-full bg-gray-400 hover:bg-gray-500 dark:hover:bg-gray-700 transition-colors"
           >
             ยกเลิก
+          </button>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="flex cursor-pointer py-2 px-5 bg-green-600 text-white rounded-full hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors items-center justify-center gap-2"
+          >
+            <FontAwesomeIcon icon={isEdit ? faSave : faPlus} />
+            {isLoading ? 'กำลังบันทึก...' : (isEdit ? 'บันทึกการแก้ไข' : 'เพิ่มรายการ')}
           </button>
         </div>
       </form>
