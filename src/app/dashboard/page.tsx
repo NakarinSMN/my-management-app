@@ -490,9 +490,13 @@ return (
             
             <div className="relative h-[400px] w-full bg-slate-50/50 dark:bg-slate-900/50 rounded-3xl p-6 border border-slate-100 dark:border-slate-700/50">
               {(() => {
+                // Determine if monthly or daily view
                 const isMonthly = selectedMonth === null;
+                
+                // Explicitly cast or handle data based on mode
+                // (ในทางปฏิบัติ JS ธรรมดาไม่ error แต่ TS จะฟ้อง)
                 const currentData = isMonthly ? taxMonthlyData : taxDailyData;
-                const maxCount = Math.max(...currentData.map(d => d.count), 1);
+                const maxCount = Math.max(...currentData.map((d: any) => d.count), 1);
                 const maxScale = Math.ceil(maxCount / 10) * 10 + (maxCount < 10 ? 5 : 10);
                 const steps = 5;
                 
@@ -507,9 +511,20 @@ return (
                     </div>
                     <div className="absolute inset-0 top-6 bottom-10 left-12 right-6 overflow-x-auto scrollbar-hide px-2">
                        <div className={`flex items-end h-full w-full ${!isMonthly ? 'min-w-[800px]' : ''} justify-between gap-2`}>
-                        {currentData.map((data, index) => {
+                        {currentData.map((data: any, index: number) => {
                             const heightPercentage = (data.count / maxScale) * 100;
-                            const isCurrent = isMonthly ? new Date().getMonth() === data.monthNum : new Date().getDate() === data.day && new Date().getMonth() === selectedMonth;
+                            
+                            // แก้ไข Logic การเช็ค isCurrent ให้ปลอดภัยกับ TypeScript
+                            let isCurrent = false;
+                            const now = new Date();
+                            if (isMonthly) {
+                                // data คือ MonthlyData (มี monthNum)
+                                isCurrent = now.getMonth() === data.monthNum;
+                            } else {
+                                // data คือ DailyData (มี day)
+                                isCurrent = now.getDate() === data.day && now.getMonth() === selectedMonth;
+                            }
+
                             return (
                             <div 
                                 key={index}
@@ -541,6 +556,21 @@ return (
                   </>
                 );
               })()}
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 mt-8 pt-6 border-t border-slate-100 dark:border-slate-700/50">
+               <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-slate-50 dark:bg-slate-700/30">
+                  <span className="text-xs text-slate-400 uppercase tracking-wider mb-1">ยอดรวม</span>
+                  <span className="text-2xl font-bold text-slate-700 dark:text-white">
+                      {selectedMonth === null ? taxMonthlyData.reduce((sum, d) => sum + d.count, 0) : taxDailyData.reduce((sum, d) => sum + d.count, 0)}
+                  </span>
+               </div>
+               <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-slate-50 dark:bg-slate-700/30">
+                  <span className="text-xs text-slate-400 uppercase tracking-wider mb-1">เฉลี่ย</span>
+                  <span className="text-2xl font-bold text-slate-700 dark:text-white">
+                      {selectedMonth === null ? Math.round(taxMonthlyData.reduce((sum, d) => sum + d.count, 0) / 12) : (taxDailyData.length ? Math.round(taxDailyData.reduce((sum, d) => sum + d.count, 0) / taxDailyData.length) : 0)}
+                  </span>
+               </div>
             </div>
           </div>
         </motion.div>
@@ -902,7 +932,6 @@ return (
     </div>
   );
 
-  // return (
   //   <div className="min-h-screen py-8 px-4">
   //     {/* Tooltip */}
   //     {hoveredBar && (
