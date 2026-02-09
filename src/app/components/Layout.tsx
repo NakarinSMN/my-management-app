@@ -47,7 +47,7 @@ const SidebarMenuItem: React.FC<MenuItemProps> = ({ href, icon, text, notificati
   return (
     <Link
       href={href}
-      className={`flex items-center p-3.5 rounded-xl text-gray-700 dark:text-gray-200 transition-all duration-300 group relative
+      className={`flex items-center p-2 rounded-full text-gray-700 dark:text-gray-200 transition-all duration-300 group relative
         ${isActive 
           ? "bg-gradient-to-r from-emerald-500 to-green-500 text-white dark:from-emerald-600 dark:to-green-600 shadow-lg shadow-emerald-500/30" 
           : "hover:bg-gradient-to-r hover:from-emerald-50 hover:to-green-50 dark:hover:from-emerald-900/20 dark:hover:to-green-900/20 hover:shadow-md"
@@ -57,11 +57,10 @@ const SidebarMenuItem: React.FC<MenuItemProps> = ({ href, icon, text, notificati
       suppressHydrationWarning
     >
       <motion.div 
-        whileHover={{ scale: 1.03, x: 3 }} 
-        whileTap={{ scale: 0.98 }}
+
         className="flex items-center w-full"
       >
-        <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-300 relative
+        <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 relative
           ${isActive 
             ? "bg-white/20 shadow-md" 
             : "bg-gray-100 dark:bg-gray-700 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-800/30"
@@ -503,7 +502,7 @@ return (
 
           {(isMobile || isSidebarOpen) && (
             <motion.h2
-              className="text-lg font-medium text-[#444746] dark:text-[#e3e3e3] ml-3 flex-grow"
+              className="text-md font-medium bg-gradient-to-r from-emerald-500 to-green-500 py-2 px-5 rounded-full text-white dark:text-[#e3e3e3] ml-3 flex-grow"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.2, delay: 0.1 }}
@@ -651,7 +650,7 @@ return (
                 <FontAwesomeIcon icon={faBars} className="text-xl" />
               </motion.button>
               <motion.h1
-                className="ml-4 text-lg font-medium text-[#1f1f1f] dark:text-[#e3e3e3]"
+                className="text-md font-medium bg-gradient-to-r from-emerald-500 to-green-500 py-2 px-5 rounded-full text-white text-[#1f1f1f] dark:text-[#e3e3e3]"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
