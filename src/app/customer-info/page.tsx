@@ -334,7 +334,7 @@ export default function CustomerInfoPage() {
 
   return (
     <AnimatedPage>
-      <motion.div variants={itemVariants} initial="hidden" animate="show" exit="exit" transition={{ duration: 0.5, ease: 'easeInOut' }} className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <motion.div variants={itemVariants} initial="hidden" animate="show" exit="exit" transition={{ duration: 0.5, ease: 'easeInOut' }} className="min-h-screen  dark:bg-gray-900">
         <div className="w-full h-full">
           {/* Header */}
           <div className="mb-6 px-3 pt-3">
@@ -350,13 +350,13 @@ export default function CustomerInfoPage() {
               <div className="flex gap-2">
                 <RippleButton
                   onClick={() => setIsAddModalOpen(true)}
-                  className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-lg hover:from-emerald-600 hover:to-green-600 transition-all shadow-md hover:shadow-lg"
+                  className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-full hover:from-emerald-600 hover:to-green-600 transition-all shadow-md hover:shadow-lg"
                 >
                   + เพิ่มข้อมูลลูกค้า
                 </RippleButton>
                 <Link
                   href="/tax-expiry-next-year"
-                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors inline-block"
+                  className="px-4 py-2 bg-orange-600 text-white rounded-full hover:bg-orange-700 transition-colors inline-block"
                 >
                   ภาษีครั้งถัดไป
                 </Link>
@@ -365,7 +365,7 @@ export default function CustomerInfoPage() {
 
             {/* สถิติสรุป */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-3xl shadow">
                 <div className="flex items-center">
                   <FontAwesomeIcon icon={faInfoCircle} className="text-emerald-500 mr-2" />
                   <div>
@@ -374,7 +374,7 @@ export default function CustomerInfoPage() {
                   </div>
                 </div>
               </div>
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-3xl shadow">
                 <div className="flex items-center">
                   <FontAwesomeIcon icon={faCheckCircle} className="text-green-500 mr-2" />
                   <div>
@@ -385,7 +385,7 @@ export default function CustomerInfoPage() {
                   </div>
                 </div>
               </div>
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-3xl shadow">
                 <div className="flex items-center">
                   <FontAwesomeIcon icon={faExclamationTriangle} className="text-orange-500 mr-2" />
                   <div>
@@ -396,7 +396,7 @@ export default function CustomerInfoPage() {
                   </div>
                 </div>
               </div>
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-3xl shadow">
                 <div className="flex items-center">
                   <FontAwesomeIcon icon={faTimesCircle} className="text-red-500 mr-2" />
                   <div>
@@ -411,8 +411,8 @@ export default function CustomerInfoPage() {
           </div>
 
           {/* Filters */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 mb-3 mx-3">
-            <div className="grid grid-cols-1 md:grid-cols-6 gap-2">
+          <div className="bg-white dark:bg-gray-800 rounded-full flex shadow p-3 mb-3 mx-3">
+            <div className="grid grid-cols-1 md:grid-cols-6 flex-1 gap-3">
               <div className="relative md:col-span-2">
                 <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
                 <input
@@ -420,7 +420,7 @@ export default function CustomerInfoPage() {
                   placeholder="ค้นหาเลขลำดับ, ทะเบียนรถ, ชื่อลูกค้า, เบอร์โทร"
                   value={search}
                   onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
-                  className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                  className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-full bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
                 />
               </div>
               {/* ใน filter UI ลบ SelectFilter ของวันออก */}
@@ -457,20 +457,20 @@ export default function CustomerInfoPage() {
               />
               <button
                 onClick={resetAllFilters}
-                className="px-3 py-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors w-full font-medium text-sm border border-emerald-100 dark:border-emerald-800"
+                className="bg-gray-200 rounded-full mr-3 text-sm hover:bg-gray-300 "
               >
                 รีเซ็ตฟิลเตอร์
               </button>
             </div>
             
             {/* Advanced Filter Button & Active Filters */}
-            <div className="mt-2 flex items-center justify-between">
+            <div className="flex justify-between">
               <button
                 onClick={() => setShowAdvancedFilter(true)}
-                className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-xs font-medium relative"
+                className="text-orange-700 hover:text-orange-600 hover:scale-105 px-2 mr-2"
               >
                 <FontAwesomeIcon icon={faFilter} />
-                ตัวกรองขั้นสูง
+               
                 {activeFiltersCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
                     {activeFiltersCount}
@@ -555,7 +555,7 @@ export default function CustomerInfoPage() {
               </div>
 
               {/* Desktop Table View */}
-              <div className="hidden md:block bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden mx-3 mb-4">
+              <div className="hidden md:block bg-white dark:bg-gray-800 rounded-3xl shadow overflow-hidden mx-3 mb-4">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead className="bg-gray-50 dark:bg-gray-700">
@@ -601,7 +601,7 @@ export default function CustomerInfoPage() {
 
               {/* Pagination - แสดงทั้ง Mobile และ Desktop */}
               {totalPages > 1 && (
-                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow px-4 py-4 mx-3 mt-3">
+                  <div className="bg-white dark:bg-gray-800 rounded-3xl shadow px-4 py-4 mx-3 mt-3">
                     {/* Mobile Pagination */}
                     <div className="flex flex-col gap-2 sm:hidden">
                       <div className="flex justify-between items-center">
@@ -667,23 +667,23 @@ export default function CustomerInfoPage() {
                             onChange={(e) => setJumpToPage(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && handleJumpToPage()}
                             placeholder={currentPage.toString()}
-                            className="w-16 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-center focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                            className="w-16 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-3xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-center focus:outline-none focus:ring-2 focus:ring-emerald-500"
                           />
                           <button
                             onClick={handleJumpToPage}
-                            className="px-3 py-1 text-xs font-medium rounded-md bg-gradient-to-r from-emerald-500 to-green-500 text-white hover:from-emerald-600 hover:to-green-600 transition-all"
+                            className="px-3 py-1 text-xs font-medium rounded-3xl bg-gradient-to-r from-emerald-500 to-green-500 text-white hover:from-emerald-600 hover:to-green-600 transition-all"
                           >
                             ไป
                           </button>
                         </div>
                       </div>
                       <div className="flex justify-center">
-                        <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                        <nav className="relative z-0 inline-flex rounded-3xl shadow-sm -space-x-px">
                           {/* First Page Button */}
                           <button
                             onClick={() => setCurrentPage(1)}
                             disabled={currentPage === 1}
-                            className="relative inline-flex items-center px-3 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="relative inline-flex items-center px-3 py-2 rounded-l-3xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                             title="หน้าแรก (Home)"
                           >
                             <span className="sr-only">หน้าแรก</span>
@@ -738,7 +738,7 @@ export default function CustomerInfoPage() {
                           <button
                             onClick={() => setCurrentPage(totalPages)}
                             disabled={currentPage === totalPages}
-                            className="relative inline-flex items-center px-3 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="relative inline-flex items-center px-3 py-2 rounded-r-3xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                             title="หน้าสุดท้าย (End)"
                           >
                             <span className="sr-only">หน้าสุดท้าย</span>
