@@ -140,7 +140,7 @@ export default function AdjustCarpetPage() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-gray-900 dark:via-emerald-950 dark:to-gray-900"
+      className="min-h-screen"
     >
       <div className="w-full h-full p-4 md:p-6">
         {/* Header */}
@@ -168,7 +168,7 @@ export default function AdjustCarpetPage() {
                   transition={{ duration: 0.5, delay: 0.2 }}
                   className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent"
                 >
-                  ปรับรอบพรบ. ประกันภัย
+                  ปรับรอบพรบ.
                 </motion.h1>
                 <motion.p 
                   initial={{ x: -20, opacity: 0 }}
@@ -192,19 +192,7 @@ export default function AdjustCarpetPage() {
           </div>
 
           {/* Back Button */}
-          <motion.div
-            initial={{ x: -20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-            <Link
-              href="/customer-info"
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:from-emerald-50 hover:to-green-50 dark:hover:from-emerald-900/20 dark:hover:to-green-900/20 transition-all border border-gray-200 dark:border-gray-700 hover:border-emerald-400 dark:hover:border-emerald-600 shadow-sm hover:shadow-md transform hover:scale-105"
-            >
-              <FontAwesomeIcon icon={faArrowLeft} className="text-xs" />
-              กลับไปหน้าข้อมูลลูกค้า
-            </Link>
-          </motion.div>
+         
         </motion.div>
 
         {/* Content */}
@@ -220,7 +208,7 @@ export default function AdjustCarpetPage() {
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setActiveTab('byDate')}
-              className={`flex-1 px-5 py-3 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 shadow-md hover:shadow-lg ${
+              className={`flex-1 px-5 py-3 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 shadow-md hover:shadow-lg ${
                 activeTab === 'byDate'
                   ? 'bg-gradient-to-br from-emerald-500 to-green-500 text-white shadow-lg'
                   : 'bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-700 text-gray-700 dark:text-gray-300 hover:from-emerald-50 hover:to-green-50 dark:hover:from-emerald-900/20 dark:hover:to-green-900/20 border border-gray-200 dark:border-gray-700 hover:border-emerald-400 dark:hover:border-emerald-600'
@@ -233,7 +221,7 @@ export default function AdjustCarpetPage() {
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setActiveTab('byDays')}
-              className={`flex-1 px-5 py-3 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 shadow-md hover:shadow-lg ${
+              className={`flex-1 px-5 py-3 rounded-full text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 shadow-md hover:shadow-lg ${
                 activeTab === 'byDays'
                   ? 'bg-gradient-to-br from-emerald-500 to-green-500 text-white shadow-lg'
                   : 'bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-700 text-gray-700 dark:text-gray-300 hover:from-emerald-50 hover:to-green-50 dark:hover:from-emerald-900/20 dark:hover:to-green-900/20 border border-gray-200 dark:border-gray-700 hover:border-emerald-400 dark:hover:border-emerald-600'
@@ -268,7 +256,7 @@ export default function AdjustCarpetPage() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.4, delay: 0.1 }}
-                      className="bg-gradient-to-br from-white to-emerald-50/30 dark:from-gray-800 dark:to-emerald-900/10 p-4 rounded-xl shadow-lg border border-emerald-100 dark:border-emerald-900/30 transition-all h-[480px] flex flex-col"
+                      className="bg-gradient-to-br from-white to-emerald-50/30 dark:from-gray-800 dark:to-emerald-900/10 p-4 rounded-3xl shadow-lg border border-emerald-100 dark:border-emerald-900/30 transition-all h-[480px] flex flex-col"
                     >
                       <p className="mb-3 text-sm font-semibold text-center text-gray-900 dark:text-white flex-shrink-0">
                         <FontAwesomeIcon icon={faCalendarAlt} className="mr-2 text-emerald-600 text-xs" />
@@ -286,7 +274,7 @@ export default function AdjustCarpetPage() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.4, delay: 0.2 }}
-                      className="bg-gradient-to-br from-white to-green-50/30 dark:from-gray-800 dark:to-green-900/10 p-4 rounded-xl shadow-lg border border-green-100 dark:border-green-900/30 transition-all h-[480px] flex flex-col"
+                      className="bg-gradient-to-br from-white to-green-50/30 dark:from-gray-800 dark:to-green-900/10 p-4 rounded-3xl shadow-lg border border-green-100 dark:border-green-900/30 transition-all h-[480px] flex flex-col"
                     >
                       <p className="mb-3 text-sm font-semibold text-center text-gray-900 dark:text-white flex-shrink-0">
                         <FontAwesomeIcon icon={faCalendarAlt} className="mr-2 text-green-600 text-xs" />
@@ -308,7 +296,7 @@ export default function AdjustCarpetPage() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.5, delay: 0.4, ease: "easeOut" }}
-                      className="bg-gradient-to-br from-emerald-500 to-green-500 p-6 rounded-xl shadow-lg border border-emerald-400 h-[100px] flex items-center justify-center mt-6"
+                      className="bg-gradient-to-br from-emerald-500 to-green-500 p-6 rounded-3xl shadow-lg border border-emerald-400 h-[100px] flex items-center justify-center mt-6"
                     >
                       <div className="text-center">
                         <p className="text-white/90 text-sm font-semibold mb-2 tracking-wider uppercase">
@@ -343,7 +331,7 @@ export default function AdjustCarpetPage() {
                       <input
                         type="number"
                         placeholder="จำนวนวัน (เช่น 365)"
-                        className="w-full px-6 py-4 text-xl font-medium text-center border border-emerald-300 dark:border-emerald-700 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-md transition-all"
+                        className="w-full px-6 py-4 text-xl font-medium text-center border border-emerald-300 dark:border-emerald-700 rounded-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-md transition-all"
                         value={customDays}
                         onChange={(e) => setCustomDays(e.target.value)}
                       />
@@ -355,7 +343,7 @@ export default function AdjustCarpetPage() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.5, delay: 0.4, ease: "easeOut" }}
-                      className="bg-gradient-to-br from-emerald-500 to-green-500 p-6 rounded-xl shadow-lg border border-emerald-400 h-[100px] flex items-center justify-center mt-6"
+                      className="bg-gradient-to-br from-emerald-500 to-green-500 p-6 rounded-3xl shadow-lg border border-emerald-400 h-[100px] flex items-center justify-center mt-6"
                     >
                       <div className="text-center">
                         <p className="text-white/90 text-sm font-semibold mb-2 tracking-wider uppercase">
@@ -387,7 +375,7 @@ export default function AdjustCarpetPage() {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ duration: 0.3 }}
-                    className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 p-5 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 flex flex-col h-[586px]"
+                    className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 p-5 rounded-3xl shadow-lg border border-gray-200 dark:border-gray-700 flex flex-col h-[600px]"
                   >
                   <h3 className="text-base font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-3 border-b border-emerald-200 dark:border-emerald-700 pb-3 flex-shrink-0">
                     <div className="w-9 h-9 bg-gradient-to-br from-emerald-500 to-green-500 rounded-lg flex items-center justify-center shadow-md">
@@ -429,7 +417,7 @@ export default function AdjustCarpetPage() {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.2, delay: Object.keys(resultRates).indexOf(k) * 0.05 }}
                         whileHover={{ scale: 1.03, x: 5 }}
-                        className="bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/10 dark:to-green-900/10 p-3.5 rounded-lg border border-emerald-200 dark:border-emerald-700 hover:border-emerald-400 dark:hover:border-emerald-500 hover:shadow-lg transition-all duration-200"
+                        className="bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/10 dark:to-green-900/10 p-3.5 rounded-3xl border border-emerald-200 dark:border-emerald-700 hover:border-emerald-400 dark:hover:border-emerald-500 hover:shadow-lg transition-all duration-200"
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex-1">

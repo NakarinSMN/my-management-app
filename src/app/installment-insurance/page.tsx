@@ -451,7 +451,7 @@ export default function InstallmentInsurancePage() {
 
   return (
     <AnimatedPage>
-      <motion.div variants={itemVariants} initial="hidden" animate="show" exit="exit" transition={{ duration: 0.5, ease: 'easeInOut' }} className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <motion.div variants={itemVariants} initial="hidden" animate="show" exit="exit" transition={{ duration: 0.5, ease: 'easeInOut' }} className="min-h-screen">
         <div className="w-full h-full">
           {/* Header */}
           <div className="mb-6 px-3 pt-3">
@@ -464,7 +464,7 @@ export default function InstallmentInsurancePage() {
                   รายการข้อมูลผ่อนประกันทั้งหมด
                 </motion.p>
               </div>
-              <div className="flex gap-2 items-center">
+              <div className="flex gap-8 items-center">
                 {/* ไอคอนกระดิ่งพร้อม badge และวงกลมสีแดง + Tooltip */}
                 {renewalNotifications.length > 0 && (
                   <div className="relative" ref={notificationTooltipRef}>
@@ -473,21 +473,22 @@ export default function InstallmentInsurancePage() {
                       className="relative"
                     >
                       {/* วงกลมสีแดงรอบไอคอน */}
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full animate-pulse"></div>
-                      <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-red-600 rounded-full"></div>
+                      <div className="absolute  -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full animate-pulse"></div>
+
+                      <div className="absolute  -top-0.5 -right-0.5 w-3 h-3 bg-red-600 rounded-full"></div>
                       
                       <FontAwesomeIcon 
                         icon={faBell} 
                         className="text-2xl text-gray-700 dark:text-gray-300 relative z-10 cursor-pointer hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
                       />
-                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full min-w-[22px] h-6 flex items-center justify-center px-1.5 shadow-lg border-2 border-white dark:border-gray-800">
+                      <span className="absolute -top-2 z-[50] -right-2 bg-red-500 text-white text-xs font-bold rounded-full min-w-[22px] h-6 flex items-center justify-center px-1.5 shadow-lg border-2 border-white dark:border-gray-800">
                         {renewalNotifications.length > 99 ? '99+' : renewalNotifications.length}
                       </span>
                     </button>
 
                     {/* Notification Tooltip */}
                     {isNotificationTooltipOpen && (
-                      <div className="absolute right-0 top-full mt-2 w-96 bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 z-50 max-h-96 overflow-hidden flex flex-col">
+                      <div className="absolute right-0 top-full mt-2 w-96 bg-white dark:bg-gray-800 rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 max-h-96 overflow-hidden flex flex-col">
                         {/* Header - แถบส้ม */}
                         <div className="bg-orange-500 text-white px-4 py-3 rounded-t-lg flex-shrink-0">
                           <h2 className="text-base font-semibold">
@@ -501,7 +502,7 @@ export default function InstallmentInsurancePage() {
                             {renewalNotifications.slice(0, 10).map((notification, index) => (
                               <div 
                                 key={`${notification.licensePlate}-${index}`}
-                                className="flex items-center text-sm text-gray-800 dark:text-gray-200 py-2 px-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors"
+                                className="flex items-center text-sm text-gray-800 dark:text-gray-200 py-2 px-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 rounded-full transition-colors"
                                 onClick={() => {
                                   setIsNotificationTooltipOpen(false);
                                   // ค้นหาและแสดงข้อมูลที่เกี่ยวข้อง
@@ -571,7 +572,7 @@ export default function InstallmentInsurancePage() {
                 )}
                 <RippleButton
                   onClick={() => setIsAddModalOpen(true)}
-                  className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-lg hover:from-emerald-600 hover:to-green-600 transition-all shadow-md hover:shadow-lg"
+                  className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-full hover:from-emerald-600 hover:to-green-600 transition-all shadow-md hover:shadow-lg"
                 >
                   + เพิ่มข้อมูลผ่อนประกัน
                 </RippleButton>
@@ -580,7 +581,7 @@ export default function InstallmentInsurancePage() {
 
             {/* สถิติสรุป */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-3xl shadow">
                 <div className="flex items-center">
                   <FontAwesomeIcon icon={faInfoCircle} className="text-emerald-500 mr-2" />
                   <div>
@@ -589,7 +590,7 @@ export default function InstallmentInsurancePage() {
                   </div>
                 </div>
               </div>
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-3xl shadow">
                 <div className="flex items-center">
                   <FontAwesomeIcon icon={faClock} className="text-blue-500 mr-2" />
                   <div>
@@ -600,7 +601,7 @@ export default function InstallmentInsurancePage() {
                   </div>
                 </div>
               </div>
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-3xl shadow">
                 <div className="flex items-center">
                   <FontAwesomeIcon icon={faCheckCircle} className="text-green-500 mr-2" />
                   <div>
@@ -611,7 +612,7 @@ export default function InstallmentInsurancePage() {
                   </div>
                 </div>
               </div>
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-3xl shadow">
                 <div className="flex items-center">
                   <FontAwesomeIcon icon={faMoneyBill} className="text-yellow-500 mr-2" />
                   <div>
@@ -626,7 +627,7 @@ export default function InstallmentInsurancePage() {
           </div>
 
           {/* Filters */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 mb-3 mx-3">
+          <div className="bg-white dark:bg-gray-800 rounded-full shadow p-3 mb-3 mx-3">
             <div className="grid grid-cols-1 md:grid-cols-6 gap-2">
               <div className="relative md:col-span-3">
                 <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
@@ -635,7 +636,7 @@ export default function InstallmentInsurancePage() {
                   placeholder="ค้นหาเลขลำดับ, ทะเบียนรถ, ชื่อลูกค้า, เบอร์โทร, บริษัทประกัน"
                   value={search}
                   onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
-                  className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                  className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-full bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
                 />
               </div>
               <FilterDropdown
@@ -664,7 +665,7 @@ export default function InstallmentInsurancePage() {
               />
               <button
                 onClick={resetFilters}
-                className="px-3 py-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors w-full font-medium text-sm border border-emerald-100 dark:border-emerald-800"
+                className="px-3 py-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-full hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors w-full font-medium text-sm border border-emerald-100 dark:border-emerald-800"
               >
                 รีเซ็ตฟิลเตอร์
               </button>
@@ -689,7 +690,7 @@ export default function InstallmentInsurancePage() {
           ) : (
             <>
               {/* Desktop Table View */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden mx-3 mb-4">
+              <div className="bg-white dark:bg-gray-800 rounded-3xl shadow overflow-hidden mx-3 mb-4">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead className="bg-gray-50 dark:bg-gray-700">
@@ -736,7 +737,7 @@ export default function InstallmentInsurancePage() {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow px-4 py-4 mx-3 mt-3">
+                <div className="bg-white dark:bg-gray-800 rounded-3xl shadow px-4 py-4 mx-3 mt-3">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs text-gray-700 dark:text-gray-300">
@@ -758,22 +759,22 @@ export default function InstallmentInsurancePage() {
                         onChange={(e) => setJumpToPage(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleJumpToPage()}
                         placeholder={currentPage.toString()}
-                        className="w-16 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-center focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        className="w-16 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-center focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       />
                       <button
                         onClick={handleJumpToPage}
-                        className="px-3 py-1 text-xs font-medium rounded-md bg-gradient-to-r from-emerald-500 to-green-500 text-white hover:from-emerald-600 hover:to-green-600 transition-all"
+                        className="px-3 py-1 text-xs font-medium rounded-full bg-gradient-to-r from-emerald-500 to-green-500 text-white hover:from-emerald-600 hover:to-green-600 transition-all"
                       >
                         ไป
                       </button>
                     </div>
                   </div>
                   <div className="flex justify-center mt-2">
-                    <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                    <nav className="relative z-0 inline-flex rounded-full shadow-sm -space-x-px">
                       <button
                         onClick={() => setCurrentPage(1)}
                         disabled={currentPage === 1}
-                        className="relative inline-flex items-center px-3 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="relative inline-flex items-center px-3 py-2 rounded-l-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         «
                       </button>
@@ -816,7 +817,7 @@ export default function InstallmentInsurancePage() {
                       <button
                         onClick={() => setCurrentPage(totalPages)}
                         disabled={currentPage === totalPages}
-                        className="relative inline-flex items-center px-3 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="relative inline-flex items-center px-3 py-2 rounded-r-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         »
                       </button>
