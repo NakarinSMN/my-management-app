@@ -104,9 +104,16 @@ export default function InspectionStackedChart({ data }: InspectionChartProps) {
       },
       y: {
         stacked: true,
-        grid: { color: '#f1f5f9', borderDash: [5, 5], drawBorder: false },
-        ticks: { color: '#94a3b8', font: { family: "'Kanit', sans-serif" }, padding: 10 },
-        border: { display: false },
+        grid: {
+          color: '#f1f5f9',
+          tickBorderDash: [5, 5]
+        },
+        ticks: {
+          color: '#94a3b8',
+          font: { family: "'Kanit', sans-serif" },
+          padding: 10
+        },
+        border: { display: false }, // บรรทัดนี้ทำหน้าที่แทน drawBorder: false เดิม
       },
     },
     interaction: {

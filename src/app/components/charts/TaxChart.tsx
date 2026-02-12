@@ -32,8 +32,8 @@ export default function TaxChart({ data }: TaxChartProps) {
           return data[index]?.active ? '#10b981' : '#e2e8f0'; // Emerald-500 vs Slate-200
         },
         hoverBackgroundColor: (context) => {
-            const index = context.dataIndex;
-            return data[index]?.active ? '#059669' : '#cbd5e1';
+          const index = context.dataIndex;
+          return data[index]?.active ? '#059669' : '#cbd5e1';
         },
         borderRadius: 4,
         barPercentage: 0.6,
@@ -55,8 +55,8 @@ export default function TaxChart({ data }: TaxChartProps) {
         padding: 10,
         displayColors: false, // ซ่อนสีหน้า Tooltip
         callbacks: {
-            title: (items) => `เดือน ${items[0].label}`,
-            label: (item) => `${item.formattedValue} คัน`,
+          title: (items) => `เดือน ${items[0].label}`,
+          label: (item) => `${item.formattedValue} คัน`,
         },
         titleFont: { family: "'Kanit', sans-serif", size: 14 },
         bodyFont: { family: "'Kanit', sans-serif", size: 14, weight: 'bold' },
@@ -69,9 +69,17 @@ export default function TaxChart({ data }: TaxChartProps) {
         border: { display: false },
       },
       y: {
-        grid: { color: '#f1f5f9', borderDash: [5, 5], drawBorder: false },
-        ticks: { color: '#94a3b8', font: { family: "'Kanit', sans-serif" }, padding: 10 },
-        border: { display: false },
+        stacked: true,
+        grid: {
+          color: '#f1f5f9',
+          tickBorderDash: [5, 5]
+        },
+        ticks: {
+          color: '#94a3b8',
+          font: { family: "'Kanit', sans-serif" },
+          padding: 10
+        },
+        border: { display: false }, // บรรทัดนี้ทำหน้าที่แทน drawBorder: false เดิม
       },
     },
   };
