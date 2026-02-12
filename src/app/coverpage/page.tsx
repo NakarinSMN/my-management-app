@@ -3,16 +3,18 @@ import React, { useState, useEffect } from 'react'
 
 function Page() {
   // เปลี่ยนเป็น State ว่างๆ เพื่อรอรับข้อมูลจาก API
-  const [sheets, setSheets] = useState<{_id: string, name: string, url: string}[]>([]);
- const [activeSheet, setActiveSheet] = useState<any>(null);
+  const [sheets, setSheets] = useState<{ _id: string, name: string, url: string }[]>([]);
+  const [activeSheet, setActiveSheet] = useState<any>(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({ title: '', desc: '', url: '' });
   const [isLoading, setIsLoading] = useState(false);
+  const [isIframeLoading, setIsIframeLoading] = useState(true);
 
   // 1. โหลดข้อมูลเมื่อเปิดหน้าเว็บ (Fetch from MongoDB)
   // 1. โหลดข้อมูลเมื่อเปิดหน้าเว็บ (Fetch from MongoDB)
   useEffect(() => {
+    setIsIframeLoading(true);
     const fetchSheets = async () => {
       try {
         const res = await fetch('/api/sheets');
@@ -39,7 +41,7 @@ function Page() {
     };
 
     fetchSheets();
-  }, []);
+  }, [activeSheet]);
 
   // 2. ฟังก์ชันส่งข้อมูลไปบันทึก (POST to MongoDB)
   const handleSubmit = async (e) => {
@@ -116,7 +118,7 @@ function Page() {
                 // MongoDB ใช้ _id แทน id
                 const isActive = activeSheet?._id === sheet._id;
                 return (
-                 <div key={sheet._id} className="group relative">
+                  <div key={sheet._id} className="group relative">
                     <button
                       onClick={() => setActiveSheet(sheet)}
                       className={`
@@ -127,9 +129,9 @@ function Page() {
                       `}
                     >
                       {sheet.name}
-                      
+
                       {/* ปุ่มลบ (x) จะแสดงตอน Hover หรือตอนที่ Tab นั้น active */}
-                      <span 
+                      <span
                         onClick={(e) => handleDelete(e, sheet._id)}
                         className={`
                           ml-1 w-4 h-4 flex items-center justify-center rounded-full hover:bg-red-100 hover:text-red-600 transition-colors
@@ -147,22 +149,40 @@ function Page() {
         </div>
       </header>
 
-      {/* --- Main Content Area --- */}
-      <main className="flex-1 w-full">
-        <div className="w-full h-[90vh] bg-white overflow-hidden relative">
-          <div className="absolute inset-0 bg-gray-50 animate-pulse -z-10"></div>
+      {/* --- Main Content Area (Pre-loading Version) --- */}
+      <main className="flex-1 p-4 sm:p-6 bg-slate-50">
+        <div className="max-w-screen-2xl mx-auto h-[calc(100vh-180px)] bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-200 overflow-hidden relative">
 
-          {activeSheet ? (
-            <iframe
-              src={activeSheet.url}
-              className="w-full h-full border-0 block"
-              title="Sheet Content"
-            ></iframe>
-          ) : (
-            <div className="flex items-center justify-center h-full text-gray-400">
-              ยังไม่มีข้อมูล หรือกำลังโหลด...
+          {/* 1. ข้อความกรณีไม่มีข้อมูลเลย */}
+          {sheets.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-full text-slate-400 space-y-4">
+              <div className="text-6xl opacity-20">📄</div>
+              <p className="text-lg">ยังไม่มีข้อมูลที่จะแสดงผล</p>
             </div>
           )}
+
+          {/* 2. เทคนิค Pre-loading: โหลดทุก iframe พร้อมกันแต่ซ่อนไว้ */}
+          {sheets.map((sheet) => {
+            const isActive = activeSheet?._id === sheet._id;
+            return (
+              <div
+                key={sheet._id}
+                className={`absolute inset-0 transition-opacity w-full h-full duration-500 ${isActive ? "opacity-100 z-10" : "opacity-0 -z-10 pointer-events-none"
+                  }`}
+              >
+                {/* แถบ Loading เล็กๆ ด้านบน iframe */}
+                {!isActive && <div className="absolute top-0 left-0 w-full h-1 bg-blue-100 animate-pulse"></div>}
+
+                <iframe
+                  src={sheet.url}
+                  className="w-full h-full border-0"
+                  title={sheet.name}
+                  // loading="eager" คือการสั่งให้โหลดทันทีไม่ต้องรอ scroll มาถึง
+                  loading="eager"
+                ></iframe>
+              </div>
+            );
+          })}
         </div>
       </main>
 
