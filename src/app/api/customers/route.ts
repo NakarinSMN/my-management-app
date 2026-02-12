@@ -137,7 +137,6 @@ export async function GET(request: NextRequest) {
       duration: duration
     });
 
-    // Return more detailed error information
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     const isConnectionError = errorMessage.includes('connection') ||
       errorMessage.includes('SSL') ||
@@ -161,10 +160,9 @@ export async function GET(request: NextRequest) {
 
 // POST: เพิ่มลูกค้าใหม่
 export async function POST(request: NextRequest) {
-  // Check authentication
   const authSession = await requireAuth();
   if (authSession instanceof NextResponse) {
-    return authSession; // Return error response
+    return authSession; 
   }
 
   try {
@@ -174,21 +172,18 @@ export async function POST(request: NextRequest) {
     const db = await getDatabase();
     const customers = db.collection('customers');
 
-    // ตรวจสอบว่าทะเบียนรถซ้ำกับประเภทรถเดียวกันหรือไม่
-    // หากไม่มีประเภทรถ (ข้อมูลเก่า) ให้เช็คเฉพาะทะเบียน
-    // หากมีประเภทรถ ให้เช็คทั้งทะเบียนและประเภท
     const newVehicleType = body.vehicleType || '';
 
-    // หาทะเบียนที่ซ้ำทั้งหมด
     const duplicates = await customers.find({
       licensePlate: body.licensePlate
     }).toArray();
 
-    // เช็คว่ามีทะเบียนซ้ำกับประเภทเดียวกันหรือไม่
+    // ✅ แก้ไข: เพิ่ม (doc: any) เพื่อให้ผ่านการ Build
     const existingCustomer = duplicates.find((doc: any) => {
       const existingType = doc.vehicleType || '';
       return existingType === newVehicleType;
     });
+
     if (existingCustomer) {
       const sequenceStr = existingCustomer.sequenceNumber
         ? String(existingCustomer.sequenceNumber).padStart(6, '0')
@@ -204,16 +199,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // แจ้งเตือนว่ามีทะเบียนซ้ำ (แต่ต่างประเภท)
     if (duplicates.length > 0) {
       console.log(`⚠️ [Customers API] Duplicate license plate found, but different vehicle type. Allowing...`);
-      duplicates.forEach(dup => {
+      // ✅ แก้ไข: เพิ่ม (dup: any) เพื่อให้ผ่านการ Build
+      duplicates.forEach((dup: any) => {
         console.log(`   - Existing: ${dup.licensePlate} (${dup.vehicleType || 'ไม่ระบุ'}) - Seq: ${dup.sequenceNumber}`);
       });
       console.log(`   - New: ${body.licensePlate} (${body.vehicleType || 'ไม่ระบุ'})`);
     }
 
-    // สร้างเลขลำดับอัตโนมัติ (Auto Increment)
     const sequenceNumber = await getNextSequenceNumber(db);
     console.log('🔢 [Customers API] Generated sequence number:', sequenceNumber);
 
@@ -234,16 +228,7 @@ export async function POST(request: NextRequest) {
       updatedAt: now
     };
 
-    console.log('💾 [Customers API] Saving customer with sequence number:', {
-      sequenceNumber: newCustomer.sequenceNumber,
-      licensePlate: newCustomer.licensePlate,
-      createdAt: newCustomer.createdAt.toISOString(),
-      updatedAt: newCustomer.updatedAt.toISOString()
-    });
-
     const result = await customers.insertOne(newCustomer);
-
-    console.log('✅ [Customers API] Customer added successfully with ID:', result.insertedId);
 
     return NextResponse.json({
       success: true,
@@ -263,10 +248,9 @@ export async function POST(request: NextRequest) {
 
 // PUT: อัปเดตข้อมูลลูกค้า
 export async function PUT(request: NextRequest) {
-  // Check authentication
   const authSession = await requireAuth();
   if (authSession instanceof NextResponse) {
-    return authSession; // Return error response
+    return authSession;
   }
 
   try {
@@ -278,7 +262,6 @@ export async function PUT(request: NextRequest) {
 
     const { originalLicensePlate, originalVehicleType, ...updateData } = body;
 
-    // หาข้อมูลเดิม
     const originalCustomer = await customers.findOne({
       licensePlate: originalLicensePlate,
       vehicleType: originalVehicleType || ''
@@ -291,21 +274,19 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // ตรวจสอบว่าทะเบียนรถใหม่และประเภทรถใหม่ซ้ำกับข้อมูลอื่นหรือไม่
     const isDifferent = updateData.licensePlate !== originalLicensePlate ||
       (updateData.vehicleType || '') !== (originalVehicleType || '');
 
     if (isDifferent) {
       const newVehicleType = updateData.vehicleType || '';
 
-      // หาทะเบียนที่ซ้ำทั้งหมด (ยกเว้นตัวเอง)
       const duplicates = await customers.find({
         licensePlate: updateData.licensePlate,
         _id: { $ne: originalCustomer._id }
       }).toArray();
 
-      // เช็คว่ามีทะเบียนซ้ำกับประเภทเดียวกันหรือไม่
-      const existingCustomer = duplicates.find(doc => {
+      // ✅ แก้ไข: เพิ่ม (doc: any) เพื่อให้ผ่านการ Build
+      const existingCustomer = duplicates.find((doc: any) => {
         const existingType = doc.vehicleType || '';
         return existingType === newVehicleType;
       });
@@ -324,11 +305,6 @@ export async function PUT(request: NextRequest) {
           { status: 400 }
         );
       }
-
-      // แจ้งเตือนว่ามีทะเบียนซ้ำ (แต่ต่างประเภท)
-      if (duplicates.length > 0) {
-        console.log(`⚠️ [Customers API] Duplicate license plate found during update, but different vehicle type. Allowing...`);
-      }
     }
 
     await customers.updateOne(
@@ -345,14 +321,10 @@ export async function PUT(request: NextRequest) {
           status: updateData.status,
           note: updateData.note || '',
           tags: updateData.tags || [],
-          sequenceNumber: originalCustomer.sequenceNumber || 0, // เก็บเลขลำดับเดิม
-          createdAt: originalCustomer.createdAt || new Date(),
           updatedAt: new Date()
         }
       }
     );
-
-    console.log('✅ [Customers API] Customer updated successfully');
 
     return NextResponse.json({
       success: true,
@@ -369,10 +341,9 @@ export async function PUT(request: NextRequest) {
 
 // DELETE: ลบข้อมูลลูกค้า
 export async function DELETE(request: NextRequest) {
-  // Check authentication
   const authSession = await requireAuth();
   if (authSession instanceof NextResponse) {
-    return authSession; // Return error response
+    return authSession;
   }
 
   try {
