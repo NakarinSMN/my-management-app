@@ -525,7 +525,7 @@ function BillDetailModal({ bill, onClose }: { bill: BillingData; onClose: () => 
   if (bill?.items) {
     try {
       itemsData = typeof bill.items === 'string' ? JSON.parse(bill.items) : bill.items;
-    } catch {
+    } catch (error) {
       itemsData = { items: [] };
     }
   }
