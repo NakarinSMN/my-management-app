@@ -104,7 +104,7 @@ function getPageNumbers(currentPage: number, totalPages: number, maxPages = 5) {
 // ฟังก์ชันแสดงวันที่
 function formatDate(dateStr: string) {
   if (!dateStr || typeof dateStr !== 'string') return '';
-  
+
   try {
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
       const [yyyy, mm, dd] = dateStr.split('-');
@@ -114,11 +114,11 @@ function formatDate(dateStr: string) {
     } else {
       const dateObj = new Date(dateStr);
       if (isNaN(dateObj.getTime())) return dateStr;
-      
+
       const day = dateObj.getDate().toString().padStart(2, '0');
       const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
       const year = dateObj.getFullYear();
-      
+
       return `${day}/${month}/${year}`;
     }
   } catch (error) {
@@ -159,24 +159,24 @@ export default function BillingPage() {
 
   const filteredData: BillingData[] = useMemo(() => data
     .filter(item => {
-      const matchSearch = 
+      const matchSearch =
         item.billNumber.toLowerCase().includes(search.toLowerCase()) ||
         item.customerName.toLowerCase().includes(search.toLowerCase()) ||
         item.phone.includes(search);
-      
+
       const matchStatus = !filterStatus || item.status === filterStatus;
       const matchCategory = !filterCategory || item.category === filterCategory;
-      
+
       return matchSearch && matchStatus && matchCategory;
     }), [data, search, filterStatus, filterCategory]);
 
-  const paginatedData: BillingData[] = useMemo(() => 
-    itemsPerPage === filteredData.length 
-      ? filteredData 
-      : filteredData.slice(startIdx, startIdx + itemsPerPage), 
+  const paginatedData: BillingData[] = useMemo(() =>
+    itemsPerPage === filteredData.length
+      ? filteredData
+      : filteredData.slice(startIdx, startIdx + itemsPerPage),
     [filteredData, itemsPerPage, startIdx]
   );
-  
+
   const totalPages: number = itemsPerPage === filteredData.length ? 1 : Math.ceil(filteredData.length / itemsPerPage);
 
   // สร้างตัวเลือกสำหรับ dropdown
@@ -195,7 +195,7 @@ export default function BillingPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <motion.h1 
+              <motion.h1
                 className="text-3xl font-bold text-gray-900 dark:text-white"
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -203,7 +203,7 @@ export default function BillingPage() {
                 <FontAwesomeIcon icon={faFileInvoice} className="mr-3" />
                 รายการบิล
               </motion.h1>
-              <motion.p 
+              <motion.p
                 className="text-gray-600 dark:text-gray-400 mt-2"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -285,7 +285,7 @@ export default function BillingPage() {
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            
+
             <SelectFilter
               value={filterStatus}
               onChange={val => { setFilterStatus(val); setCurrentPage(1); }}
@@ -309,7 +309,7 @@ export default function BillingPage() {
               รีเซ็ตตัวกรอง
             </button>
           </div>
-          
+
           <div className="mt-4">
             <select
               className="py-2 px-3 rounded-lg bg-gray-50 dark:bg-gray-700 text-black dark:text-white focus:outline-none border border-gray-300 dark:border-gray-600"
@@ -377,9 +377,9 @@ export default function BillingPage() {
                       </tr>
                     ) : (
                       paginatedData.map((item, idx) => (
-                        <BillRow 
-                          key={item.billNumber + idx} 
-                          item={item} 
+                        <BillRow
+                          key={item.billNumber + idx}
+                          item={item}
                           onViewDetail={(bill) => {
                             setSelectedBill(bill);
                             setIsDetailModalOpen(true);
@@ -429,11 +429,10 @@ export default function BillingPage() {
                           <button
                             key={page}
                             onClick={() => setCurrentPage(page)}
-                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                              currentPage === page
+                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === page
                                 ? 'z-10 bg-blue-50 border-blue-500 text-blue-600 dark:bg-blue-900 dark:text-blue-200'
                                 : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
-                            }`}
+                              }`}
                           >
                             {page}
                           </button>
@@ -468,11 +467,11 @@ export default function BillingPage() {
 }
 
 // Table Row Component
-const BillRow = memo(function BillRow({ 
-  item, 
-  onViewDetail 
-}: { 
-  item: BillingData; 
+const BillRow = memo(function BillRow({
+  item,
+  onViewDetail
+}: {
+  item: BillingData;
   onViewDetail: (bill: BillingData) => void;
 }) {
   return (
@@ -521,13 +520,13 @@ const BillRow = memo(function BillRow({
 
 // Modal Component สำหรับแสดงรายละเอียด
 function BillDetailModal({ bill, onClose }: { bill: BillingData; onClose: () => void }) {
-  let itemsData = null;
-  
-  if (bill.items) {
+  let currentItems = { items: [] };
+
+  if (bill?.items) {
     try {
-      itemsData = JSON.parse(bill.items);
+      currentItems = typeof bill.items === 'string' ? JSON.parse(bill.items) : bill.items;
     } catch {
-      itemsData = null;
+      currentItems = { items: [] };
     }
   }
 
