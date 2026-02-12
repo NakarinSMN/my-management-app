@@ -11,6 +11,9 @@ function Page() {
   const [isLoading, setIsLoading] = useState(false);
   const [isIframeLoading, setIsIframeLoading] = useState(true);
 
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<any>(null);
+
   // 1. โหลดข้อมูลเมื่อเปิดหน้าเว็บ (Fetch from MongoDB)
   // 1. โหลดข้อมูลเมื่อเปิดหน้าเว็บ (Fetch from MongoDB)
   useEffect(() => {
@@ -74,23 +77,43 @@ function Page() {
     }
   };
 
-  const handleDelete = async (e, id) => {
-    e.stopPropagation(); // กันไม่ให้ไปคลิกเลือก Tab ตอนกดลบ
-    if (!window.confirm("คุณแน่ใจหรือไม่ว่าต้องการลบใบปะหน้านี้?")) return;
+  const handleDeleteClick = (e, sheet) => {
+    e.stopPropagation();
+    setItemToDelete(sheet); // เก็บข้อมูลทั้งก้อนของ sheet ที่จะลบ
+    setIsDeleteModalOpen(true);
+  };
+
+  // ฟังก์ชันที่จะลบจริงๆ เมื่อกดยืนยันใน Modal
+  const confirmDelete = async () => {
+    // เช็คว่ามีข้อมูลที่จะลบจริงไหม (ป้องกัน Error Property '_id' does not exist)
+    if (!itemToDelete || !itemToDelete._id) return;
 
     try {
-      const res = await fetch(`/api/sheets?id=${id}`, { method: 'DELETE' });
+      // ส่ง ID ไปที่ API
+      const res = await fetch(`/api/sheets?id=${itemToDelete._id}`, {
+        method: 'DELETE'
+      });
+
       if (res.ok) {
-        const updatedSheets = sheets.filter(s => s._id !== id);
+        // ลบออกจาก State เพื่อให้ UI อัปเดตทันที
+        const updatedSheets = sheets.filter((s: any) => s._id !== itemToDelete._id);
         setSheets(updatedSheets);
-        // ถ้าลบตัวที่เปิดอยู่ ให้ไปเปิดตัวแรกแทน หรือล้างค่าถ้าไม่เหลือแล้ว
-        if (activeSheet?._id === id) {
+
+        // ถ้าตัวที่ลบคือตัวที่กำลังเปิดอยู่ ให้สลับไปเปิดอันแรกแทน
+        if (activeSheet?._id === itemToDelete._id) {
           setActiveSheet(updatedSheets.length > 0 ? updatedSheets[0] : null);
         }
+
+        // ปิด Modal และล้างค่าตัวแปร
+        setIsDeleteModalOpen(false);
+        setItemToDelete(null);
+      } else {
+        const errorData = await res.json();
+        alert(`ลบไม่สำเร็จ: ${errorData.error}`);
       }
     } catch (error) {
-      console.error("Error deleting:", error);
-      alert("ลบไม่สำเร็จ");
+      console.error("Error deleting sheet:", error);
+      alert("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
     }
   };
 
@@ -109,34 +132,33 @@ function Page() {
             </button>
           </div>
 
-          {/* Navigation Tabs */}
+
+          {/* --- Navigation Tabs --- */}
           <div className="flex space-x-6 overflow-x-auto no-scrollbar">
             {sheets.length === 0 ? (
               <div className="text-gray-400 py-2 text-sm">กำลังโหลดข้อมูล...</div>
             ) : (
               sheets.map((sheet) => {
-                // MongoDB ใช้ _id แทน id
                 const isActive = activeSheet?._id === sheet._id;
                 return (
                   <div key={sheet._id} className="group relative">
                     <button
                       onClick={() => setActiveSheet(sheet)}
                       className={`
-                        flex items-center gap-2 px-4 pb-3 pt-2 text-sm font-medium transition-all duration-200 border-b-2 whitespace-nowrap
-                        ${isActive
+              flex items-center gap-2 px-4 pb-3 pt-2 text-sm font-medium transition-all duration-200 border-b-2 whitespace-nowrap
+              ${isActive
                           ? 'border-blue-600 text-blue-600'
                           : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}
-                      `}
+            `}
                     >
                       {sheet.name}
 
-                      {/* ปุ่มลบ (x) จะแสดงตอน Hover หรือตอนที่ Tab นั้น active */}
                       <span
-                        onClick={(e) => handleDelete(e, sheet._id)}
+                        onClick={(e) => handleDeleteClick(e, sheet)} // เรียก Modal ยืนยัน
                         className={`
-                          ml-1 w-4 h-4 flex items-center justify-center rounded-full hover:bg-red-100 hover:text-red-600 transition-colors
-                          ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
-                        `}
+                ml-1 w-4 h-4 flex items-center justify-center rounded-full hover:bg-red-500 hover:text-white transition-all
+                ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
+              `}
                       >
                         ✕
                       </span>
@@ -146,6 +168,50 @@ function Page() {
               })
             )}
           </div>
+
+          {/* --- Delete Confirmation Modal --- */}
+          {isDeleteModalOpen && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              {/* Overlay */}
+              <div
+                className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
+                onClick={() => setIsDeleteModalOpen(false)}
+              ></div>
+
+              {/* Modal Content */}
+              <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm relative z-10 overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-100 p-8 text-center">
+                <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center text-red-500 text-2xl mx-auto mb-4">
+                  ⚠️
+                </div>
+                <h3 className="text-xl font-bold text-slate-800 mb-2">ยืนยันการลบ?</h3>
+                <p className="text-slate-500 mb-8">
+                  คุณต้องการลบใบปะหน้า <span className="font-semibold text-slate-700">"{itemToDelete?.name}"</span> ใช่หรือไม่? ข้อมูลนี้จะไม่สามารถกู้คืนได้
+                </p>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setIsDeleteModalOpen(false)}
+                    className="flex-1 px-4 py-3 text-sm font-bold text-slate-500 bg-slate-100 rounded-xl hover:bg-slate-200 transition-all"
+                  >
+                    ยกเลิก
+                  </button>
+                  <button
+                    onClick={confirmDelete}
+                    className="flex-1 px-4 py-3 text-sm font-bold text-white bg-red-500 rounded-xl hover:bg-red-600 shadow-lg shadow-red-200 transition-all active:scale-95"
+                  >
+                    ลบทันที
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+
+
+
+
+
+
         </div>
       </header>
 
@@ -175,7 +241,7 @@ function Page() {
 
                 <iframe
                   src={sheet.url}
-                  className="w-full h-full border-0"
+                  className="w-full h-full  border-0"
                   title={sheet.name}
                   // loading="eager" คือการสั่งให้โหลดทันทีไม่ต้องรอ scroll มาถึง
                   loading="eager"
