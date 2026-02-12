@@ -520,13 +520,13 @@ const BillRow = memo(function BillRow({
 
 // Modal Component สำหรับแสดงรายละเอียด
 function BillDetailModal({ bill, onClose }: { bill: BillingData; onClose: () => void }) {
-  let currentItems = { items: [] };
+  let itemsData = { items: [] };
 
   if (bill?.items) {
     try {
-      currentItems = typeof bill.items === 'string' ? JSON.parse(bill.items) : bill.items;
+      itemsData = typeof bill.items === 'string' ? JSON.parse(bill.items) : bill.items;
     } catch {
-      currentItems = { items: [] };
+      itemsData = { items: [] };
     }
   }
 
