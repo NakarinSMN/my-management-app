@@ -1,5 +1,10 @@
 "use client";
 import React, { useState, useEffect } from 'react'
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faSheetPlastic,
+} from "@fortawesome/free-solid-svg-icons";
+
 
 function Page() {
   // เปลี่ยนเป็น State ว่างๆ เพื่อรอรับข้อมูลจาก API
@@ -124,10 +129,23 @@ function Page() {
         <div>
           {/* Title Area */}
           <div className="pt-6 pb-4 flex-1 justify-between items-center flex">
-            <h3 className="text-2xl font-medium bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent inline-block">
-              ใบปะหน้า
-            </h3>
-            <button onClick={() => setIsModalOpen(true)} className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+            <div className='px-4 flex items-center gap-5 '>
+
+              <FontAwesomeIcon 
+              icon={faSheetPlastic}
+              className='  text-emerald-500  text-3xl' 
+              />
+              <div>
+                <h3 className="text-2xl font-semibold bg-gradient-to-r text-gray-800 inline-block">
+                  ใบปะหน้า
+                </h3>
+                <p className="text-sm text-gray-500 leading-relaxed mt-1">
+                  รายงานสรุปยอดชำระภาษีรถยนต์และค่าธรรมเนียมประจำปี 2569
+                </p>
+              </div>
+            </div>
+
+            <button onClick={() => setIsModalOpen(true)} className="bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition-colors">
               + เพิ่มใบปะหน้า
             </button>
           </div>

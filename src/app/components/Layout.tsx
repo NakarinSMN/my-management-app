@@ -14,11 +14,12 @@ import {
   faHandHoldingUsd,
   faUserCircle,
   faFileAlt,
-  // faCalendarAlt,
+  faSheetPlastic,
   faAngleLeft,
   faBars,
   faClock,
   faMoneyBillWave,
+  faCashRegister
 } from "@fortawesome/free-solid-svg-icons";
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { useRenewalNotificationCount } from "@/lib/useRenewalNotificationCount";
@@ -300,6 +301,28 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               isSidebarOpen={isMobile || isSidebarOpen}
             />
 
+
+            <div className="my-4 mx-2 border-t border-[#c7c7c7] dark:border-[#444746]"></div>
+
+            <motion.h3
+              className="text-xs font-medium text-[#444746] dark:text-[#c4c7c5] uppercase tracking-wider mt-4 mb-2 px-4"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{
+                opacity: (isMobile || isSidebarOpen) ? 1 : 0,
+                x: (isMobile || isSidebarOpen) ? 0 : -20
+              }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+            >{(isMobile || isSidebarOpen) ? "การเงิน" : ""}</motion.h3>
+
+
+
+            <SidebarMenuItem
+              href="/billing-main"
+              icon={faCashRegister}
+              text="ใบเสร็จ"
+              isSidebarOpen={isMobile || isSidebarOpen}
+            />
+
             <div className="my-4 mx-2 border-t border-[#c7c7c7] dark:border-[#444746]"></div>
 
 
@@ -316,7 +339,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
             <SidebarMenuItem
               href="/coverpage"
-              icon={faFileAlt}
+              icon={faSheetPlastic}
               text="ใบปะหน้า"
               isSidebarOpen={isMobile || isSidebarOpen}
             />
