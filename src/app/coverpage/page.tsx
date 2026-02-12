@@ -150,12 +150,12 @@ function Page() {
       </header>
 
       {/* --- Main Content Area (Pre-loading Version) --- */}
-      <main className="flex-1 p-4 sm:p-6 bg-slate-50">
-        <div className="max-w-screen-2xl mx-auto h-[calc(100vh-180px)] bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-200 overflow-hidden relative">
+      <main className="flex-1 py-4">
+        <div className="max-w-screen-2xl h-[calc(100vh-180px)] bg-white rounded-3xl shadow-xl shadow-slate-200/60 border border-slate-200 overflow-hidden relative">
 
           {/* 1. ข้อความกรณีไม่มีข้อมูลเลย */}
           {sheets.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full text-slate-400 space-y-4">
+            <div className="flex flex-col items-center justify-center text-slate-400 space-y-4">
               <div className="text-6xl opacity-20">📄</div>
               <p className="text-lg">ยังไม่มีข้อมูลที่จะแสดงผล</p>
             </div>
