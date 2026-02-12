@@ -185,11 +185,10 @@ export async function POST(request: NextRequest) {
     }).toArray();
 
     // เช็คว่ามีทะเบียนซ้ำกับประเภทเดียวกันหรือไม่
-    const existingCustomer = duplicates.find((doc: { vehicleType?: string }) => {
+    const existingCustomer = duplicates.find((doc: any) => {
       const existingType = doc.vehicleType || '';
       return existingType === newVehicleType;
     });
-
     if (existingCustomer) {
       const sequenceStr = existingCustomer.sequenceNumber
         ? String(existingCustomer.sequenceNumber).padStart(6, '0')
