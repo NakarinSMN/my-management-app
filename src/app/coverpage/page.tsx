@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react'
 
 function Page() {
   // เปลี่ยนเป็น State ว่างๆ เพื่อรอรับข้อมูลจาก API
-  const [sheets, setSheets] = useState([]);
+  const [sheets, setSheets] = useState<{_id: string, name: string, url: string}[]>([]);
   const [activeSheet, setActiveSheet] = useState(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
