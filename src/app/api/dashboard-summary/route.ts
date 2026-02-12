@@ -78,7 +78,7 @@ export async function GET() {
     };
 
     // วนรอบข้อมูลเพื่อคำนวณสถิติหลัก
-    docs.forEach((item) => {
+    docs.forEach((item: any) => {
       const lastTax = parseDate(item.registerDate);
 
       if (lastTax) {
