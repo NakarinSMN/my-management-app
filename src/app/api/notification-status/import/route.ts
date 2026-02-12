@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     // แยกข้อมูลเป็นบรรทัด
     const lines = textData.split('\n').filter((line: string) => line.trim() !== '');
     
-    const importedItems = [];
+    const importedItems: { licensePlate: string; sent: boolean; sentAt: string }[] = [];
     let i = 0;
     
     while (i < lines.length) {
