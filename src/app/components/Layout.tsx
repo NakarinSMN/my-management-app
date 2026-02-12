@@ -10,7 +10,7 @@ import { motion } from "framer-motion";
 // Font Awesome Imports
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faTachometerAlt,
+  faChartColumn,
   faHandHoldingUsd,
   faUserCircle,
   faFileAlt,
@@ -19,7 +19,8 @@ import {
   faBars,
   faClock,
   faMoneyBillWave,
-  faCashRegister
+  faCashRegister,
+  
 } from "@fortawesome/free-solid-svg-icons";
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { useRenewalNotificationCount } from "@/lib/useRenewalNotificationCount";
@@ -48,10 +49,10 @@ const SidebarMenuItem: React.FC<MenuItemProps> = ({ href, icon, text, notificati
   return (
     <Link
       href={href}
-      className={`flex items-center p-2 rounded-full text-gray-700 dark:text-gray-200 transition-all duration-300 group relative
+      className={`flex  items-center shadow-lg p-1 mb-3 rounded-full   border-l border-blue-800/50 text-blue-50 transition-all duration-300 group relative 
         ${isActive
-          ? "bg-gradient-to-r from-emerald-500 to-green-500 text-white dark:from-emerald-600 dark:to-green-600 shadow-lg shadow-emerald-500/30"
-          : "hover:bg-gradient-to-r hover:from-emerald-50 hover:to-green-50 dark:hover:from-emerald-900/20 dark:hover:to-green-900/20 hover:shadow-md"
+          ? "bg-blue-400/15 border-l  border-blue-800/50"
+          : "hover:bg-blue-400/10 hover:border-l hover:border-blue-800/50 "
         }
         justify-start`}
       title={text}
@@ -61,24 +62,24 @@ const SidebarMenuItem: React.FC<MenuItemProps> = ({ href, icon, text, notificati
 
         className="flex items-center w-full"
       >
-        <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 relative
+        <div className={`w-9 h-9  rounded-full flex items-center justify-center transition-all duration-300 relative
           ${isActive
-            ? "bg-white/20 shadow-md"
-            : "bg-gray-100 dark:bg-gray-700 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-800/30"
+            ? ""
+            : ""
           }`}
         >
-          <FontAwesomeIcon icon={icon} className="text-lg" />
+          <FontAwesomeIcon icon={icon} className="text-lg text-blue-50" />
           {/* Badge แจ้งเตือน */}
           {hasNotification && (
             <>
               <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1 shadow-lg border border-white dark:border-gray-800">
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px]  rounded-full min-w-[16px] h-4 flex items-center justify-center px-1 shadow-lg border border-white dark:border-gray-800">
                 {notificationCount > 99 ? '99+' : notificationCount}
               </span>
             </>
           )}
         </div>
-        <span className="font-semibold text-[14px] ml-3 flex-1">{text}</span>
+        <span className=" text-[14px] ml-3 flex-1">{text}</span>
         {/* วงกลมสีแดงที่ข้อความ */}
         {hasNotification && (
           <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse ml-2"></div>
@@ -149,7 +150,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   // ถ้าอยู่ในหน้า login หรือ register ให้ไม่แสดง sidebar
   if (isAuthPage) {
     return (
-      <div className="min-h-screen bg-gray-100 dark:bg-gray-950">
+      <div className="min-h-screen bg-[#04091a]">
         {children}
       </div>
     );
@@ -158,8 +159,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   // HTML
   return (
-    // 1. พื้นหลังหลักเปลี่ยนเป็นสีเทาอ่อนสไตล์ Gemini (#f0f4f9)
-    <div className="flex min-h-screen bg-[#f0f4f9] dark:bg-[#131314] font-sans text-[#1f1f1f] dark:text-[#e3e3e3]">
+
+    <div className="flex min-h-screen">
 
       {/* Overlay for Mobile View */}
       {isMobile && isSidebarOpen && (
@@ -188,7 +189,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           damping: 30
         }}
         // ตัด Shadow และ Border ออก เพื่อให้ดู Flat สไตล์ Google
-        className={`fixed top-0 left-0 h-full ${sidebarWidthClass} bg-[#f0f4f9] dark:bg-[#131314] z-40
+        className={`fixed top-0 left-0 h-full ${sidebarWidthClass} bg-[#04091a] z-40
           flex flex-col
           lg:flex-shrink-0 lg:overflow-y-auto lg:transform-none lg:transition-all lg:duration-300 lg:ease-in-out`}
       >
@@ -215,7 +216,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
           {(isMobile || isSidebarOpen) && (
             <motion.h2
-              className="text-md font-medium bg-gradient-to-r from-emerald-500 to-green-500 py-2 px-5 rounded-full text-white dark:text-[#e3e3e3] ml-3 flex-grow"
+              className="text-md  rounded-full bg-blue-700/10 border-l border-blue-800/50 px-5 py-3 text-blue-50 ml-3 flex-grow"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.2, delay: 0.1 }}
@@ -229,7 +230,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               onClick={toggleMobileSidebar}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="lg:hidden p-2 rounded-full text-[#444746] hover:bg-[#dee3ea] transition-colors"
+              className="lg:hidden p-2 rounded-full text-blue-700/40 hover:text-blue-500/50  transition-colors"
             >
               <FontAwesomeIcon icon={faAngleLeft} className="text-lg" />
             </motion.button>
@@ -239,14 +240,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         {/* Menu Items */}
         <nav className="flex-1 px-4 py-2 overflow-y-auto scrollbar-hide">
           <ul className="space-y-1">
-            {/* ปุ่ม New Chat (Optional: ถ้าอยากให้เหมือนเป๊ะต้องมีปุ่มใหญ่ด้านบน) */}
+
 
             <SidebarMenuItem
               href="/dashboard"
-              icon={faTachometerAlt}
+              icon={faChartColumn}
               text="แดชบอร์ด"
               isSidebarOpen={isMobile || isSidebarOpen}
             />
+
+
             <SidebarMenuItem
               href="/pricing"
               icon={faHandHoldingUsd}
@@ -254,10 +257,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               isSidebarOpen={isMobile || isSidebarOpen}
             />
 
-            <div className="my-4 mx-2 border-t border-[#c7c7c7] dark:border-[#444746]"></div>
+            <div className="my-4 mx-2 border-t border-blue-50/50 dark:border-[#444746]"></div>
 
             <motion.h3
-              className="text-xs font-medium text-[#444746] dark:text-[#c4c7c5] uppercase tracking-wider mt-4 mb-2 px-4"
+              className="text-xs  text-blue-50/50 dark:text-[#c4c7c5] uppercase tracking-wider mt-4 mb-2 px-4"
               initial={{ opacity: 0, x: -20 }}
               animate={{
                 opacity: (isMobile || isSidebarOpen) ? 1 : 0,
@@ -282,10 +285,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               notificationCount={renewalNotificationCount}
             />
 
-            <div className="my-4 mx-2 border-t border-[#c7c7c7] dark:border-[#444746]"></div>
+            <div className="my-4 mx-2 border-t border-blue-50/50 dark:border-[#444746]"></div>
 
             <motion.h3
-              className="text-xs font-medium text-[#444746] dark:text-[#c4c7c5] uppercase tracking-wider mt-4 mb-2 px-4"
+              className="text-xs  text-blue-50/50 dark:text-[#c4c7c5] uppercase tracking-wider mt-4 mb-2 px-4"
               initial={{ opacity: 0, x: -20 }}
               animate={{
                 opacity: (isMobile || isSidebarOpen) ? 1 : 0,
@@ -302,10 +305,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             />
 
 
-            <div className="my-4 mx-2 border-t border-[#c7c7c7] dark:border-[#444746]"></div>
+            <div className="my-4 mx-2 border-t border-blue-50/50 dark:border-[#444746]"></div>
 
             <motion.h3
-              className="text-xs font-medium text-[#444746] dark:text-[#c4c7c5] uppercase tracking-wider mt-4 mb-2 px-4"
+              className="text-xs  text-blue-50/50 dark:text-[#c4c7c5] uppercase tracking-wider mt-4 mb-2 px-4"
               initial={{ opacity: 0, x: -20 }}
               animate={{
                 opacity: (isMobile || isSidebarOpen) ? 1 : 0,
@@ -323,12 +326,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               isSidebarOpen={isMobile || isSidebarOpen}
             />
 
-            <div className="my-4 mx-2 border-t border-[#c7c7c7] dark:border-[#444746]"></div>
+            <div className="my-4 mx-2 border-t border-blue-50/50 dark:border-[#444746]"></div>
 
 
 
             <motion.h3
-              className="text-xs font-medium text-[#444746] dark:text-[#c4c7c5] uppercase tracking-wider mt-4 mb-2 px-4"
+              className="text-xs  text-blue-50/50 dark:text-[#c4c7c5] uppercase tracking-wider mt-4 mb-2 px-4"
               initial={{ opacity: 0, x: -20 }}
               animate={{
                 opacity: (isMobile || isSidebarOpen) ? 1 : 0,
@@ -344,12 +347,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               isSidebarOpen={isMobile || isSidebarOpen}
             />
 
-            <div className="my-4 mx-2 border-t border-[#c7c7c7] dark:border-[#444746]"></div>
+            <div className="my-4 mx-2 border-t border-blue-50/50 dark:border-[#444746]"></div>
 
 
             {isMounted && (
               <motion.h3
-                className="text-xs font-medium text-[#444746] dark:text-[#c4c7c5] uppercase tracking-wider mt-4 mb-2 px-4"
+                className="text-xs  text-blue-50/50 dark:text-[#c4c7c5] uppercase tracking-wider mt-4 mb-2 px-4"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{
                   opacity: (isMobile || isSidebarOpen) ? 1 : 0,
@@ -372,7 +375,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </nav>
 
         <motion.footer
-          className={`p-4 text-center text-[10px] text-[#444746] dark:text-[#c4c7c5]`}
+          className={`p-4 text-center text-[10px] text-blue-50/50 dark:text-[#c4c7c5]`}
           initial={{ opacity: 0, y: 20 }}
           animate={{
             opacity: (isMobile || isSidebarOpen) ? 1 : 0,
@@ -393,21 +396,33 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       >
         {/* Mobile Header */}
         <motion.header
-          className="lg:hidden bg-[#f0f4f9] dark:bg-[#131314] p-4 flex items-center justify-between"
+          className="lg:hidden bg-[#04091a]  p-4 flex items-center justify-between"
           initial={{ y: -100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
         >
-          <div className="flex items-center">
+          <div className="flex items-center gap-3">
             <motion.button
               onClick={toggleMobileSidebar}
               whileTap={{ scale: 0.95 }}
-              className="p-2 -ml-2 rounded-full text-[#444746] dark:text-[#e3e3e3] hover:bg-[#dee3ea] dark:hover:bg-[#2c2c2c] transition-colors"
+              className="p-2 text-blue-900 hover:text-blue-700/50"
             >
-              <FontAwesomeIcon icon={faBars} className="text-xl" />
+              <FontAwesomeIcon icon={faBars} className="text-lg" />
             </motion.button>
+
+            <div className="w-10 h-10 flex items-center justify-center">
+              <Image
+                className="h-8 w-auto"
+                src="/ToRoOo.png"
+                alt="Logo"
+                width={100}
+                height={100}
+                priority
+              />
+            </div>
+
             <motion.h1
-              className="text-md font-medium bg-gradient-to-r from-emerald-500 to-green-500 py-2 px-5 rounded-full text-white text-[#1f1f1f] dark:text-[#e3e3e3]"
+              className="text-md   rounded-full bg-blue-700/10 border-l border-blue-800/50 px-5 py-3 text-blue-50"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.2 }}
@@ -417,15 +432,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
         </motion.header>
 
-        {/* Content Area: 
-            นี่คือหัวใจของ Gemini UI คือส่วนเนื้อหาจะเป็น Card สีขาว (bg-white) 
-            ที่มีมุมโค้งมน (rounded-[2rem]) ลอยอยู่บนพื้นหลังสีเทา 
-        */}
-        <main className="flex-1 overflow-y-auto lg:my-2 lg:mr-2 lg:rounded-[2rem] bg-white dark:bg-[#1e1f20] shadow-sm">
-          <div className="h-full p-4 lg:p-8">
+
+        <main className="flex-1 overflow-y-auto">
+          <div className="h-full p-4">
             {children}
           </div>
         </main>
+
+
       </motion.div>
     </div>
   );
