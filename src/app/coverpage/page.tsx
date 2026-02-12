@@ -145,10 +145,10 @@ function Page() {
                     <button
                       onClick={() => setActiveSheet(sheet)}
                       className={`
-              flex items-center gap-2 px-4 pb-3 pt-2 text-sm font-medium transition-all duration-200 border-b-2 whitespace-nowrap
+              flex items-center text-gray-700 text-sm font-medium pl-10 py-1 rounded-full border border-gray-300 
               ${isActive
-                          ? 'border-blue-600 text-blue-600'
-                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}
+                          ? ' bg-blue-500 text-white'
+                          : ''}
             `}
                     >
                       {sheet.name}
@@ -156,8 +156,8 @@ function Page() {
                       <span
                         onClick={(e) => handleDeleteClick(e, sheet)} // เรียก Modal ยืนยัน
                         className={`
-                ml-1 w-4 h-4 flex items-center justify-center rounded-full hover:bg-red-500 hover:text-white transition-all
-                ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
+                 ml-2 flex p-3 h-3 items-center justify-between font-semibold rounded-full hover:text-red-500 hover:scale-105 transition-all
+                ${isActive ? 'opacity-100' : 'display-none group-hover:flex opacity-0 group-hover:opacity-100'}
               `}
                       >
                         ✕
