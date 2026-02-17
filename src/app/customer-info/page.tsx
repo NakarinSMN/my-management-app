@@ -4,9 +4,15 @@
 import Link from 'next/link';
 import React, { useState, useMemo, memo, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { IconDefinition } from '@fortawesome/fontawesome-svg-core'; // สำคัญ: ต้อง Import IconDefinition
 import { motion } from 'framer-motion';
 
+// Icons
+import {
+  faSearch, faCalendarAlt, faClock, faCheckCircle, faExclamationTriangle,
+  faTimesCircle, faInfoCircle, faFilter, faStar, faTag, faPlus, faArrowRight
+} from '@fortawesome/free-solid-svg-icons';
+
+// Components
 import AnimatedPage, { itemVariants } from '../components/AnimatedPage';
 import Modal from '../components/Modal';
 import AddCustomerForm from '../components/AddCustomerForm';
@@ -17,115 +23,25 @@ import CustomerCard from '../components/CustomerCard';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import RippleButton from '../components/RippleButton';
 import { ToastContainer } from '../components/Toast';
-import { useToast } from '../hooks/useToast';
+import CustomerDetailModal from '../components/CustomerDetailModal';
 
-// ⚡ ใช้ Custom Hook แทน SWR โดยตรง
+// Hooks & Libs
+import { useToast } from '../hooks/useToast';
 import { useCustomerData, CustomerData } from '@/lib/useCustomerData';
 import { useDebounce } from '@/lib/useDebounce';
 
+// Utils
 import {
-  faSearch,
-  faCalendarAlt,
-  faClock,
-  faCheckCircle,
-  faExclamationTriangle,
-  faTimesCircle,
-  faChevronLeft,
-  faChevronRight,
-  faInfoCircle,
-  faEdit,
-  faTag,
-  faFilter,
-  faStar,
-} from '@fortawesome/free-solid-svg-icons';
-// Maps สำหรับสถานะและสี/ไอคอน
-const statusColor: { [key: string]: string } = {
-  'ต่อภาษีแล้ว': 'bg-green-200 dark:bg-green-700 text-green-800 dark:text-white',
-  'กำลังจะครบกำหนด': 'bg-yellow-200 dark:bg-yellow-600 text-yellow-800 dark:text-white',
-  'ครบกำหนดวันนี้': 'bg-orange-200 dark:bg-orange-700 text-orange-800 dark:text-white',
-  'เกินกำหนด': 'bg-red-200 dark:bg-red-700 text-red-800 dark:text-white',
-  'รอดำเนินการ': 'bg-emerald-200 dark:bg-emerald-700 text-emerald-800 dark:text-white',
-};
-
-const statusIcon: { [key: string]: IconDefinition } = {
-  'ต่อภาษีแล้ว': faCheckCircle,
-  'กำลังจะครบกำหนด': faExclamationTriangle,
-  'ครบกำหนดวันนี้': faExclamationTriangle,
-  'เกินกำหนด': faTimesCircle,
-  'รอดำเนินการ': faClock,
-};
-
-function getPageNumbers(currentPage: number, totalPages: number, maxPages = 5) {
-  const pages: (number | string)[] = [];
-
-  if (totalPages <= maxPages + 2) {
-    // แสดงทุกหน้าถ้าไม่เยอะมาก
-    return Array.from({ length: totalPages }, (_, i) => i + 1);
-  }
-
-  // เสมอแสดงหน้าแรก
-  pages.push(1);
-
-  if (currentPage > 3) {
-    pages.push('...');
-  }
-
-  // แสดงหน้าปัจจุบันและข้างเคียง
-  const start = Math.max(2, currentPage - 1);
-  const end = Math.min(totalPages - 1, currentPage + 1);
-
-  for (let i = start; i <= end; i++) {
-    pages.push(i);
-  }
-
-  if (currentPage < totalPages - 2) {
-    pages.push('...');
-  }
-
-  // เสมอแสดงหน้าสุดท้าย
-  if (totalPages > 1) {
-    pages.push(totalPages);
-  }
-
-  return pages;
-}
-
-// ฟังก์ชันแสดงวันที่ตรงกับชีต รองรับทั้ง YYYY-MM-DD และ DD/MM/YYYY
-function formatDateFlexible(dateStr: string) {
-  if (!dateStr || typeof dateStr !== 'string') return '';
-
-  try {
-    // ถ้าเป็น YYYY-MM-DD
-    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-      const [yyyy, mm, dd] = dateStr.split('-');
-      return `${dd.padStart(2, '0')}/${mm.padStart(2, '0')}/${yyyy}`;
-    }
-    // ถ้าเป็น DD/MM/YYYY อยู่แล้ว
-    else if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
-      return dateStr;
-    }
-    // ถ้าเป็น format อื่น ลองแปลง
-    else {
-      const dateObj = new Date(dateStr);
-      if (isNaN(dateObj.getTime())) {
-        return dateStr; // คืนค่าต้นฉบับถ้าไม่สามารถแปลงได้
-      }
-
-      // แสดงผลในรูปแบบ DD/MM/YYYY โดยใช้ค่าจาก Date object
-      const day = dateObj.getDate().toString().padStart(2, '0');
-      const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
-      const year = dateObj.getFullYear();
-
-      return `${day}/${month}/${year}`;
-    }
-  } catch (error) {
-    console.error('Error formatting date:', dateStr, error);
-    return dateStr; // คืนค่าต้นฉบับถ้าเกิดข้อผิดพลาด
-  }
-}
-
+  STATUS_COLOR,
+  STATUS_ICON,
+  MONTH_OPTIONS,
+  STATUS_FILTER_OPTIONS,
+  getPageNumbers,
+  formatDateFlexible
+} from '@/utils/customerHelpers';
 
 export default function CustomerInfoPage() {
+  // --- State ---
   const [search, setSearch] = useState<string>('');
   const [filterMonth, setFilterMonth] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('');
@@ -137,48 +53,35 @@ export default function CustomerInfoPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerData | null>(null);
   const [jumpToPage, setJumpToPage] = useState<string>('');
   const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
+
   const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>({
     dateFrom: '',
     dateTo: '',
+    inspectionDateFrom: '',
+    inspectionDateTo: '',
     selectedBrands: [],
     selectedVehicleTypes: []
   });
+
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
-  // ⚡ ใช้ Custom Hook แทน useSWR โดยตรง
+  // --- Hooks ---
   const { data, error, isLoading, refreshData } = useCustomerData();
   const toast = useToast();
-
-  // ⚡ Debounce search เพื่อลด re-render
   const debouncedSearch = useDebounce(search, 300);
 
-  // โหลด favorites จาก localStorage
-  useEffect(() => {
-    const savedFavorites = localStorage.getItem('customer-favorites');
-    if (savedFavorites) {
-      setFavorites(new Set(JSON.parse(savedFavorites)));
-    }
-  }, []);
-
-  // บันทึก favorites ลง localStorage
+  // --- Helpers ---
   const toggleFavorite = (licensePlate: string) => {
     setFavorites(prev => {
       const newFavorites = new Set(prev);
-      if (newFavorites.has(licensePlate)) {
-        newFavorites.delete(licensePlate);
-      } else {
-        newFavorites.add(licensePlate);
-      }
+      newFavorites.has(licensePlate) ? newFavorites.delete(licensePlate) : newFavorites.add(licensePlate);
       localStorage.setItem('customer-favorites', JSON.stringify(Array.from(newFavorites)));
       return newFavorites;
     });
   };
 
   const resetFilters = () => {
-    setSearch('');
-    setFilterMonth('');
-    setFilterStatus('');
-    setCurrentPage(1); // เมื่อรีเซ็ตตัวกรอง ให้กลับไปหน้าแรก
+    setSearch(''); setFilterMonth(''); setFilterStatus(''); setCurrentPage(1);
   };
 
   const resetAllFilters = () => {
@@ -186,892 +89,381 @@ export default function CustomerInfoPage() {
     setAdvancedFilters({
       dateFrom: '',
       dateTo: '',
+      inspectionDateFrom: '',
+      inspectionDateTo: '',
       selectedBrands: [],
       selectedVehicleTypes: []
     });
   };
 
-  const handleJumpToPage = () => {
-    const page = parseInt(jumpToPage);
-    if (!isNaN(page) && page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-      setJumpToPage('');
-    }
-  };
-
-  const startIdx: number = (currentPage - 1) * itemsPerPage;
-
-  // ดึงรายการยี่ห้อและประเภทรถที่ไม่ซ้ำกัน
+  // --- Data Processing ---
   const uniqueBrands = useMemo(() => {
-    const brands = Array.from(new Set(data.map(item => item.brand || '').filter(Boolean)));
-    return brands.sort();
+    return Array.from(new Set(
+      data.map(item => item.brand || '').filter(b => b !== '')
+    )).sort();
   }, [data]);
-
   const uniqueVehicleTypes = useMemo(() => {
-    const types = Array.from(new Set(data.map(item => item.vehicleType || '').filter(Boolean)));
-    return types.sort();
+    return Array.from(new Set(
+      data.map(item => item.vehicleType || '').filter(t => t !== '')
+    )).sort();
   }, [data]);
 
-  const filteredData: CustomerData[] = useMemo(() => data
-    .filter(item => {
+  const filteredData: CustomerData[] = useMemo(() => {
+    return data.filter(item => {
       const dateStr = formatDateFlexible(item.registerDate);
       const [dd, mm, yyyy] = dateStr.split('/');
       if (!dd || !mm || !yyyy) return false;
 
-      // กรองตามการค้นหา (ใช้ debouncedSearch แทน search)
       const searchLower = debouncedSearch.toLowerCase();
       const sequenceStr = item.sequenceNumber ? String(item.sequenceNumber).padStart(6, '0') : '';
+
       const matchSearch = !debouncedSearch ||
         item.licensePlate.toLowerCase().includes(searchLower) ||
         item.customerName.toLowerCase().includes(searchLower) ||
         item.phone.includes(debouncedSearch) ||
         sequenceStr.includes(debouncedSearch);
 
-      // กรองตามเดือน
       const matchMonth = !filterMonth || mm === filterMonth.padStart(2, '0');
-
-      // กรองตามสถานะ
       const matchStatus = !filterStatus || item.status === filterStatus;
 
-      // Advanced Filters
-      // กรองตามช่วงวันที่
       let matchDateRange = true;
       if (advancedFilters.dateFrom || advancedFilters.dateTo) {
-        const itemDate = new Date(yyyy + '-' + mm + '-' + dd);
-        if (advancedFilters.dateFrom) {
-          const fromDate = new Date(advancedFilters.dateFrom);
-          matchDateRange = matchDateRange && itemDate >= fromDate;
-        }
-        if (advancedFilters.dateTo) {
-          const toDate = new Date(advancedFilters.dateTo);
-          matchDateRange = matchDateRange && itemDate <= toDate;
+        const itemDate = new Date(`${yyyy}-${mm}-${dd}`);
+        if (advancedFilters.dateFrom) matchDateRange = matchDateRange && itemDate >= new Date(advancedFilters.dateFrom);
+        if (advancedFilters.dateTo) matchDateRange = matchDateRange && itemDate <= new Date(advancedFilters.dateTo);
+      }
+
+      let matchInspectionDateRange = true;
+      if (advancedFilters.inspectionDateFrom || advancedFilters.inspectionDateTo) {
+        if (!item.inspectionDate) {
+          matchInspectionDateRange = false;
+        } else {
+          const inspectDate = new Date(item.inspectionDate);
+          if (advancedFilters.inspectionDateFrom) {
+            matchInspectionDateRange = matchInspectionDateRange && inspectDate >= new Date(advancedFilters.inspectionDateFrom);
+          }
+          if (advancedFilters.inspectionDateTo) {
+            matchInspectionDateRange = matchInspectionDateRange && inspectDate <= new Date(advancedFilters.inspectionDateTo);
+          }
         }
       }
 
-      // กรองตามยี่ห้อ
-      const matchBrand = advancedFilters.selectedBrands.length === 0 ||
-        advancedFilters.selectedBrands.includes(item.brand || '');
+      const matchBrand = advancedFilters.selectedBrands.length === 0 || advancedFilters.selectedBrands.includes(item.brand || '');
+      const matchVehicleType = advancedFilters.selectedVehicleTypes.length === 0 || advancedFilters.selectedVehicleTypes.includes(item.vehicleType || '');
 
-      // กรองตามประเภทรถ
-      const matchVehicleType = advancedFilters.selectedVehicleTypes.length === 0 ||
-        advancedFilters.selectedVehicleTypes.includes(item.vehicleType || '');
+      return matchSearch && matchMonth && matchStatus && matchDateRange && matchInspectionDateRange && matchBrand && matchVehicleType;
+    });
+  }, [data, debouncedSearch, filterMonth, filterStatus, advancedFilters]);
 
-      return matchSearch && matchMonth && matchStatus && matchDateRange && matchBrand && matchVehicleType;
-    }), [data, debouncedSearch, filterMonth, filterStatus, advancedFilters]);
+  const startIdx = (currentPage - 1) * itemsPerPage;
+  const paginatedData = useMemo(() => itemsPerPage === filteredData.length ? filteredData : filteredData.slice(startIdx, startIdx + itemsPerPage), [filteredData, itemsPerPage, startIdx]);
+  const totalPages = itemsPerPage === filteredData.length ? 1 : Math.ceil(filteredData.length / itemsPerPage);
 
-  const paginatedData: CustomerData[] = useMemo(() => itemsPerPage === filteredData.length ? filteredData : filteredData.slice(startIdx, startIdx + itemsPerPage), [filteredData, itemsPerPage, startIdx]);
-  const totalPages: number = itemsPerPage === filteredData.length ? 1 : Math.ceil(filteredData.length / itemsPerPage);
-
-  // นับจำนวน active filters
   const activeFiltersCount = useMemo(() => {
     let count = 0;
     if (advancedFilters.dateFrom) count++;
     if (advancedFilters.dateTo) count++;
-    count += advancedFilters.selectedBrands.length;
-    count += advancedFilters.selectedVehicleTypes.length;
+    if (advancedFilters.inspectionDateFrom) count++;
+    if (advancedFilters.inspectionDateTo) count++;
+    count += advancedFilters.selectedBrands.length + advancedFilters.selectedVehicleTypes.length;
     return count;
   }, [advancedFilters]);
 
-  // Keyboard shortcuts สำหรับเปลี่ยนหน้า
+  // --- Effects ---
+  useEffect(() => {
+    const savedFavorites = localStorage.getItem('customer-favorites');
+    if (savedFavorites) setFavorites(new Set(JSON.parse(savedFavorites)));
+  }, []);
+
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      // ป้องกันไม่ให้ทำงานถ้ากำลังพิมพ์ใน input/textarea หรือเปิด modal
-      if (
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement ||
-        isAddModalOpen ||
-        isEditModalOpen ||
-        isViewModalOpen
-      ) {
-        return;
-      }
-
-      if (e.key === 'ArrowLeft' && currentPage > 1) {
-        e.preventDefault();
-        setCurrentPage(currentPage - 1);
-      } else if (e.key === 'ArrowRight' && currentPage < totalPages) {
-        e.preventDefault();
-        setCurrentPage(currentPage + 1);
-      } else if (e.key === 'Home' && currentPage !== 1) {
-        e.preventDefault();
-        setCurrentPage(1);
-      } else if (e.key === 'End' && currentPage !== totalPages) {
-        e.preventDefault();
-        setCurrentPage(totalPages);
-      }
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || isAddModalOpen || isEditModalOpen || isViewModalOpen) return;
+      if (e.key === 'ArrowLeft' && currentPage > 1) setCurrentPage(p => p - 1);
+      else if (e.key === 'ArrowRight' && currentPage < totalPages) setCurrentPage(p => p + 1);
+      else if (e.key === 'Home') setCurrentPage(1);
+      else if (e.key === 'End') setCurrentPage(totalPages);
     };
-
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [currentPage, totalPages, isAddModalOpen, isEditModalOpen, isViewModalOpen]);
 
-  // สร้างตัวเลือกสำหรับ dropdown
-  const monthOptions = [
-    { value: '', label: 'ทุกเดือน', color: '#6B7280' },
-    { value: '01', label: 'มกราคม', color: '#EF4444' },
-    { value: '02', label: 'กุมภาพันธ์', color: '#F97316' },
-    { value: '03', label: 'มีนาคม', color: '#F59E0B' },
-    { value: '04', label: 'เมษายน', color: '#10B981' },
-    { value: '05', label: 'พฤษภาคม', color: '#06B6D4' },
-    { value: '06', label: 'มิถุนายน', color: '#3B82F6' },
-    { value: '07', label: 'กรกฎาคม', color: '#8B5CF6' },
-    { value: '08', label: 'สิงหาคม', color: '#EC4899' },
-    { value: '09', label: 'กันยายน', color: '#84CC16' },
-    { value: '10', label: 'ตุลาคม', color: '#F59E0B' },
-    { value: '11', label: 'พฤศจิกายน', color: '#EF4444' },
-    { value: '12', label: 'ธันวาคม', color: '#6B7280' },
-  ];
-
-  const statusOptions = [
-    { value: '', label: 'ทุกสถานะ', color: '#6B7280' },
-    { value: 'ต่อภาษีแล้ว', label: 'ต่อภาษีแล้ว', color: '#10B981' },
-    { value: 'กำลังจะครบกำหนด', label: 'กำลังจะครบกำหนด', color: '#F59E0B' },
-    { value: 'ครบกำหนดวันนี้', label: 'ครบกำหนดวันนี้', color: '#EF4444' },
-    { value: 'เกินกำหนด', label: 'เกินกำหนด', color: '#DC2626' },
-    { value: 'รอดำเนินการ', label: 'รอดำเนินการ', color: '#6B7280' },
-  ];
-
-
+  // --- Render ---
   return (
     <AnimatedPage>
-      <motion.div variants={itemVariants} initial="hidden" animate="show" exit="exit" transition={{ duration: 0.5, ease: 'easeInOut' }} className="min-h-screen  dark:bg-gray-900">
-        <div className="w-full h-full">
-          {/* Header */}
-          <div className="mb-6 px-3 pt-3">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <motion.h1 variants={itemVariants} initial="hidden" animate="show" exit="exit" transition={{ duration: 0.5, ease: 'easeInOut' }} className="text-3xl font-bold text-gray-900 dark:text-white">
-                  ข้อมูลต่อภาษี
-                </motion.h1>
-                <motion.p variants={itemVariants} initial="hidden" animate="show" exit="exit" transition={{ duration: 0.5, ease: 'easeInOut' }} className="text-gray-600 dark:text-gray-400 mt-2">
-                  รายการลูกค้าทั้งหมดและข้อมูลการต่อภาษี
-                </motion.p>
-              </div>
-              <div className="flex gap-2">
-                <RippleButton
-                  onClick={() => setIsAddModalOpen(true)}
-                  className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-full hover:from-emerald-600 hover:to-green-600 transition-all shadow-md hover:shadow-lg"
-                >
-                  + เพิ่มข้อมูลลูกค้า
-                </RippleButton>
-                <Link
-                  href="/tax-expiry-next-year"
-                  className="px-4 py-2 bg-orange-600 text-white rounded-full hover:bg-orange-700 transition-colors inline-block"
-                >
-                  ภาษีครั้งถัดไป
-                </Link>
-              </div>
+      <motion.div variants={itemVariants} initial="hidden" animate="show" exit="exit" className="min-h-screen bg-gray-50/50 dark:bg-gray-900">
+        <div className="w-full max-w-[1600px] mx-auto p-4 md:p-6 lg:p-8">
+          
+          {/* Header & Actions */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
+                ทะเบียนข้อมูล
+              </h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 font-medium">
+                จัดการข้อมูลลูกค้าและสถานะการต่อภาษี
+              </p>
             </div>
-
-            {/* สถิติสรุป */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-3xl shadow">
-                <div className="flex items-center">
-                  <FontAwesomeIcon icon={faInfoCircle} className="text-emerald-500 mr-2" />
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">รายการทั้งหมด</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{filteredData.length}</p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-3xl shadow">
-                <div className="flex items-center">
-                  <FontAwesomeIcon icon={faCheckCircle} className="text-green-500 mr-2" />
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">ต่อภาษีแล้ว</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {filteredData.filter(item => item.status === 'ต่อภาษีแล้ว').length}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-3xl shadow">
-                <div className="flex items-center">
-                  <FontAwesomeIcon icon={faExclamationTriangle} className="text-orange-500 mr-2" />
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">กำลังจะครบกำหนด</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {filteredData.filter(item => item.status === 'กำลังจะครบกำหนด').length}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-3xl shadow">
-                <div className="flex items-center">
-                  <FontAwesomeIcon icon={faTimesCircle} className="text-red-500 mr-2" />
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">เกินกำหนด</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {filteredData.filter(item => item.status === 'เกินกำหนด').length}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Filters */}
-          <div className="bg-white dark:bg-gray-800 rounded-full flex shadow p-3 mb-3 mx-3">
-            <div className="grid grid-cols-1 md:grid-cols-6 flex-1 gap-3">
-              <div className="relative md:col-span-2">
-                <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
-                <input
-                  type="text"
-                  placeholder="ค้นหาเลขลำดับ, ทะเบียนรถ, ชื่อลูกค้า, เบอร์โทร"
-                  value={search}
-                  onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
-                  className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-full bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
-                />
-              </div>
-              {/* ใน filter UI ลบ SelectFilter ของวันออก */}
-              <FilterDropdown
-                value={filterMonth}
-                onChange={val => { setFilterMonth(val); setCurrentPage(1); }}
-                icon={faCalendarAlt}
-                placeholder="กรองตามเดือน"
-                options={monthOptions}
-              />
-              <FilterDropdown
-                value={filterStatus}
-                onChange={val => { setFilterStatus(val); setCurrentPage(1); }}
-                icon={faClock}
-                placeholder="กรองตามสถานะ"
-                options={statusOptions}
-              />
-              <FilterDropdown
-                value={itemsPerPage === filteredData.length ? 'all' : itemsPerPage.toString()}
-                onChange={val => {
-                  setItemsPerPage(val === 'all' ? filteredData.length : Number(val));
-                  setCurrentPage(1);
-                }}
-                icon={faInfoCircle}
-                placeholder="จำนวนรายการ"
-                options={[
-                  { value: '10', label: '10', color: '#6B7280' },
-                  { value: '20', label: '20', color: '#3B82F6' },
-                  { value: '30', label: '30', color: '#10B981' },
-                  { value: '40', label: '40', color: '#F59E0B' },
-                  { value: '50', label: '50', color: '#EF4444' },
-                  { value: 'all', label: 'ทั้งหมด', color: '#8B5CF6' },
-                ]}
-              />
-              <button
-                onClick={resetAllFilters}
-                className="bg-gray-200 rounded-full mr-3 text-sm hover:bg-gray-300 "
+            <div className="flex gap-3">
+               <Link 
+                href="/tax-expiry-next-year" 
+                className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-semibold shadow-sm"
               >
-                รีเซ็ตฟิลเตอร์
-              </button>
-            </div>
-
-            {/* Advanced Filter Button & Active Filters */}
-            <div className="flex justify-between">
-              <button
-                onClick={() => setShowAdvancedFilter(true)}
-                className="text-orange-700 hover:text-orange-600 hover:scale-105 px-2 mr-2"
+                ภาษีครั้งถัดไป
+              </Link>
+              <RippleButton 
+                onClick={() => setIsAddModalOpen(true)} 
+                className="px-5 py-2.5 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-all shadow-sm text-sm font-semibold flex items-center gap-2"
               >
-                <FontAwesomeIcon icon={faFilter} />
-
-                {activeFiltersCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                    {activeFiltersCount}
-                  </span>
-                )}
-              </button>
-
-              {/* แสดง Active Filters */}
-              {activeFiltersCount > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {advancedFilters.dateFrom && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-md text-xs">
-                      จาก: {advancedFilters.dateFrom}
-                    </span>
-                  )}
-                  {advancedFilters.dateTo && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-md text-xs">
-                      ถึง: {advancedFilters.dateTo}
-                    </span>
-                  )}
-                  {advancedFilters.selectedBrands.slice(0, 3).map(brand => (
-                    <span key={brand} className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-md text-xs">
-                      {brand}
-                    </span>
-                  ))}
-                  {advancedFilters.selectedBrands.length > 3 && (
-                    <span className="inline-flex items-center px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-md text-xs">
-                      +{advancedFilters.selectedBrands.length - 3}
-                    </span>
-                  )}
-                  {advancedFilters.selectedVehicleTypes.map(type => (
-                    <span key={type} className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-md text-xs">
-                      {type}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Data Display - Table for Desktop, Cards for Mobile */}
-          {isLoading ? (
-            <div className="p-6">
-              <LoadingSkeleton variant="list" count={8} />
-            </div>
-          ) : error ? (
-            <div className="p-8 text-center">
-              <p className="text-red-500 mb-4">เกิดข้อผิดพลาดในการโหลดข้อมูล</p>
-              <RippleButton
-                onClick={refreshData}
-                className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-lg hover:from-emerald-600 hover:to-green-600 transition-all shadow-md hover:shadow-lg"
-              >
-                ลองใหม่
+                <FontAwesomeIcon icon={faPlus} className="text-xs" />
+                เพิ่มข้อมูล
               </RippleButton>
+            </div>
+          </div>
+
+          {/* Stats Grid - Minimal Style */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <StatCard icon={faInfoCircle} color="gray" title="รายการทั้งหมด" value={filteredData.length} />
+            <StatCard icon={faCheckCircle} color="emerald" title="ต่อภาษีแล้ว" value={filteredData.filter(i => i.status === 'ต่อภาษีแล้ว').length} />
+            <StatCard icon={faExclamationTriangle} color="amber" title="ใกล้ครบกำหนด" value={filteredData.filter(i => i.status === 'กำลังจะครบกำหนด').length} />
+            <StatCard icon={faTimesCircle} color="rose" title="เกินกำหนด" value={filteredData.filter(i => i.status === 'เกินกำหนด').length} />
+          </div>
+
+          {/* Filters Bar - Clean Style */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 mb-6 shadow-sm">
+            <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
+              
+              <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto flex-1">
+                <div className="relative flex-1 max-w-md">
+                  <FontAwesomeIcon icon={faSearch} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+                  <input
+                    type="text"
+                    placeholder="ค้นหาชื่อ, ทะเบียน, เบอร์โทร..."
+                    value={search}
+                    onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
+                    className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 transition-all placeholder:text-gray-400"
+                  />
+                </div>
+                
+                <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0 no-scrollbar">
+                    <FilterDropdown value={filterMonth} onChange={val => { setFilterMonth(val); setCurrentPage(1); }} icon={faCalendarAlt} placeholder="เดือน" options={MONTH_OPTIONS} />
+                    <FilterDropdown value={filterStatus} onChange={val => { setFilterStatus(val); setCurrentPage(1); }} icon={faClock} placeholder="สถานะ" options={STATUS_FILTER_OPTIONS} />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 w-full lg:w-auto justify-end border-t lg:border-t-0 pt-3 lg:pt-0 border-gray-100">
+                 <button onClick={resetAllFilters} className="text-xs font-medium text-gray-500 hover:text-gray-900 transition-colors px-2">
+                    รีเซ็ตตัวกรอง
+                 </button>
+                 <div className="h-4 w-px bg-gray-200 hidden lg:block"></div>
+                <button 
+                    onClick={() => setShowAdvancedFilter(true)} 
+                    className={`relative flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all text-sm font-medium ${activeFiltersCount > 0 ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+                >
+                  <FontAwesomeIcon icon={faFilter} className="text-xs" />
+                  ตัวกรองขั้นสูง
+                  {activeFiltersCount > 0 && (
+                    <span className="ml-1 bg-white text-gray-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+                        {activeFiltersCount}
+                    </span>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Content Area */}
+          {isLoading ? (
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm"><LoadingSkeleton variant="list" count={8} /></div>
+          ) : error ? (
+            <div className="bg-white rounded-2xl p-12 text-center border border-gray-100 shadow-sm">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-50 text-red-500 mb-4">
+                    <FontAwesomeIcon icon={faTimesCircle} className="text-2xl" />
+                </div>
+                <p className="text-gray-900 font-medium mb-2">ไม่สามารถโหลดข้อมูลได้</p>
+                <p className="text-gray-500 text-sm mb-6">กรุณาลองใหม่อีกครั้ง หรือติดต่อผู้ดูแลระบบ</p>
+                <RippleButton onClick={refreshData} className="px-6 py-2 bg-gray-900 text-white rounded-lg text-sm">ลองใหม่</RippleButton>
             </div>
           ) : (
             <>
-              {/* Mobile Card View */}
-              <div className="md:hidden px-3 space-y-3 mb-4">
-                {paginatedData.length === 0 ? (
-                  <div className="text-center py-10 text-gray-500 dark:text-gray-400">
-                    ไม่พบข้อมูลที่ตรงกับตัวกรอง
-                  </div>
-                ) : (
-                  paginatedData.map((item, idx) => (
-                    <CustomerCard
-                      key={item.licensePlate + item.customerName + idx}
-                      item={item}
-                      rowNumber={startIdx + idx + 1}
-                      onView={(customer) => {
-                        setSelectedCustomer(customer);
-                        setIsViewModalOpen(true);
-                      }}
-                      isFavorite={favorites.has(item.licensePlate)}
-                      onToggleFavorite={toggleFavorite}
-                      statusColor={statusColor}
-                      statusIcon={statusIcon}
-                      formatDate={formatDateFlexible}
-                    />
-                  ))
-                )}
-              </div>
-
-              {/* Desktop Table View */}
-              <div className="hidden md:block bg-white dark:bg-gray-800 rounded-3xl shadow overflow-hidden mx-3 mb-4">
+              {/* Desktop Table - Minimal */}
+              <div className="hidden md:block bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 dark:bg-gray-700">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ลำดับ</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ทะเบียนรถ</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ประเภท</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ยี่ห้อ</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ชื่อลูกค้า</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">เบอร์โทร</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">วันที่ชำระล่าสุด</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">แท็ก</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">สถานะ</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">จัดการ</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                      {paginatedData.length === 0 ? (
+                    <table className="w-full">
+                    <thead className="bg-gray-50/50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
                         <tr>
-                          <td colSpan={10} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
-                            ไม่พบข้อมูลที่ตรงกับตัวกรอง
-                          </td>
+                        {['ลำดับ', 'ทะเบียนรถ', 'ประเภท', 'ยี่ห้อ', 'ชื่อลูกค้า', 'เบอร์โทร', 'วันที่ชำระล่าสุด', 'วันที่ตรวจ', 'แท็ก', 'สถานะ', ''].map(h => (
+                            <th key={h} className="px-6 py-4 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                        ))}
                         </tr>
-                      ) : (
-                        paginatedData.map((item, idx) => (
-                          <CustomerRow
-                            key={item.licensePlate + item.customerName + idx}
-                            item={item}
-                            rowNumber={startIdx + idx + 1}
-                            onView={(customer) => {
-                              setSelectedCustomer(customer);
-                              setIsViewModalOpen(true);
-                            }}
-                            isFavorite={favorites.has(item.licensePlate)}
-                            onToggleFavorite={toggleFavorite}
-                          />
-                        ))
-                      )}
+                    </thead>
+                    <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
+                        {paginatedData.length === 0 ? (
+                             <tr>
+                                <td colSpan={11} className="px-6 py-12 text-center text-gray-500 text-sm">ไม่พบข้อมูลที่ค้นหา</td>
+                             </tr>
+                        ) : (
+                            paginatedData.map((item, idx) => (
+                            <CustomerRow
+                                key={idx} item={item} rowNumber={startIdx + idx + 1}
+                                onView={c => { setSelectedCustomer(c); setIsViewModalOpen(true); }}
+                                isFavorite={favorites.has(item.licensePlate)} onToggleFavorite={toggleFavorite}
+                            />
+                            ))
+                        )}
                     </tbody>
-                  </table>
+                    </table>
+                </div>
+                
+                {/* Footer Pagination */}
+                <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50/30 flex items-center justify-between">
+                    <p className="text-xs text-gray-500">
+                        แสดง {paginatedData.length > 0 ? startIdx + 1 : 0} - {Math.min(startIdx + itemsPerPage, filteredData.length)} จาก {filteredData.length} รายการ
+                    </p>
+                    {totalPages > 1 && (
+                        <div className="flex items-center gap-2">
+                            <button 
+                                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} 
+                                disabled={currentPage === 1} 
+                                className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            >
+                                <FontAwesomeIcon icon={faArrowRight} className="rotate-180 text-xs" />
+                            </button>
+                            <div className="flex gap-1">
+                                {getPageNumbers(currentPage, totalPages).map((page, i) => (
+                                    <button 
+                                        key={i} 
+                                        onClick={() => typeof page === 'number' && setCurrentPage(page)} 
+                                        className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs font-medium transition-all ${
+                                            currentPage === page 
+                                            ? 'bg-gray-900 text-white shadow-sm' 
+                                            : 'text-gray-600 hover:bg-gray-100'
+                                        }`} 
+                                        disabled={typeof page !== 'number'}
+                                    >
+                                        {page}
+                                    </button>
+                                ))}
+                            </div>
+                            <button 
+                                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} 
+                                disabled={currentPage === totalPages} 
+                                className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            >
+                                <FontAwesomeIcon icon={faArrowRight} className="text-xs" />
+                            </button>
+                        </div>
+                    )}
                 </div>
               </div>
 
-              {/* Pagination - แสดงทั้ง Mobile และ Desktop */}
-              {totalPages > 1 && (
-                <div className="bg-white dark:bg-gray-800 rounded-3xl shadow px-4 py-4 mx-3 mt-3">
-                  {/* Mobile Pagination */}
-                  <div className="flex flex-col gap-2 sm:hidden">
-                    <div className="flex justify-between items-center">
-                      <button
-                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                        disabled={currentPage === 1}
-                        className="relative inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-xs font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50"
-                      >
-                        ก่อนหน้า
-                      </button>
-                      <span className="text-xs text-gray-700 dark:text-gray-300">
-                        หน้า {currentPage} / {totalPages}
-                      </span>
-                      <button
-                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                        disabled={currentPage === totalPages}
-                        className="relative inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-xs font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50"
-                      >
-                        ถัดไป
-                      </button>
-                    </div>
-                    <div className="flex items-center justify-center gap-2">
-                      <span className="text-xs text-gray-600 dark:text-gray-400">ไปหน้า:</span>
-                      <input
-                        type="number"
-                        min="1"
-                        max={totalPages}
-                        value={jumpToPage}
-                        onChange={(e) => setJumpToPage(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleJumpToPage()}
-                        placeholder={currentPage.toString()}
-                        className="w-14 px-2 py-0.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-center focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                      />
-                      <button
-                        onClick={handleJumpToPage}
-                        className="px-2.5 py-0.5 text-xs font-medium rounded bg-gradient-to-r from-emerald-500 to-green-500 text-white hover:from-emerald-600 hover:to-green-600 transition-all"
-                      >
-                        ไป
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Desktop Pagination */}
-                  <div className="hidden sm:flex sm:flex-col sm:gap-2">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs text-gray-700 dark:text-gray-300">
-                          แสดง <span className="font-medium">{startIdx + 1}</span> ถึง{' '}
-                          <span className="font-medium">{Math.min(startIdx + itemsPerPage, filteredData.length)}</span> จาก{' '}
-                          <span className="font-medium">{filteredData.length.toLocaleString()}</span> รายการ
-                          <span className="text-gray-500 dark:text-gray-400 ml-2">
-                            (หน้า {currentPage} / {totalPages})
-                          </span>
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-600 dark:text-gray-400">ไปหน้า:</span>
-                        <input
-                          type="number"
-                          min="1"
-                          max={totalPages}
-                          value={jumpToPage}
-                          onChange={(e) => setJumpToPage(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && handleJumpToPage()}
-                          placeholder={currentPage.toString()}
-                          className="w-16 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-3xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-center focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                        />
-                        <button
-                          onClick={handleJumpToPage}
-                          className="px-3 py-1 text-xs font-medium rounded-3xl bg-gradient-to-r from-emerald-500 to-green-500 text-white hover:from-emerald-600 hover:to-green-600 transition-all"
-                        >
-                          ไป
-                        </button>
-                      </div>
-                    </div>
-                    <div className="flex justify-center">
-                      <nav className="relative z-0 inline-flex rounded-3xl shadow-sm -space-x-px">
-                        {/* First Page Button */}
-                        <button
-                          onClick={() => setCurrentPage(1)}
-                          disabled={currentPage === 1}
-                          className="relative inline-flex items-center px-3 py-2 rounded-l-3xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="หน้าแรก (Home)"
-                        >
-                          <span className="sr-only">หน้าแรก</span>
-                          «
-                        </button>
-
-                        {/* Previous Page Button */}
-                        <button
-                          onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                          disabled={currentPage === 1}
-                          className="relative inline-flex items-center px-2 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="หน้าก่อนหน้า (←)"
-                        >
-                          <FontAwesomeIcon icon={faChevronLeft} />
-                        </button>
-
-                        {/* Page Numbers */}
-                        {getPageNumbers(currentPage, totalPages).map((page, idx) => (
-                          typeof page === 'number' ? (
-                            <button
-                              key={`page-${page}`}
-                              onClick={() => setCurrentPage(page)}
-                              className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium transition-colors ${currentPage === page
-                                  ? 'z-10 bg-emerald-50 dark:bg-emerald-900 border-emerald-500 dark:border-emerald-400 text-emerald-600 dark:text-emerald-300'
-                                  : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
-                                }`}
-                            >
-                              {page}
-                            </button>
-                          ) : (
-                            <span
-                              key={`ellipsis-${idx}`}
-                              className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300"
-                            >
-                              {page}
-                            </span>
-                          )
-                        ))}
-
-                        {/* Next Page Button */}
-                        <button
-                          onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                          disabled={currentPage === totalPages}
-                          className="relative inline-flex items-center px-2 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="หน้าถัดไป (→)"
-                        >
-                          <FontAwesomeIcon icon={faChevronRight} />
-                        </button>
-
-                        {/* Last Page Button */}
-                        <button
-                          onClick={() => setCurrentPage(totalPages)}
-                          disabled={currentPage === totalPages}
-                          className="relative inline-flex items-center px-3 py-2 rounded-r-3xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="หน้าสุดท้าย (End)"
-                        >
-                          <span className="sr-only">หน้าสุดท้าย</span>
-                          »
-                        </button>
-                      </nav>
-                    </div>
-                    {/* Keyboard Shortcuts Hint */}
-                    <div className="text-center">
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        💡 ใช้ ← → สำหรับเปลี่ยนหน้า | Home/End สำหรับหน้าแรก/สุดท้าย
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {/* Mobile List View */}
+              <div className="md:hidden space-y-3">
+                {paginatedData.map((item, idx) => (
+                  <CustomerCard
+                    key={idx} item={item} rowNumber={startIdx + idx + 1}
+                    onView={c => { setSelectedCustomer(c); setIsViewModalOpen(true); }}
+                    isFavorite={favorites.has(item.licensePlate)} onToggleFavorite={toggleFavorite}
+                    statusColor={STATUS_COLOR} statusIcon={STATUS_ICON} formatDate={formatDateFlexible}
+                  />
+                ))}
+              </div>
             </>
           )}
         </div>
       </motion.div>
-      {/* Modal สำหรับเพิ่มข้อมูลลูกค้า */}
-      <Modal isOpen={isAddModalOpen}>
-        <AddCustomerForm
-          onSuccess={() => {
-            setIsAddModalOpen(false);
-            setCurrentPage(1); // กลับไปหน้าแรก
-            setSearch(''); // เคลียร์การค้นหา
-            refreshData(); // บังคับ refresh ข้อมูล
-            toast.success('✅ เพิ่มข้อมูลลูกค้าสำเร็จ!');
-          }}
-          onCancel={() => setIsAddModalOpen(false)}
-        />
-      </Modal>
 
-      {/* Modal สำหรับแก้ไขข้อมูลลูกค้า */}
-      <Modal isOpen={isEditModalOpen}>
-        <EditCustomerForm
-          customerData={selectedCustomer || {
-            licensePlate: '',
-            brand: '',
-            customerName: '',
-            phone: '',
-            registerDate: '',
-            status: '',
-            note: ''
-          }}
-          onSuccess={() => {
-            setIsEditModalOpen(false);
-            setSelectedCustomer(null);
-            setCurrentPage(1); // กลับไปหน้าแรก
-            refreshData(); // บังคับ refresh ข้อมูล
-            toast.success('✅ แก้ไขข้อมูลลูกค้าสำเร็จ!');
-          }}
-          onCancel={() => { setIsEditModalOpen(false); setSelectedCustomer(null); }}
-        />
-      </Modal>
-
-      {/* Toast Notifications */}
+      {/* Modals */}
+      <Modal isOpen={isAddModalOpen}><AddCustomerForm onSuccess={() => { setIsAddModalOpen(false); setCurrentPage(1); refreshData(); toast.success('เพิ่มข้อมูลเรียบร้อย'); }} onCancel={() => setIsAddModalOpen(false)} /></Modal>
+      <Modal isOpen={isEditModalOpen}><EditCustomerForm customerData={selectedCustomer || {} as any} onSuccess={() => { setIsEditModalOpen(false); setSelectedCustomer(null); refreshData(); toast.success('บันทึกการแก้ไขแล้ว'); }} onCancel={() => setIsEditModalOpen(false)} /></Modal>
+      <AdvancedFilterModal isOpen={showAdvancedFilter} onClose={() => setShowAdvancedFilter(false)} onApply={f => { setAdvancedFilters(f); setCurrentPage(1); }} brands={uniqueBrands} vehicleTypes={uniqueVehicleTypes} currentFilters={advancedFilters} />
+      <CustomerDetailModal isOpen={isViewModalOpen} customer={selectedCustomer} onClose={() => { setIsViewModalOpen(false); setSelectedCustomer(null); }} onEdit={() => { setIsViewModalOpen(false); setIsEditModalOpen(true); }} />
       <ToastContainer toasts={toast.toasts} onClose={toast.removeToast} />
-
-      {/* Modal สำหรับ Advanced Filter */}
-      <AdvancedFilterModal
-        isOpen={showAdvancedFilter}
-        onClose={() => setShowAdvancedFilter(false)}
-        onApply={(filters) => {
-          setAdvancedFilters(filters);
-          setCurrentPage(1);
-        }}
-        brands={uniqueBrands}
-        vehicleTypes={uniqueVehicleTypes}
-        currentFilters={advancedFilters}
-      />
-
-      {/* Modal สำหรับดูข้อมูลเต็ม */}
-      <Modal isOpen={isViewModalOpen}>
-        {selectedCustomer && (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-3xl w-full mx-auto border border-gray-200 dark:border-gray-700 max-h-[85vh] flex flex-col">
-            {/* Header */}
-            <div className="p-6 md:p-8 pb-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                ข้อมูลลูกค้า
-              </h2>
-            </div>
-
-            {/* ข้อมูลทั้งหมด - Scrollable */}
-            <div className="overflow-y-auto px-6 md:px-8 py-4 flex-1">
-              <div className="space-y-6">
-                {/* ส่วนข้อมูลรถ */}
-                <div>
-                  <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                    <div className="w-1 h-4 bg-gradient-to-b from-emerald-500 to-teal-500 rounded-full"></div>
-                    ข้อมูลรถยนต์
-                  </h3>
-                  <div className="grid grid-cols-3 gap-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">ทะเบียนรถ</p>
-                      <p className="text-base font-bold text-gray-900 dark:text-white">{selectedCustomer.licensePlate}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">ยี่ห้อ / รุ่น</p>
-                      <p className="text-sm font-semibold text-gray-900 dark:text-white">{selectedCustomer.brand || '-'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">ประเภทรถ</p>
-                      {selectedCustomer.vehicleType ? (
-                        <span className="inline-flex px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-lg text-sm font-bold">
-                          {selectedCustomer.vehicleType}
-                        </span>
-                      ) : (
-                        <p className="text-sm text-gray-400">-</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* ส่วนข้อมูลลูกค้า */}
-                <div>
-                  <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                    <div className="w-1 h-4 bg-gradient-to-b from-emerald-500 to-green-500 rounded-full"></div>
-                    ข้อมูลลูกค้า
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-xl p-4">
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">ชื่อ-นามสกุล</p>
-                      <p className="text-base font-bold text-gray-900 dark:text-white">{selectedCustomer.customerName}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">เบอร์ติดต่อ</p>
-                      <p className="text-sm font-semibold text-gray-900 dark:text-white">{selectedCustomer.phone}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* ส่วนข้อมูลการบริการ */}
-                <div>
-                  <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                    <div className="w-1 h-4 bg-gradient-to-b from-green-500 to-emerald-500 rounded-full"></div>
-                    ข้อมูลการบริการ
-                  </h3>
-                  <div className="grid grid-cols-4 gap-4 bg-green-50 dark:bg-green-900/10 rounded-xl p-4">
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">วันที่ชำระภาษีล่าสุด</p>
-                      <p className="text-sm font-bold text-gray-900 dark:text-white">{formatDateFlexible(selectedCustomer.registerDate)}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">วันที่ตรวจ</p>
-                      <p className="text-sm font-bold text-gray-900 dark:text-white">
-                        {selectedCustomer.inspectionDate ? formatDateFlexible(selectedCustomer.inspectionDate) : '-'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">แท็กบริการ</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {selectedCustomer.tags && selectedCustomer.tags.length > 0 ? (
-                          selectedCustomer.tags.map((tag, index) => (
-                            <span
-                              key={index}
-                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium ${tag === 'ภาษี' ? 'bg-emerald-500 text-white' :
-                                  tag === 'ตรอ.' ? 'bg-green-500 text-white' :
-                                    tag === 'พรบ.' ? 'bg-orange-500 text-white' :
-                                      'bg-gray-500 text-white'
-                                }`}
-                            >
-                              <FontAwesomeIcon icon={faTag} className="text-[8px]" />
-                              {tag}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-sm text-gray-400">ไม่มีแท็ก</span>
-                        )}
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">สถานะ</p>
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${statusColor[selectedCustomer.status]}`}>
-                        <FontAwesomeIcon icon={statusIcon[selectedCustomer.status]} className="mr-1" />
-                        {selectedCustomer.status}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* ส่วนข้อมูลระบบ */}
-                {(selectedCustomer.createdAt || selectedCustomer.updatedAt) && (
-                  <div>
-                    <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                      <div className="w-1 h-4 bg-gradient-to-b from-orange-500 to-red-500 rounded-full"></div>
-                      ข้อมูลการบันทึก
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4 bg-orange-50 dark:bg-orange-900/10 rounded-xl p-4">
-                      {selectedCustomer.createdAt && (
-                        <div>
-                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">วันที่บันทึก</p>
-                          <p className="text-xs font-semibold text-gray-900 dark:text-white">
-                            {new Date(selectedCustomer.createdAt).toLocaleString('th-TH')}
-                          </p>
-                        </div>
-                      )}
-                      {selectedCustomer.updatedAt && (
-                        <div>
-                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">อัปเดตล่าสุด</p>
-                          <p className="text-xs font-semibold text-gray-900 dark:text-white">
-                            {new Date(selectedCustomer.updatedAt).toLocaleString('th-TH')}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* หมายเหตุ */}
-                {selectedCustomer.note && (
-                  <div>
-                    <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                      <div className="w-1 h-4 bg-gradient-to-b from-gray-500 to-gray-600 rounded-full"></div>
-                      หมายเหตุ
-                    </h3>
-                    <div className="bg-yellow-50 dark:bg-yellow-900/10 border-l-4 border-yellow-400 dark:border-yellow-600 rounded-lg p-4">
-                      <p className="text-sm text-gray-900 dark:text-white leading-relaxed">
-                        {selectedCustomer.note}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* ปุ่มจัดการ */}
-            <div className="flex justify-between gap-3 p-6 md:px-8 md:py-6 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 bg-gray-50 dark:bg-gray-900/50 rounded-b-2xl">
-              <button
-                onClick={() => {
-                  setIsViewModalOpen(false);
-                  setSelectedCustomer(null);
-                }}
-                className="px-6 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200 font-semibold text-sm"
-              >
-                ปิด
-              </button>
-              <button
-                onClick={() => {
-                  setIsViewModalOpen(false);
-                  setIsEditModalOpen(true);
-                }}
-                className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold rounded-xl hover:from-emerald-600 hover:to-teal-600 transition-all duration-200 text-sm shadow-lg"
-              >
-                <FontAwesomeIcon icon={faEdit} />
-                แก้ไขข้อมูล
-              </button>
-            </div>
-          </div>
-        )}
-      </Modal>
     </AnimatedPage>
   );
 }
 
-// Table Row Memoized
-const CustomerRow = memo(function CustomerRow({
-  item,
-  rowNumber,
-  onView,
-  isFavorite,
-  onToggleFavorite
-}: {
-  item: CustomerData;
-  rowNumber: number;
-  onView: (customer: CustomerData) => void;
-  isFavorite: boolean;
-  onToggleFavorite: (licensePlate: string) => void;
-}) {
+// --- Minimal Stat Card ---
+const StatCard = ({ icon, color, title, value }: any) => {
+    // Mapping color names to Tailwind classes for minimal look (pastel backgrounds)
+    const colorMap: {[key: string]: string} = {
+        emerald: 'bg-emerald-50 text-emerald-600 border-emerald-100',
+        green: 'bg-green-50 text-green-600 border-green-100',
+        amber: 'bg-amber-50 text-amber-600 border-amber-100',
+        orange: 'bg-orange-50 text-orange-600 border-orange-100',
+        rose: 'bg-rose-50 text-rose-600 border-rose-100',
+        red: 'bg-red-50 text-red-600 border-red-100',
+        gray: 'bg-gray-50 text-gray-600 border-gray-100',
+    };
+    
+    const styleClass = colorMap[color] || colorMap['gray'];
+
+    return (
+        <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 flex items-start justify-between shadow-sm hover:shadow-md transition-shadow duration-300">
+            <div>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{title}</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">{value}</p>
+            </div>
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${styleClass.split(' ')[2]} ${styleClass.split(' ')[0]}`}>
+                <FontAwesomeIcon icon={icon} className={`text-sm ${styleClass.split(' ')[1]}`} />
+            </div>
+        </div>
+    );
+};
+
+// --- Minimal Row ---
+const CustomerRow = memo(function CustomerRow({ item, rowNumber, onView, isFavorite, onToggleFavorite }: any) {
   return (
-    <tr className="hover:bg-gray-50 dark:hover:bg-gray-700">
-      <td className="px-6 py-4 whitespace-nowrap text-sm">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => onToggleFavorite(item.licensePlate)}
-            className="text-yellow-500 hover:text-yellow-600 transition-colors"
-            title={isFavorite ? "ลบออกจากรายการโปรด" : "เพิ่มในรายการโปรด"}
-          >
-            <FontAwesomeIcon icon={faStar} className={isFavorite ? 'text-yellow-500' : 'text-gray-300 dark:text-gray-600'} />
+    <tr className="group hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="flex items-center gap-3">
+          <button onClick={(e) => { e.stopPropagation(); onToggleFavorite(item.licensePlate); }} className="text-gray-300 hover:text-amber-400 transition-colors focus:outline-none">
+             <FontAwesomeIcon icon={faStar} className={isFavorite ? 'text-amber-400' : ''} />
           </button>
-          <span className="font-bold text-emerald-600 dark:text-emerald-400">
-            {item.sequenceNumber ? String(item.sequenceNumber).padStart(6, '0') : String(rowNumber).padStart(6, '0')}
-          </span>
+          <span className="text-xs font-mono text-gray-400">#{String(item.sequenceNumber || rowNumber).padStart(6, '0')}</span>
         </div>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{item.licensePlate}</td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-        {item.vehicleType ? (
-          <span className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-md text-xs font-medium">
-            {item.vehicleType}
-          </span>
-        ) : (
-          <span className="text-gray-400">-</span>
-        )}
+      <td className="px-6 py-4">
+          <span className="text-sm font-semibold text-gray-900 dark:text-white block">{item.licensePlate}</span>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.brand || '-'}</td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.customerName}</td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{item.phone}</td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{formatDateFlexible(item.registerDate)}</td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="flex flex-row flex-wrap gap-1">
-          {item.tags && item.tags.length > 0 ? (
-            item.tags.map((tag, index) => (
-              <span
-                key={index}
-                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${tag === 'ภาษี' ? 'bg-blue-500 text-white' :
-                    tag === 'ตรอ.' ? 'bg-green-500 text-white' :
-                      tag === 'พรบ.' ? 'bg-orange-500 text-white' :
-                        'bg-gray-500 text-white'
-                  }`}
-              >
-                <FontAwesomeIcon icon={faTag} className="text-[9px]" />
-                {tag}
-              </span>
-            ))
-          ) : (
-            <span className="text-xs text-gray-400">-</span>
-          )}
+      <td className="px-6 py-4">
+        {item.vehicleType && <span className="inline-flex items-center px-2 py-1 rounded-md bg-gray-100 text-gray-600 text-[10px] font-medium border border-gray-200">{item.vehicleType}</span>}
+      </td>
+      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">{item.brand || '-'}</td>
+      <td className="px-6 py-4">
+        <div className="flex flex-col">
+            <span className="text-sm font-medium text-gray-900 dark:text-white">{item.customerName}</span>
         </div>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor[item.status]}`}>
-          <FontAwesomeIcon icon={statusIcon[item.status]} className="mr-1" />
-          {item.status}
-        </span>
+      <td className="px-6 py-4 text-sm text-gray-500 font-mono">{item.phone}</td>
+      <td className="px-6 py-4 text-sm text-gray-500">{formatDateFlexible(item.registerDate)}</td>
+      <td className="px-6 py-4 text-sm text-gray-500">{item.inspectionDate ? formatDateFlexible(item.inspectionDate) : '-'}</td>
+      <td className="px-6 py-4">
+        <div className="flex gap-1 flex-wrap max-w-[120px]">
+          {item.tags?.slice(0, 2).map((tag: string, i: number) => (
+            <span key={i} className="px-1.5 py-0.5 bg-gray-50 text-gray-500 rounded border border-gray-100 text-[10px] whitespace-nowrap">{tag}</span>
+          ))}
+          {item.tags?.length > 2 && <span className="px-1.5 py-0.5 bg-gray-50 text-gray-400 text-[10px] rounded">+{item.tags.length - 2}</span>}
+        </div>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm">
-        <button
-          onClick={() => onView(item)}
-          className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors"
-        >
-          <FontAwesomeIcon icon={faInfoCircle} className="mr-1" />
-          ดูข้อมูล
+      <td className="px-6 py-4">
+         {/* Custom Minimal Status Badge */}
+         <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${
+            item.status === 'ต่อภาษีแล้ว' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+            item.status === 'กำลังจะครบกำหนด' ? 'bg-amber-50 text-amber-700 border-amber-100' :
+            item.status === 'เกินกำหนด' ? 'bg-rose-50 text-rose-700 border-rose-100' :
+            'bg-gray-50 text-gray-700 border-gray-200'
+         }`}>
+            <div className={`w-1.5 h-1.5 rounded-full ${
+                item.status === 'ต่อภาษีแล้ว' ? 'bg-emerald-500' :
+                item.status === 'กำลังจะครบกำหนด' ? 'bg-amber-500' :
+                item.status === 'เกินกำหนด' ? 'bg-rose-500' : 'bg-gray-400'
+            }`}></div>
+            {item.status}
+         </div>
+      </td>
+      <td className="px-6 py-4 text-right">
+        <button onClick={() => onView(item)} className="text-gray-400 hover:text-gray-900 transition-colors p-2">
+            <FontAwesomeIcon icon={faArrowRight} className="text-xs" />
         </button>
       </td>
     </tr>

@@ -3,7 +3,15 @@
 
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFilter, faTimes, faCalendarAlt, faCar, faTag, faRedo } from '@fortawesome/free-solid-svg-icons';
+import { 
+  faFilter, 
+  faTimes, 
+  faCalendarAlt, 
+  faCar, 
+  faTag, 
+  faRedo,
+  faCalendarCheck // ✅ เพิ่มไอคอนสำหรับวันที่ตรวจ
+} from '@fortawesome/free-solid-svg-icons';
 
 interface AdvancedFilterProps {
   isOpen: boolean;
@@ -14,9 +22,12 @@ interface AdvancedFilterProps {
   currentFilters: AdvancedFilters;
 }
 
+// ✅ อัปเดต Interface
 export interface AdvancedFilters {
   dateFrom: string;
   dateTo: string;
+  inspectionDateFrom: string; // ✅ เพิ่ม
+  inspectionDateTo: string;   // ✅ เพิ่ม
   selectedBrands: string[];
   selectedVehicleTypes: string[];
 }
@@ -29,10 +40,15 @@ export default function AdvancedFilterModal({
   vehicleTypes,
   currentFilters 
 }: AdvancedFilterProps) {
+  // State เดิม
   const [dateFrom, setDateFrom] = useState(currentFilters.dateFrom || '');
   const [dateTo, setDateTo] = useState(currentFilters.dateTo || '');
   const [selectedBrands, setSelectedBrands] = useState<string[]>(currentFilters.selectedBrands || []);
   const [selectedVehicleTypes, setSelectedVehicleTypes] = useState<string[]>(currentFilters.selectedVehicleTypes || []);
+
+  // ✅ State ใหม่สำหรับวันที่ตรวจ
+  const [inspectionDateFrom, setInspectionDateFrom] = useState(currentFilters.inspectionDateFrom || '');
+  const [inspectionDateTo, setInspectionDateTo] = useState(currentFilters.inspectionDateTo || '');
 
   if (!isOpen) return null;
 
@@ -40,6 +56,8 @@ export default function AdvancedFilterModal({
     onApply({
       dateFrom,
       dateTo,
+      inspectionDateFrom, // ✅ ส่งค่ากลับ
+      inspectionDateTo,   // ✅ ส่งค่ากลับ
       selectedBrands,
       selectedVehicleTypes
     });
@@ -49,27 +67,34 @@ export default function AdvancedFilterModal({
   const handleReset = () => {
     setDateFrom('');
     setDateTo('');
+    setInspectionDateFrom(''); // ✅ รีเซ็ต
+    setInspectionDateTo('');   // ✅ รีเซ็ต
     setSelectedBrands([]);
     setSelectedVehicleTypes([]);
   };
 
   const toggleBrand = (brand: string) => {
     setSelectedBrands(prev => 
-      prev.includes(brand) 
-        ? prev.filter(b => b !== brand)
-        : [...prev, brand]
+      prev.includes(brand) ? prev.filter(b => b !== brand) : [...prev, brand]
     );
   };
 
   const toggleVehicleType = (type: string) => {
     setSelectedVehicleTypes(prev => 
-      prev.includes(type) 
-        ? prev.filter(t => t !== type)
-        : [...prev, type]
+      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
     );
   };
 
-return (
+  // คำนวณจำนวนตัวกรองที่เลือก (รวมวันที่ตรวจด้วย)
+  const activeFilterCount = 
+    selectedBrands.length + 
+    selectedVehicleTypes.length + 
+    (dateFrom ? 1 : 0) + 
+    (dateTo ? 1 : 0) +
+    (inspectionDateFrom ? 1 : 0) + 
+    (inspectionDateTo ? 1 : 0);
+
+  return (
     <div 
       className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all"
       onClick={onClose}
@@ -101,10 +126,10 @@ return (
         <div className="flex-1 overflow-y-auto p-8 bg-white dark:bg-gray-800 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-600">
           <div className="space-y-8">
             
-            {/* 1. Date Range Filter */}
+            {/* 1. Date Range Filter (Tax) */}
             <div className="bg-gray-50/50 dark:bg-gray-700/20 rounded-3xl p-6 border border-gray-100 dark:border-gray-700/50">
               <label className="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-200 mb-4">
-                <span className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">
+                <span className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 flex items-center justify-center text-xs">
                   <FontAwesomeIcon icon={faCalendarAlt} />
                 </span>
                 ช่วงวันที่ชำระภาษี
@@ -131,7 +156,37 @@ return (
               </div>
             </div>
 
-            {/* 2. Vehicle Type Filter */}
+            {/* ✅ 2. Inspection Date Filter (เพิ่มใหม่) */}
+            <div className="bg-blue-50/50 dark:bg-blue-900/10 rounded-3xl p-6 border border-blue-100 dark:border-blue-800/30">
+              <label className="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-200 mb-4">
+                <span className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">
+                  <FontAwesomeIcon icon={faCalendarCheck} />
+                </span>
+                ช่วงวันที่ตรวจสภาพ
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 ml-1">จากวันที่</label>
+                  <input
+                    type="date"
+                    value={inspectionDateFrom}
+                    onChange={(e) => setInspectionDateFrom(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-blue-200 dark:border-blue-700/50 rounded-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 ml-1">ถึงวันที่</label>
+                  <input
+                    type="date"
+                    value={inspectionDateTo}
+                    onChange={(e) => setInspectionDateTo(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-blue-200 dark:border-blue-700/50 rounded-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Vehicle Type Filter */}
             <div>
               <div className="flex items-center justify-between mb-4">
                 <label className="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-200">
@@ -170,7 +225,7 @@ return (
               </div>
             </div>
 
-            {/* 3. Brand Filter */}
+            {/* 4. Brand Filter */}
             <div>
                <div className="flex items-center justify-between mb-4">
                   <label className="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-200">
@@ -223,10 +278,10 @@ return (
           
           {/* Status Text */}
           <div className="text-sm text-gray-500 dark:text-gray-400 hidden sm:block">
-            {(selectedBrands.length + selectedVehicleTypes.length + (dateFrom ? 1 : 0) + (dateTo ? 1 : 0)) > 0 ? (
+            {activeFilterCount > 0 ? (
                <span className="flex items-center gap-2">
                  <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-                 เลือกแล้ว <span className="font-bold text-gray-800 dark:text-white">{selectedBrands.length + selectedVehicleTypes.length + (dateFrom ? 1 : 0) + (dateTo ? 1 : 0)}</span> รายการ
+                 เลือกแล้ว <span className="font-bold text-gray-800 dark:text-white">{activeFilterCount}</span> รายการ
                </span>
             ) : (
                 <span>ยังไม่ได้เลือกตัวกรอง</span>
@@ -262,4 +317,3 @@ return (
     </div>
   );
 }
-
