@@ -192,7 +192,7 @@ export default function CustomerInfoPage() {
     <AnimatedPage>
       <motion.div variants={itemVariants} initial="hidden" animate="show" exit="exit" className="min-h-screen bg-gray-50/50 dark:bg-gray-900">
         <div className="w-full max-w-[1600px] mx-auto p-4 md:p-6 lg:p-8">
-          
+
           {/* Header & Actions */}
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
             <div>
@@ -204,14 +204,14 @@ export default function CustomerInfoPage() {
               </p>
             </div>
             <div className="flex gap-3">
-               <Link 
-                href="/tax-expiry-next-year" 
+              <Link
+                href="/tax-expiry-next-year"
                 className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-semibold shadow-sm"
               >
                 ภาษีครั้งถัดไป
               </Link>
-              <RippleButton 
-                onClick={() => setIsAddModalOpen(true)} 
+              <RippleButton
+                onClick={() => setIsAddModalOpen(true)}
                 className="px-5 py-2.5 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-all shadow-sm text-sm font-semibold flex items-center gap-2"
               >
                 <FontAwesomeIcon icon={faPlus} className="text-xs" />
@@ -230,44 +230,79 @@ export default function CustomerInfoPage() {
 
           {/* Filters Bar - Clean Style */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 mb-6 shadow-sm">
-            <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
-              
-              <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto flex-1">
-                <div className="relative flex-1 max-w-md">
-                  <FontAwesomeIcon icon={faSearch} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+            {/* Main Container - ใช้ gap ที่พอดีไม่ห่างหรือชิดเกินไป */}
+            <div className="flex flex-col lg:flex-row gap-5 items-stretch lg:items-center">
+
+              {/* --- ส่วนซ้าย: ค้นหาและตัวกรองหลัก --- */}
+              <div className="flex flex-col md:flex-row gap-3 flex-[3] items-stretch">
+
+                {/* ช่องค้นหา - ปรับสัดส่วนให้เด่นที่สุด */}
+                <div className="relative flex-[2] min-w-[280px]">
+                  <FontAwesomeIcon
+                    icon={faSearch}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"
+                  />
                   <input
                     type="text"
                     placeholder="ค้นหาชื่อ, ทะเบียน, เบอร์โทร..."
                     value={search}
                     onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
-                    className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 transition-all placeholder:text-gray-400"
+                    className="w-full pl-11 pr-4 py-2.5 h-11 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all placeholder:text-gray-400"
                   />
                 </div>
-                
-                <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0 no-scrollbar">
-                    <FilterDropdown value={filterMonth} onChange={val => { setFilterMonth(val); setCurrentPage(1); }} icon={faCalendarAlt} placeholder="เดือน" options={MONTH_OPTIONS} />
-                    <FilterDropdown value={filterStatus} onChange={val => { setFilterStatus(val); setCurrentPage(1); }} icon={faClock} placeholder="สถานะ" options={STATUS_FILTER_OPTIONS} />
+
+                {/* กลุ่ม Dropdown - ล็อกความสูง h-11 ให้เท่ากับ Input */}
+                <div className="flex flex-row gap-2 flex-1 items-center">
+                  <div className="flex-1 min-w-[110px]">
+                    <FilterDropdown
+                      value={filterMonth}
+                      onChange={val => { setFilterMonth(val); setCurrentPage(1); }}
+                      icon={faCalendarAlt}
+                      placeholder="เดือน"
+                      options={MONTH_OPTIONS}
+                    />
+                  </div>
+                  <div className="flex-1 min-w-[110px]">
+                    <FilterDropdown
+                      value={filterStatus}
+                      onChange={val => { setFilterStatus(val); setCurrentPage(1); }}
+                      icon={faClock}
+                      placeholder="สถานะ"
+                      options={STATUS_FILTER_OPTIONS}
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 w-full lg:w-auto justify-end border-t lg:border-t-0 pt-3 lg:pt-0 border-gray-100">
-                 <button onClick={resetAllFilters} className="text-xs font-medium text-gray-500 hover:text-gray-900 transition-colors px-2">
-                    รีเซ็ตตัวกรอง
-                 </button>
-                 <div className="h-4 w-px bg-gray-200 hidden lg:block"></div>
-                <button 
-                    onClick={() => setShowAdvancedFilter(true)} 
-                    className={`relative flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all text-sm font-medium ${activeFiltersCount > 0 ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+              {/* --- ส่วนขวา: ปุ่มเครื่องมือ --- */}
+              <div className="flex items-center justify-between lg:justify-end gap-4 flex-[1] border-t lg:border-t-0 pt-4 lg:pt-0 border-gray-100 dark:border-gray-700">
+
+                <button
+                  onClick={resetAllFilters}
+                  className="text-[13px] font-medium text-gray-400 hover:text-red-500 transition-colors whitespace-nowrap"
+                >
+                  รีเซ็ตตัวกรอง
+                </button>
+
+                <div className="h-6 w-px bg-gray-200 dark:bg-gray-700 hidden lg:block"></div>
+
+                <button
+                  onClick={() => setShowAdvancedFilter(true)}
+                  className={`relative flex items-center justify-center gap-2 px-5 h-11 rounded-xl border text-sm font-bold transition-all whitespace-nowrap shadow-sm ${activeFiltersCount > 0
+                      ? 'bg-slate-900 text-white border-slate-900'
+                      : 'bg-white dark:bg-gray-800 text-slate-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-50'
+                    }`}
                 >
                   <FontAwesomeIcon icon={faFilter} className="text-xs" />
-                  ตัวกรองขั้นสูง
+                  <span>ตัวกรองขั้นสูง</span>
                   {activeFiltersCount > 0 && (
-                    <span className="ml-1 bg-white text-gray-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
-                        {activeFiltersCount}
+                    <span className="flex items-center justify-center bg-white text-slate-900 text-[10px] font-black w-5 h-5 rounded-full ml-1 border border-slate-900">
+                      {activeFiltersCount}
                     </span>
                   )}
                 </button>
               </div>
+
             </div>
           </div>
 
@@ -276,83 +311,82 @@ export default function CustomerInfoPage() {
             <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm"><LoadingSkeleton variant="list" count={8} /></div>
           ) : error ? (
             <div className="bg-white rounded-2xl p-12 text-center border border-gray-100 shadow-sm">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-50 text-red-500 mb-4">
-                    <FontAwesomeIcon icon={faTimesCircle} className="text-2xl" />
-                </div>
-                <p className="text-gray-900 font-medium mb-2">ไม่สามารถโหลดข้อมูลได้</p>
-                <p className="text-gray-500 text-sm mb-6">กรุณาลองใหม่อีกครั้ง หรือติดต่อผู้ดูแลระบบ</p>
-                <RippleButton onClick={refreshData} className="px-6 py-2 bg-gray-900 text-white rounded-lg text-sm">ลองใหม่</RippleButton>
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-50 text-red-500 mb-4">
+                <FontAwesomeIcon icon={faTimesCircle} className="text-2xl" />
+              </div>
+              <p className="text-gray-900 font-medium mb-2">ไม่สามารถโหลดข้อมูลได้</p>
+              <p className="text-gray-500 text-sm mb-6">กรุณาลองใหม่อีกครั้ง หรือติดต่อผู้ดูแลระบบ</p>
+              <RippleButton onClick={refreshData} className="px-6 py-2 bg-gray-900 text-white rounded-lg text-sm">ลองใหม่</RippleButton>
             </div>
           ) : (
             <>
               {/* Desktop Table - Minimal */}
               <div className="hidden md:block bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
-                    <table className="w-full">
+                  <table className="w-full">
                     <thead className="bg-gray-50/50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
-                        <tr>
+                      <tr>
                         {['ลำดับ', 'ทะเบียนรถ', 'ประเภท', 'ยี่ห้อ', 'ชื่อลูกค้า', 'เบอร์โทร', 'วันที่ชำระล่าสุด', 'วันที่ตรวจ', 'แท็ก', 'สถานะ', ''].map(h => (
-                            <th key={h} className="px-6 py-4 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                          <th key={h} className="px-6 py-4 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
                         ))}
-                        </tr>
+                      </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
-                        {paginatedData.length === 0 ? (
-                             <tr>
-                                <td colSpan={11} className="px-6 py-12 text-center text-gray-500 text-sm">ไม่พบข้อมูลที่ค้นหา</td>
-                             </tr>
-                        ) : (
-                            paginatedData.map((item, idx) => (
-                            <CustomerRow
-                                key={idx} item={item} rowNumber={startIdx + idx + 1}
-                                onView={c => { setSelectedCustomer(c); setIsViewModalOpen(true); }}
-                                isFavorite={favorites.has(item.licensePlate)} onToggleFavorite={toggleFavorite}
-                            />
-                            ))
-                        )}
+                      {paginatedData.length === 0 ? (
+                        <tr>
+                          <td colSpan={11} className="px-6 py-12 text-center text-gray-500 text-sm">ไม่พบข้อมูลที่ค้นหา</td>
+                        </tr>
+                      ) : (
+                        paginatedData.map((item, idx) => (
+                          <CustomerRow
+                            key={idx} item={item} rowNumber={startIdx + idx + 1}
+                            onView={c => { setSelectedCustomer(c); setIsViewModalOpen(true); }}
+                            isFavorite={favorites.has(item.licensePlate)} onToggleFavorite={toggleFavorite}
+                          />
+                        ))
+                      )}
                     </tbody>
-                    </table>
+                  </table>
                 </div>
-                
+
                 {/* Footer Pagination */}
                 <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50/30 flex items-center justify-between">
-                    <p className="text-xs text-gray-500">
-                        แสดง {paginatedData.length > 0 ? startIdx + 1 : 0} - {Math.min(startIdx + itemsPerPage, filteredData.length)} จาก {filteredData.length} รายการ
-                    </p>
-                    {totalPages > 1 && (
-                        <div className="flex items-center gap-2">
-                            <button 
-                                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} 
-                                disabled={currentPage === 1} 
-                                className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                            >
-                                <FontAwesomeIcon icon={faArrowRight} className="rotate-180 text-xs" />
-                            </button>
-                            <div className="flex gap-1">
-                                {getPageNumbers(currentPage, totalPages).map((page, i) => (
-                                    <button 
-                                        key={i} 
-                                        onClick={() => typeof page === 'number' && setCurrentPage(page)} 
-                                        className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs font-medium transition-all ${
-                                            currentPage === page 
-                                            ? 'bg-gray-900 text-white shadow-sm' 
-                                            : 'text-gray-600 hover:bg-gray-100'
-                                        }`} 
-                                        disabled={typeof page !== 'number'}
-                                    >
-                                        {page}
-                                    </button>
-                                ))}
-                            </div>
-                            <button 
-                                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} 
-                                disabled={currentPage === totalPages} 
-                                className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                            >
-                                <FontAwesomeIcon icon={faArrowRight} className="text-xs" />
-                            </button>
-                        </div>
-                    )}
+                  <p className="text-xs text-gray-500">
+                    แสดง {paginatedData.length > 0 ? startIdx + 1 : 0} - {Math.min(startIdx + itemsPerPage, filteredData.length)} จาก {filteredData.length} รายการ
+                  </p>
+                  {totalPages > 1 && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                        disabled={currentPage === 1}
+                        className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                      >
+                        <FontAwesomeIcon icon={faArrowRight} className="rotate-180 text-xs" />
+                      </button>
+                      <div className="flex gap-1">
+                        {getPageNumbers(currentPage, totalPages).map((page, i) => (
+                          <button
+                            key={i}
+                            onClick={() => typeof page === 'number' && setCurrentPage(page)}
+                            className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs font-medium transition-all ${currentPage === page
+                                ? 'bg-gray-900 text-white shadow-sm'
+                                : 'text-gray-600 hover:bg-gray-100'
+                              }`}
+                            disabled={typeof page !== 'number'}
+                          >
+                            {page}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                        disabled={currentPage === totalPages}
+                        className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                      >
+                        <FontAwesomeIcon icon={faArrowRight} className="text-xs" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -384,30 +418,30 @@ export default function CustomerInfoPage() {
 
 // --- Minimal Stat Card ---
 const StatCard = ({ icon, color, title, value }: any) => {
-    // Mapping color names to Tailwind classes for minimal look (pastel backgrounds)
-    const colorMap: {[key: string]: string} = {
-        emerald: 'bg-emerald-50 text-emerald-600 border-emerald-100',
-        green: 'bg-green-50 text-green-600 border-green-100',
-        amber: 'bg-amber-50 text-amber-600 border-amber-100',
-        orange: 'bg-orange-50 text-orange-600 border-orange-100',
-        rose: 'bg-rose-50 text-rose-600 border-rose-100',
-        red: 'bg-red-50 text-red-600 border-red-100',
-        gray: 'bg-gray-50 text-gray-600 border-gray-100',
-    };
-    
-    const styleClass = colorMap[color] || colorMap['gray'];
+  // Mapping color names to Tailwind classes for minimal look (pastel backgrounds)
+  const colorMap: { [key: string]: string } = {
+    emerald: 'bg-emerald-50 text-emerald-600 border-emerald-100',
+    green: 'bg-green-50 text-green-600 border-green-100',
+    amber: 'bg-amber-50 text-amber-600 border-amber-100',
+    orange: 'bg-orange-50 text-orange-600 border-orange-100',
+    rose: 'bg-rose-50 text-rose-600 border-rose-100',
+    red: 'bg-red-50 text-red-600 border-red-100',
+    gray: 'bg-gray-50 text-gray-600 border-gray-100',
+  };
 
-    return (
-        <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 flex items-start justify-between shadow-sm hover:shadow-md transition-shadow duration-300">
-            <div>
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{title}</p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">{value}</p>
-            </div>
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${styleClass.split(' ')[2]} ${styleClass.split(' ')[0]}`}>
-                <FontAwesomeIcon icon={icon} className={`text-sm ${styleClass.split(' ')[1]}`} />
-            </div>
-        </div>
-    );
+  const styleClass = colorMap[color] || colorMap['gray'];
+
+  return (
+    <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 flex items-start justify-between shadow-sm hover:shadow-md transition-shadow duration-300">
+      <div>
+        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{title}</p>
+        <p className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">{value}</p>
+      </div>
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${styleClass.split(' ')[2]} ${styleClass.split(' ')[0]}`}>
+        <FontAwesomeIcon icon={icon} className={`text-sm ${styleClass.split(' ')[1]}`} />
+      </div>
+    </div>
+  );
 };
 
 // --- Minimal Row ---
@@ -417,13 +451,13 @@ const CustomerRow = memo(function CustomerRow({ item, rowNumber, onView, isFavor
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="flex items-center gap-3">
           <button onClick={(e) => { e.stopPropagation(); onToggleFavorite(item.licensePlate); }} className="text-gray-300 hover:text-amber-400 transition-colors focus:outline-none">
-             <FontAwesomeIcon icon={faStar} className={isFavorite ? 'text-amber-400' : ''} />
+            <FontAwesomeIcon icon={faStar} className={isFavorite ? 'text-amber-400' : ''} />
           </button>
           <span className="text-xs font-mono text-gray-400">#{String(item.sequenceNumber || rowNumber).padStart(6, '0')}</span>
         </div>
       </td>
       <td className="px-6 py-4">
-          <span className="text-sm font-semibold text-gray-900 dark:text-white block">{item.licensePlate}</span>
+        <span className="text-sm font-semibold text-gray-900 dark:text-white block">{item.licensePlate}</span>
       </td>
       <td className="px-6 py-4">
         {item.vehicleType && <span className="inline-flex items-center px-2 py-1 rounded-md bg-gray-100 text-gray-600 text-[10px] font-medium border border-gray-200">{item.vehicleType}</span>}
@@ -431,7 +465,7 @@ const CustomerRow = memo(function CustomerRow({ item, rowNumber, onView, isFavor
       <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">{item.brand || '-'}</td>
       <td className="px-6 py-4">
         <div className="flex flex-col">
-            <span className="text-sm font-medium text-gray-900 dark:text-white">{item.customerName}</span>
+          <span className="text-sm font-medium text-gray-900 dark:text-white">{item.customerName}</span>
         </div>
       </td>
       <td className="px-6 py-4 text-sm text-gray-500 font-mono">{item.phone}</td>
@@ -446,24 +480,22 @@ const CustomerRow = memo(function CustomerRow({ item, rowNumber, onView, isFavor
         </div>
       </td>
       <td className="px-6 py-4">
-         {/* Custom Minimal Status Badge */}
-         <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${
-            item.status === 'ต่อภาษีแล้ว' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+        {/* Custom Minimal Status Badge */}
+        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${item.status === 'ต่อภาษีแล้ว' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
             item.status === 'กำลังจะครบกำหนด' ? 'bg-amber-50 text-amber-700 border-amber-100' :
-            item.status === 'เกินกำหนด' ? 'bg-rose-50 text-rose-700 border-rose-100' :
-            'bg-gray-50 text-gray-700 border-gray-200'
-         }`}>
-            <div className={`w-1.5 h-1.5 rounded-full ${
-                item.status === 'ต่อภาษีแล้ว' ? 'bg-emerald-500' :
-                item.status === 'กำลังจะครบกำหนด' ? 'bg-amber-500' :
+              item.status === 'เกินกำหนด' ? 'bg-rose-50 text-rose-700 border-rose-100' :
+                'bg-gray-50 text-gray-700 border-gray-200'
+          }`}>
+          <div className={`w-1.5 h-1.5 rounded-full ${item.status === 'ต่อภาษีแล้ว' ? 'bg-emerald-500' :
+              item.status === 'กำลังจะครบกำหนด' ? 'bg-amber-500' :
                 item.status === 'เกินกำหนด' ? 'bg-rose-500' : 'bg-gray-400'
             }`}></div>
-            {item.status}
-         </div>
+          {item.status}
+        </div>
       </td>
       <td className="px-6 py-4 text-right">
         <button onClick={() => onView(item)} className="text-gray-400 hover:text-gray-900 transition-colors p-2">
-            <FontAwesomeIcon icon={faArrowRight} className="text-xs" />
+          <FontAwesomeIcon icon={faArrowRight} className="text-xs" />
         </button>
       </td>
     </tr>
