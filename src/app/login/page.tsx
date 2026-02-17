@@ -1,195 +1,126 @@
-// src/app/login/page.tsx
-"use client";
+// src/app/billing-main/InvoicePDF.tsx
+import React from 'react';
+import { Page, Text, View, Document, StyleSheet, Font } from '@react-pdf/renderer';
 
-import React, { useState, useRef, useEffect } from "react";
-import { signIn } from "next-auth/react";
-import { motion, AnimatePresence } from "framer-motion";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faLock, faSignInAlt, faSpinner, faShieldAlt } from "@fortawesome/free-solid-svg-icons";
+// ✅ การ Register ฟอนต์แบบ Local
+// เราจะใช้ Absolute URL เพื่อให้ Turbopack/Next.js หาไฟล์เจอแน่นอน
+const getFontPath = (fontName: string) => {
+  if (typeof window !== 'undefined') {
+    return `${window.location.origin}/fonts/${fontName}`;
+  }
+  return ''; // ช่วง SSR ให้ส่งค่าว่างไปก่อน เพราะเราปิด SSR ไว้ที่ page.tsx อยู่แล้ว
+};
 
-export default function LoginPage() {
-  const [pin, setPin] = useState(["", "", "", "", "", ""]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+Font.register({
+  family: 'Sarabun',
+  fonts: [
+    { src: getFontPath('Sarabun-Regular.ttf'), fontWeight: 'normal' },
+    { src: getFontPath('Sarabun-Bold.ttf'), fontWeight: 'bold' }
+  ]
+});
 
-  // Handle PIN input change
-  const handlePinChange = (index: number, value: string) => {
-    if (value && !/^\d$/.test(value)) return;
+const styles = StyleSheet.create({
+  page: {
+    padding: 40,
+    fontFamily: 'Sarabun', // ✅ ใช้ชื่อที่ตั้งไว้ใน family
+    backgroundColor: '#FFFFFF',
+  },
+  // ... (Styles อื่นๆ เหมือนเดิมที่เคยทำ)
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 30,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+    paddingBottom: 20,
+  },
+  companyName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#10b981',
+  },
+  invoiceTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#E5E7EB',
+  },
+  tableHeader: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#111827',
+    paddingBottom: 8,
+    marginTop: 20,
+  },
+  tableRow: {
+    flexDirection: 'row',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F9FAFB',
+  }
+});
 
-    const newPin = [...pin];
-    newPin[index] = value;
-    setPin(newPin);
-    setError("");
+export const InvoicePDF = ({ data }: { data: any }) => (
+  <Document title={`Invoice-${data.id}`}>
+    <Page size="A4" style={styles.page}>
+      {/* --- ส่วนหัว --- */}
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.companyName}>ตรอ. บังรีท่าอิฐ</Text>
+          <Text style={{ fontSize: 10, color: '#6B7280', marginTop: 4 }}>โทร. 095-841-0423 | ท่าอิฐ นนทบุรี</Text>
+        </View>
+        <View style={{ textAlign: 'right' }}>
+          <Text style={styles.invoiceTitle}>INVOICE</Text>
+          <Text style={{ fontSize: 10, color: '#6B7280' }}>#{data.id}</Text>
+        </View>
+      </View>
 
-    if (value && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-    }
+      {/* --- ข้อมูลลูกค้าและรถ --- */}
+      <View style={{ flexDirection: 'row', gap: 20, marginBottom: 30 }}>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 8, color: '#9CA3AF', fontWeight: 'bold' }}>ลูกค้า</Text>
+          <Text style={{ fontSize: 12, fontWeight: 'bold', marginTop: 5 }}>{data.customer.name}</Text>
+          <Text style={{ fontSize: 10, color: '#6B7280' }}>{data.customer.phone}</Text>
+        </View>
+        <View style={{ flex: 1, backgroundColor: '#F9FAFB', padding: 12, borderRadius: 8 }}>
+          <Text style={{ fontSize: 8, color: '#9CA3AF', fontWeight: 'bold' }}>ข้อมูลรถยนต์</Text>
+          <Text style={{ fontSize: 14, fontWeight: 'bold', marginTop: 4 }}>{data.vehicle.licensePlate}</Text>
+          <Text style={{ fontSize: 10, color: '#6B7280' }}>{data.vehicle.province}</Text>
+        </View>
+      </View>
 
-    if (value && index === 5) {
-      const pinString = newPin.join("");
-      if (pinString.length === 6) {
-        setTimeout(() => {
-          const event = new Event('submit', { bubbles: true, cancelable: true }) as unknown as React.FormEvent;
-          handleSubmit(event);
-        }, 100);
-      }
-    }
-  };
+      {/* --- ตารางรายการ --- */}
+      <View style={styles.tableHeader}>
+        <Text style={{ flex: 4, fontSize: 10, fontWeight: 'bold' }}>รายการ</Text>
+        <Text style={{ flex: 1, textAlign: 'right', fontSize: 10, fontWeight: 'bold' }}>จำนวนเงิน</Text>
+      </View>
 
-  // Handle backspace
-  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Backspace" && !pin[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
-  };
+      {data.items.map((item: any) => (
+        <View key={item.id} style={styles.tableRow}>
+          <Text style={{ flex: 4, fontSize: 10 }}>{item.description}</Text>
+          <Text style={{ flex: 1, textAlign: 'right', fontSize: 10 }}>
+            {item.price.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+          </Text>
+        </View>
+      ))}
 
-  // Handle paste
-  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    const pastedData = e.clipboardData.getData("text").slice(0, 6);
-    const digits = pastedData.match(/\d/g) || [];
-    
-    if (digits.length === 6) {
-      setPin(digits as string[]);
-      inputRefs.current[5]?.focus();
-    }
-  };
+      {/* --- ยอดรวม --- */}
+      <View style={{ marginTop: 40, flexDirection: 'row', justifyContent: 'flex-end' }}>
+        <View style={{ width: 160 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 }}>
+            <Text style={{ fontSize: 10, color: '#6B7280' }}>ยอดรวม</Text>
+            <Text style={{ fontSize: 10 }}>{data.subtotal.toLocaleString('th-TH', { minimumFractionDigits: 2 })}</Text>
+          </View>
+          <View style={{ borderTopWidth: 1, borderTopColor: '#F3F4F6', paddingTop: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={{ fontSize: 12, fontWeight: 'bold' }}>ยอดสุทธิ</Text>
+            <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#10b981' }}>
+              {data.total.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+            </Text>
+          </View>
+        </View>
+      </View>
 
-  const handleSubmit = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    setError("");
-    
-    const pinString = pin.join("");
-    if (pinString.length !== 6) return;
-
-    setIsLoading(true);
-
-    try {
-      const result = await signIn("credentials", {
-        pin: pinString,
-        redirect: true,
-        callbackUrl: "/dashboard"
-      });
-
-      if (result?.error) {
-        throw new Error("Invalid PIN");
-      }
-    } catch {
-      setError("รหัส PIN ไม่ถูกต้อง");
-      setIsLoading(false);
-      setPin(["", "", "", "", "", ""]);
-      inputRefs.current[0]?.focus();
-    }
-  };
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F3F4F6] dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      
-      {/* Background Decorative Elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-200/30 rounded-full blur-[100px]" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-200/30 rounded-full blur-[100px]" />
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-        className="max-w-md w-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl p-10 rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/50 dark:border-gray-700 relative z-10"
-      >
-        <div className="text-center">
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="mx-auto h-20 w-20 bg-gradient-to-tr from-emerald-400 to-teal-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-emerald-200/50 dark:shadow-none rotate-3"
-          >
-            <FontAwesomeIcon icon={faShieldAlt} className="text-white text-3xl" />
-          </motion.div>
-          
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2 tracking-tight">
-            ยินดีต้อนรับกลับ
-          </h2>
-          <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
-            กรุณายืนยันตัวตนด้วย PIN 6 หลัก
-          </p>
-        </div>
-
-        <form className="mt-10 space-y-8" onSubmit={handleSubmit}>
-          {/* Error Message with Shake Animation */}
-          <AnimatePresence mode="wait">
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -10 }}
-                // Shake effect keyframes
-                key={error} // Important for re-animating on new error
-                className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-300 px-4 py-3 rounded-xl text-sm font-medium text-center border border-red-100 dark:border-red-800 flex items-center justify-center gap-2"
-              >
-                <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                {error}
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <div className="flex justify-center gap-3 sm:gap-4">
-            {pin.map((digit, index) => (
-              <motion.input
-                key={index}
-                ref={(el) => { inputRefs.current[index] = el; }}
-                type="password"
-                inputMode="numeric"
-                maxLength={1}
-                value={digit}
-                onChange={(e) => handlePinChange(index, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(index, e)}
-                onPaste={index === 0 ? handlePaste : undefined}
-                disabled={isLoading}
-                className={`w-12 h-14 sm:w-14 sm:h-16 text-center text-3xl font-bold rounded-2xl bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white border-2 transition-all duration-200 outline-none
-                  ${error 
-                    ? 'border-red-200 bg-red-50/50 text-red-500' 
-                    : digit 
-                      ? 'border-emerald-500 bg-white dark:bg-gray-700 shadow-[0_0_0_4px_rgba(16,185,129,0.1)]' 
-                      : 'border-transparent focus:border-emerald-400 focus:bg-white dark:focus:bg-gray-700'
-                  }
-                `}
-                whileFocus={{ scale: 1.05 }}
-                style={{ caretColor: 'transparent' }} // Hide cursor for cleaner look
-              />
-            ))}
-          </div>
-
-          <div>
-            <motion.button
-              type="submit"
-              disabled={isLoading || pin.join("").length !== 6}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full relative overflow-hidden py-4 px-4 rounded-xl shadow-lg shadow-emerald-200/50 dark:shadow-none text-sm font-bold text-white bg-gray-900 dark:bg-emerald-600 hover:bg-gray-800 dark:hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none transition-all"
-            >
-              <div className="flex items-center justify-center gap-2">
-                {isLoading ? (
-                  <>
-                    <FontAwesomeIcon icon={faSpinner} className="animate-spin text-lg" />
-                    <span>กำลังตรวจสอบ...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>เข้าสู่ระบบ</span>
-                    <FontAwesomeIcon icon={faSignInAlt} />
-                  </>
-                )}
-              </div>
-            </motion.button>
-          </div>
-        </form>
-
-        <div className="mt-8 text-center">
-          <p className="text-xs text-gray-400 dark:text-gray-500">
-            ลืมรหัส PIN? <button className="text-gray-600 dark:text-gray-300 hover:underline font-medium">ติดต่อผู้ดูแลระบบ</button>
-          </p>
-        </div>
-      </motion.div>
-    </div>
-  );
-}
+      {/* เส้นขอบบาร์ด้านล่างมินิมอล */}
+      <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, backgroundColor: '#10b981' }} />
+    </Page>
+  </Document>
+);

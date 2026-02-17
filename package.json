@@ -20,6 +20,7 @@
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
     "@fortawesome/react-fontawesome": "^0.2.2",
     "@netlify/plugin-nextjs": "^5.15.7",
+    "@react-pdf/renderer": "^4.3.2",
     "@types/bcryptjs": "^2.4.6",
     "@types/react-window": "^1.8.8",
     "bcryptjs": "^3.0.3",
