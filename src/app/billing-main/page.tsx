@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCarSide,
 } from "@fortawesome/free-solid-svg-icons";
-import Tooltip from '../components/Tooltip';
+import Tooltip from '/components/Tooltip';
 
 function billingmain() {
   interface TooltipProps {
