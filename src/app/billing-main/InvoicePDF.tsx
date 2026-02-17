@@ -15,7 +15,7 @@ const styles = StyleSheet.create({
   page: { padding: 0, fontFamily: 'Sarabun', backgroundColor: '#FFFFFF' },
   billContainer: { height: '50%', padding: '20 30', position: 'relative' },
   
-  // Header Section - ล็อกความสูงเพื่อไม่ให้ทับกัน
+  // Header Section
   headerRow: { 
     flexDirection: 'row', 
     borderBottom: '2pt solid #10b981', 
@@ -25,7 +25,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start'
   },
   headerLeft: { flex: 2 },
-  headerRight: { flex: 1, alignItems: 'flex-end', paddingTop: 5 }, // เพิ่ม paddingTop กันทับเส้น
+  headerRight: { flex: 1, alignItems: 'flex-end', paddingTop: 5 },
   
   logoRow: { flexDirection: 'row', alignItems: 'center' },
   logo: { width: 50, height: 50, marginRight: 10 },
@@ -34,9 +34,9 @@ const styles = StyleSheet.create({
   
   invoiceTitle: { fontSize: 18, fontWeight: 'bold', color: '#111827' },
   copyLabel: { fontSize: 9, fontWeight: 'bold', color: '#6B7280' },
-  billMeta: { fontSize: 8.5, color: '#4B5563', marginTop: 12 }, // ใช้ marginTop ดันลงมาจาก CopyLabel
+  billMeta: { fontSize: 8.5, color: '#4B5563', marginTop: 12 },
 
-  // Info Section - ล็อกความสูงกล่อง (Box)
+  // Info Section
   topGrid: { flexDirection: 'row', gap: 10, marginBottom: 10 },
   infoBox: { 
     flex: 1.6, 
@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
     padding: 8, 
     borderRadius: 4, 
     border: '0.5pt solid #E5E7EB',
-    height: 85 // ล็อกความสูงแน่นอน
+    height: 90 // ขยายความสูงเพิ่มนิดหน่อยเพื่อให้ที่อยู่ตัดบรรทัดได้พอดี
   },
   vehicleBox: { 
     flex: 1, 
@@ -52,24 +52,24 @@ const styles = StyleSheet.create({
     padding: 8, 
     borderRadius: 4, 
     border: '0.5pt solid #BBF7D0',
-    height: 85 // ล็อกความสูงแน่นอน
+    height: 90
   },
   label: { fontSize: 7, color: '#6B7280', fontWeight: 'bold', marginBottom: 3 },
   valueText: { fontSize: 10, color: '#111827', fontWeight: 'bold' },
   subText: { fontSize: 8.5, color: '#4B5563', lineHeight: 1.3 },
 
-  // Table Section - ปรับสัดส่วนคอลัมน์ใหม่
+  // Table Section
   tableContainer: { border: '0.5pt solid #E5E7EB', borderRadius: 4, overflow: 'hidden', minHeight: 130 },
   tableHeader: { flexDirection: 'row', backgroundColor: '#1F2937', padding: '5 8' },
   tableHeaderText: { color: '#FFFFFF', fontSize: 8.5, fontWeight: 'bold' },
   tableRow: { flexDirection: 'row', borderBottom: '0.5pt solid #F3F4F6', padding: '6 8', alignItems: 'center' },
   
-  colDesc: { flex: 5, fontSize: 9.5 }, // รายการกว้างขึ้น
-  colPrice: { flex: 1.5, textAlign: 'right', fontSize: 9.5, fontWeight: 'bold' }, // ราคาพอดีตัวเลข
+  colDesc: { flex: 5, fontSize: 9.5 }, 
+  colPrice: { flex: 1.5, textAlign: 'right', fontSize: 9.5, fontWeight: 'bold' },
 
   // Summary Section
   summaryContainer: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 8 },
-  summaryTable: { width: 150 }, // ล็อกความกว้างตารางสรุป
+  summaryTable: { width: 150 },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 },
   summaryLabel: { fontSize: 9, color: '#4B5563' },
   summaryValue: { fontSize: 9, color: '#111827', textAlign: 'right', fontWeight: 'bold' },
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
   footerNote: { fontSize: 7, color: '#9CA3AF' },
   
   divider: { position: 'absolute', bottom: 0, left: 20, right: 20, borderBottom: '1pt dashed #D1D5DB' },
-  cutMark: { position: 'absolute', bottom: -6, left: '46%', fontSize: 9, color: '#9CA3AF', backgroundColor: '#FFFFFF', padding: '0 10' }
+  cutMark: { position: 'absolute', bottom: -5, left: '46%', fontSize: 9, color: '#9CA3AF', backgroundColor: '#FFFFFF', padding: '0 10' }
 });
 
 const BillContent = ({ data, type }: { data: any, type: string }) => (
@@ -125,7 +125,8 @@ const BillContent = ({ data, type }: { data: any, type: string }) => (
         <Text style={styles.valueText}>{data.customer.name || '-'}</Text>
         <Text style={styles.subText}>เลขประจำตัว: {data.customer.taxId || '-'}</Text>
         <Text style={[styles.subText, { fontSize: 8 }]}>โทร: {data.customer.phone || '-'}</Text>
-        <Text style={[styles.subText, { fontSize: 7.5, marginTop: 2 }]} numberOfLines={2}>
+        {/* ✅ แก้ไข: นำ numberOfLines ออก เพื่อให้ Build ผ่าน และใช้ความสูงของ Box คุมแทน */}
+        <Text style={[styles.subText, { fontSize: 7.5, marginTop: 2, maxHeight: 25, overflow: 'hidden' }]}>
           ที่อยู่: {data.customer.addressDetail} {data.customer.subdistrict} {data.customer.district} {data.customer.province} {data.customer.zipcode}
         </Text>
       </View>
@@ -152,7 +153,8 @@ const BillContent = ({ data, type }: { data: any, type: string }) => (
       </View>
       {data.items.map((item: any, index: number) => (
         <View key={index} style={styles.tableRow}>
-          <Text style={styles.colDesc} numberOfLines={1}>{item.description || '-'}</Text>
+          {/* ✅ แก้ไข: นำ numberOfLines ออก และใช้ flex/overflow แทน */}
+          <Text style={[styles.colDesc, { maxHeight: 15, overflow: 'hidden' }]}>{item.description || '-'}</Text>
           <Text style={styles.colPrice}>
             {Number(item.price).toLocaleString('th-TH', { minimumFractionDigits: 2 })}
           </Text>
